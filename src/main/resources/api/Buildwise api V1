@@ -1,0 +1,269 @@
+type: collection.insomnia.rest/5.0
+name: BUILDWISE-API
+meta:
+  id: wrk_0cdd7607d9cd46228a782157dd3ac1db
+  created: 1748271491396
+  modified: 1748271491396
+collection:
+  - name: USER MANAGEMENT
+    meta:
+      id: fld_ce1e405d16ee47c68ffd0d0ab56fe99a
+      created: 1748271544515
+      modified: 1748271544515
+      sortKey: -1000000000
+    children:
+      - name: OTP
+        meta:
+          id: fld_61e2aa5388f94f1fb60e63321a811681
+          created: 1748271544518
+          modified: 1748271544518
+          sortKey: -1727542542547
+        children:
+          - url: "{{ _.BASE_URL }}/auth/verify-otp"
+            name: VALIDATE OTP
+            meta:
+              id: req_9defc4a622ca4e6ea7b0fb7083e44068
+              created: 1748271544519
+              modified: 1748271544519
+              isPrivate: false
+              sortKey: -1707318807023
+            method: POST
+            body:
+              mimeType: application/json
+              text: |-
+                {
+                	"email": "ecoedu255@gmail.com",
+                	"code":"694996"
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+              - name: User-Agent
+                value: insomnia/8.6.1
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ _.BASE_URL }}/auth/request-otp"
+            name: SEND OTP
+            meta:
+              id: req_bcba0d85a245476480942aba0f9b99b5
+              created: 1748271544521
+              modified: 1748271544521
+              isPrivate: false
+              sortKey: -1707804315344
+            method: POST
+            body:
+              mimeType: application/json
+              text: |-
+                {
+                	"email":"ecoedu255@gmail.com"
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+              - name: User-Agent
+                value: insomnia/8.6.1
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+      - name: PASSWORD-RESET
+        meta:
+          id: fld_395f1e400cc946aaa601a2461127c203
+          created: 1748271544522
+          modified: 1748271544522
+          sortKey: -1727542542497
+        children:
+          - url: "{{ _.BASE_URL }}/auth/verify-otp-and-reset"
+            name: Verfy-otp-and-reset-newpassword
+            meta:
+              id: req_c8cdc8f4ff304205b9320adb1f01d568
+              created: 1748271544524
+              modified: 1748271544524
+              isPrivate: false
+              sortKey: -1707318807023
+            method: POST
+            body:
+              mimeType: application/json
+              text: |-
+                {
+                	"email":"joshuasimon656@gmail.com",
+                	"code":"558786",
+                	"newPassword":"Passwords@656"
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+              - name: User-Agent
+                value: insomnia/8.6.1
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ _.BASE_URL }}/auth/psw-request-otp"
+            name: Request-otp-reset-pasword
+            meta:
+              id: req_3cec385a53da4e558728a130de674325
+              created: 1748271544526
+              modified: 1748271544526
+              isPrivate: false
+              sortKey: -1707804315344
+            method: POST
+            body:
+              mimeType: application/json
+              text: |-
+                {
+                	"email":"joshuasimon656@gmail.com"
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+              - name: User-Agent
+                value: insomnia/8.6.1
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+      - url: "{{ _.BASE_URL }}/auth/register"
+        name: USER REGISTRATION
+        meta:
+          id: req_4272b228acd945b9b208f4de78d89941
+          created: 1748271544527
+          modified: 1748271544527
+          isPrivate: false
+          sortKey: -1707288547864
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"phoneNumber": "+255745051256",
+            	"password": "Password@123",
+            	"email": "ecoedu255@gmail.com",
+            	"timezoneId":"UTC"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/8.6.1
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.BASE_URL }}/auth/login"
+        name: USER LOGIN
+        meta:
+          id: req_cf7d36a6026645f6bce8a75f76dbc6a6
+          created: 1748271544529
+          modified: 1748271544529
+          isPrivate: false
+          sortKey: -1707303475313
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            "password":"Password@123",
+            "phoneEmailOrUserName":"joshuasimon656@gmail.com"
+
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/8.6.1
+        authentication:
+          type: none
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.BASE_URL }}/auth/all-users"
+        name: LIST ALL USERS
+        meta:
+          id: req_6e370040852e430aab4b47786f4934f0
+          created: 1748271544530
+          modified: 1748271544530
+          isPrivate: false
+          sortKey: -1707288547764
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/8.6.1
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.BASE_URL }}/auth/refreshToken"
+        name: REFRESH-TOKEN
+        meta:
+          id: req_77803f92d9d1441b80b7b7195849996f
+          created: 1748271544532
+          modified: 1748271544532
+          isPrivate: false
+          sortKey: -1707296011588.5
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            "refreshToken":"eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJraWJ1dGkyNTUiLCJpYXQiOjE3MzY5NDYzOTYsImV4cCI6MTc2ODQ4MjM5NiwidG9rZW5UeXBlIjoiUkVGUkVTSCJ9.OqZlpIQKjb8J5dEvhxvN6jGwO0PxlF0stEzkj1i2U7HiWgwlN4rijvqe2_A__9Rd"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/8.6.1
+        authentication:
+          type: none
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_7f4c9871ce4f010a63a9b1ac6e199131b70ff1a1
+    created: 1748271491402
+    modified: 1748271491402
+environments:
+  name: Base Environment
+  meta:
+    id: env_7f4c9871ce4f010a63a9b1ac6e199131b70ff1a1
+    created: 1748271491400
+    modified: 1748271491400
+    isPrivate: false
