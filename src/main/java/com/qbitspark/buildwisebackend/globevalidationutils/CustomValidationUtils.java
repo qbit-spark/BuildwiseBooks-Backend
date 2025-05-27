@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.GlobeValidationUtils;
+package com.qbitspark.buildwisebackend.globevalidationutils;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

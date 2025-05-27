@@ -11,7 +11,7 @@ import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccoun
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.RolesRepository;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.EmailOTPService;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.AccountService;
-import com.qbitspark.buildwisebackend.GlobeSecurity.JWTProvider;
+import com.qbitspark.buildwisebackend.globesecurity.JWTProvider;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.authentication.AuthenticationManager;

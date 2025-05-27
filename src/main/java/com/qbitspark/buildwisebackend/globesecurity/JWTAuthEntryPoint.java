@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.GlobeSecurity;
+package com.qbitspark.buildwisebackend.globesecurity;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

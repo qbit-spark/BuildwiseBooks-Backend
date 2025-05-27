@@ -7,20 +7,17 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.VerificationExcepti
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.PasswordResetOTPRepo;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.PasswordResetOTPEntity;
-import com.qbitspark.buildwisebackend.globeauthentication.entity.UserOTP;
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccountRepository;
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.UserOTPRepository;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.EmailOTPService;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.PasswordResetOTPService;
-import com.qbitspark.buildwisebackend.GlobeValidationUtils.CustomValidationUtils;
+import com.qbitspark.buildwisebackend.globevalidationutils.CustomValidationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @RequiredArgsConstructor
 @Service
