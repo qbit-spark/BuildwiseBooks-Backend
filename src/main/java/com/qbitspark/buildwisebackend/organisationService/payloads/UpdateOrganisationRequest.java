@@ -1,6 +1,5 @@
 package com.qbitspark.buildwisebackend.organisationService.payloads;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
