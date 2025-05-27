@@ -1,9 +1,9 @@
 package com.qbitspark.buildwisebackend.GlobeSecurity;
 
 
-import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.ItemReadyExistException;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.GlobeAccountRepository;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemReadyExistException;
+import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccountRepository;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.security.core.GrantedAuthority;

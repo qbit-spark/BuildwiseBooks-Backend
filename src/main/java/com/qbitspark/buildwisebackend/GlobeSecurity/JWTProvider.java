@@ -1,7 +1,7 @@
 package com.qbitspark.buildwisebackend.GlobeSecurity;
 
 
-import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.*;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;

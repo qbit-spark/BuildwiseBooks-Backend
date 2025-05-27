@@ -1,6 +1,6 @@
 package com.qbitspark.buildwisebackend.organisationService.entity;
 
-import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

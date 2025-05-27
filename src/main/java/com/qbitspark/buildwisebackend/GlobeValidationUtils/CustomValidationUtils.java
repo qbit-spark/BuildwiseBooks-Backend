@@ -11,10 +11,8 @@ public class CustomValidationUtils {
     private Long OTP_EXPIRE_TIME;
 
     public boolean isOTPExpired(LocalDateTime createdTime) {
-
         LocalDateTime currentTime = LocalDateTime.now();
-
-        LocalDateTime expirationTime = createdTime.plusSeconds(OTP_EXPIRE_TIME);
+        LocalDateTime expirationTime = createdTime.plusMinutes(OTP_EXPIRE_TIME);
 
         return currentTime.isAfter(expirationTime);
     }

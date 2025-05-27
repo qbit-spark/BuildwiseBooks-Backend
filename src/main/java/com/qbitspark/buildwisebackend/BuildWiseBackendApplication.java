@@ -1,8 +1,8 @@
 package com.qbitspark.buildwisebackend;
 
-import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.Roles;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.RolesRepository;
-import org.modelmapper.ModelMapper;
+import com.qbitspark.buildwisebackend.globeauthentication.entity.Roles;
+import com.qbitspark.buildwisebackend.globeauthentication.Repository.RolesRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -18,12 +18,6 @@ public class BuildWiseBackendApplication implements CommandLineRunner {
 
     @Bean
     public WebClient webClient(WebClient.Builder builder) {return builder.build();}
-
-    @Bean
-    public ModelMapper modelMapper() {
-        return new ModelMapper();
-    }
-
 
     public static void main(String[] args) {
         SpringApplication.run(BuildWiseBackendApplication.class, args);

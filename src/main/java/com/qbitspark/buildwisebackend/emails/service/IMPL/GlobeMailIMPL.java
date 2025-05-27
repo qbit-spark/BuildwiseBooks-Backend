@@ -9,10 +9,7 @@ import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
 
 @RequiredArgsConstructor
 @Service
@@ -22,14 +19,14 @@ public class GlobeMailIMPL implements GlobeMailService {
     private final EmailsHelperMethodsIMPL emailsHelperMethodsIMPL;
 
     @Override
-    public boolean sendOTPEmail(String email, String otp, String userName) throws Exception {
+    public boolean sendOTPEmail(String email, String otp, String userName, String textHeader, String instructions) throws Exception {
         try {
             log.info("Sending OTP email to: {} for user: {}", email, userName);
 
             Map<String, Object> templateVariables = new HashMap<>();
-            templateVariables.put("emailHeader", "Account Verification");
+            templateVariables.put("emailHeader", textHeader);
             templateVariables.put("userName", userName != null ? userName : "User");
-            templateVariables.put("instructionText", "Please use the following OTP code to verify your account:");
+            templateVariables.put("instructionText", instructions);
             templateVariables.put("otpCode", otp);
 
             // Send email using template
