@@ -1,6 +1,6 @@
-package com.qbitspark.buildwisebackend.GlobeSecurity.Configuration;
+package com.qbitspark.buildwisebackend.globesecurity.configuration;
 
-import com.qbitspark.buildwisebackend.GlobeSecurity.JWTAuthFilter;
+import com.qbitspark.buildwisebackend.globesecurity.JWTAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

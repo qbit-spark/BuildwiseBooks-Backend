@@ -11,8 +11,8 @@ import com.qbitspark.buildwisebackend.globeauthentication.payloads.LoginResponse
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccountRepository;
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.UserOTPRepository;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.EmailOTPService;
-import com.qbitspark.buildwisebackend.GlobeSecurity.JWTProvider;
-import com.qbitspark.buildwisebackend.GlobeValidationUtils.CustomValidationUtils;
+import com.qbitspark.buildwisebackend.globesecurity.JWTProvider;
+import com.qbitspark.buildwisebackend.globevalidationutils.CustomValidationUtils;
 import com.qbitspark.buildwisebackend.emails.service.GlobeMailService;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import lombok.RequiredArgsConstructor;

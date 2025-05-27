@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.GlobeSecurity;
+package com.qbitspark.buildwisebackend.globesecurity;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
