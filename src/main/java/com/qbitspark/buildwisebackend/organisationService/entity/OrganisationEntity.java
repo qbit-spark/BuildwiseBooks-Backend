@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -16,15 +17,27 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrganisationEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID organisationId;
 
     private String organisationName;
 
-    private String organisationAddress;
+    private String organisationDescription;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "account_id", nullable = false)
     private AccountEntity owner;
+
+    private boolean isActive;
+
+    private boolean isDeleted;
+
+    private LocalDateTime createdDate;
+
+    private LocalDateTime modifiedDate;
+
+    private LocalDateTime deletedDate;
+
 }
