@@ -6,10 +6,10 @@ import com.qbitspark.buildwisebackend.GlobeAPIClient.BasicAuthApiClient;
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.RandomExceptions;
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.VerificationException;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.DTOs.UserLoginDTO;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Entity.GlobeUserEntity;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Entity.UserOTP;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.GlobeUserRepository;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.AccountLoginRequest;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.UserOTP;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.GlobeAccountRepository;
 import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.UserOTPRepository;
 import com.qbitspark.buildwisebackend.GlobeAuthentication.Service.SMSOTPService;
 import com.qbitspark.buildwisebackend.GlobeResponseBody.GlobalJsonResponseBody;
@@ -18,11 +18,9 @@ import com.qbitspark.buildwisebackend.GlobeValidationUtils.CustomValidationUtils
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.Random;
 
 @RequiredArgsConstructor
@@ -30,7 +28,7 @@ import java.util.Random;
 public class SMSOTPIMPL implements SMSOTPService {
 
     private final UserOTPRepository userOTPRepository;
-    private final GlobeUserRepository userManagerRepository;
+    private final GlobeAccountRepository userManagerRepository;
     private final ModelMapper modelMapper;
     private final JWTProvider tokenProvider;
     private final BasicAuthApiClient basicAuthApiClient;
@@ -51,7 +49,7 @@ public class SMSOTPIMPL implements SMSOTPService {
     @Override
     public String generateAndSendSMSOTP(String phoneNumber) throws RandomExceptions, JsonProcessingException, ItemNotFoundException {
 
-        GlobeUserEntity user = userManagerRepository.findUserMangerByPhoneNumber(phoneNumber).orElseThrow(()-> new ItemNotFoundException("No such user with given phone number"));
+        AccountEntity user = userManagerRepository.findAccountEntitiesByPhoneNumber(phoneNumber).orElseThrow(()-> new ItemNotFoundException("No such user with given phone number"));
 
 
         UserOTP existingOTP = userOTPRepository.findUserOTPByUser(user);
@@ -62,7 +60,7 @@ public class SMSOTPIMPL implements SMSOTPService {
         if (existingOTP == null) {
             // Create a new OTP if none exists for the user
             existingOTP = new UserOTP();
-            existingOTP.setUser(userManagerRepository.findUserMangerByPhoneNumber(phoneNumber).orElseThrow(() -> new ItemNotFoundException("Phone number is wrong")));
+            existingOTP.setUser(userManagerRepository.findAccountEntitiesByPhoneNumber(phoneNumber).orElseThrow(() -> new ItemNotFoundException("Phone number is wrong")));
             existingOTP.setSentTime(LocalDateTime.now());
         }
         existingOTP.setOtpCode(newOtpCode);
@@ -78,7 +76,7 @@ public class SMSOTPIMPL implements SMSOTPService {
 
     @Override
     public GlobalJsonResponseBody verifySMSOTP(String phoneNumber, String otpCode) throws ItemNotFoundException, RandomExceptions, ItemNotFoundException, VerificationException {
-        GlobeUserEntity user = userManagerRepository.findUserMangerByPhoneNumber(phoneNumber)
+        AccountEntity user = userManagerRepository.findAccountEntitiesByPhoneNumber(phoneNumber)
                 .orElseThrow(() -> new ItemNotFoundException("No such user with given phone number"));
 
         UserOTP existingOTP = userOTPRepository.findUserOTPByUser(user);
@@ -114,7 +112,7 @@ public class SMSOTPIMPL implements SMSOTPService {
         return String.valueOf(otp);
     }
 
-    public UserLoginDTO convertEntityToDTO(GlobeUserEntity userManger) {
-        return modelMapper.map(userManger, UserLoginDTO.class);
+    public AccountLoginRequest convertEntityToDTO(AccountEntity userManger) {
+        return modelMapper.map(userManger, AccountLoginRequest.class);
     }
 }

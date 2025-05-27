@@ -1,44 +1,38 @@
 package com.qbitspark.buildwisebackend.GlobeAuthentication.Service.IMPL;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.*;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.DTOs.UserLoginDTO;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.DTOs.UserRegisterDTO;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.DTOs.UserRegisterResponseDTO;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Entity.GlobeUserEntity;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Entity.Roles;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Payloads.LoginResponse;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Payloads.RefreshTokenResponse;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.GlobeUserRepository;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.AccountLoginRequest;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.Roles;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.CreateAccountRequest;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.LoginResponse;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.RefreshTokenResponse;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.GlobeAccountRepository;
 import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.RolesRepository;
 import com.qbitspark.buildwisebackend.GlobeAuthentication.Service.EmailOTPService;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Service.UserManagementService;
-import com.qbitspark.buildwisebackend.GlobeResponseBody.GlobalJsonResponseBody;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.Service.AccountService;
 import com.qbitspark.buildwisebackend.GlobeSecurity.JWTProvider;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
-public class UserMGMTImpl implements UserManagementService {
+public class AccountServiceIMPL implements AccountService {
 
-    private final GlobeUserRepository globeUserRepository;
+    private final GlobeAccountRepository globeAccountRepository;
     private final RolesRepository rolesRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -48,56 +42,84 @@ public class UserMGMTImpl implements UserManagementService {
 
 
     @Override
-    public GlobeUserEntity registerUser(UserRegisterDTO userManagementDTO) throws ItemReadyExistException, RandomExceptions, ItemNotFoundException {
+    public AccountEntity registerAccount(CreateAccountRequest createAccountRequest) throws ItemReadyExistException, RandomExceptions, ItemNotFoundException {
 
-        //Todo: check the existence of user
-        if (globeUserRepository.existsByPhoneNumberOrEmailOrUserName(userManagementDTO.getPhoneNumber(),
-                userManagementDTO.getEmail(),
-                userManagementDTO.getUserName())) {
-            throw new ItemReadyExistException("User with provided credentials already exist, login");
+        //check the existence of user
+        if (globeAccountRepository.existsByPhoneNumberOrEmailOrUserName(createAccountRequest.getPhoneNumber(),
+                createAccountRequest.getEmail(),
+                generateUserName(createAccountRequest.getEmail()))) {
+            throw new ItemReadyExistException("User with provided credentials already exist, please login");
         }
 
-        GlobeUserEntity userManger = convertDTOToEntity(userManagementDTO);
-        userManger.setUserName(generateUserName(userManagementDTO.getEmail()));
-        userManger.setCreatedAt(new Date());
-        userManger.setEditedAt(new Date());
-        userManger.setIsVerified(false);
-        userManger.setPassword(passwordEncoder.encode(userManagementDTO.getPassword()));
-        //Todo: lets set the user role
+        AccountEntity account = new AccountEntity();
+        account.setUserName(generateUserName(createAccountRequest.getEmail()));
+        account.setCreatedAt(LocalDateTime.now());
+        account.setEditedAt(LocalDateTime.now());
+        account.setIsVerified(false);
+        account.setEmail(createAccountRequest.getEmail());
+        account.setPhoneNumber(createAccountRequest.getPhoneNumber());
+        account.setPassword(passwordEncoder.encode(createAccountRequest.getPassword()));
+        //set the user role
         Set<Roles> roles = new HashSet<>();
         Roles userRoles = rolesRepository.findByRoleName("ROLE_NORMAL_USER").get();
         roles.add(userRoles);
-        userManger.setRoles(roles);
-        GlobeUserEntity saved = globeUserRepository.save(userManger);
+        account.setRoles(roles);
 
+        AccountEntity savedAccount = globeAccountRepository.save(account);
 
-        //Todo: send OTP or email OTP HERE.....
-       // smsotpService.generateAndSendPSWDResetOTP(userManger.getPhoneNumber());
+        //Check a selected verification channel
+        switch (createAccountRequest.getVerificationChannel()) {
+            case EMAIL -> //Send the OTP via email
+                    emailOTPService.generateAndSendEmailOTP(savedAccount, "Welcome to BuildWise Books Support!", "Please use the following OTP to complete your registration: ");
+            case SMS -> {
+                System.out.println("SMS verification is not implemented yet.");
+            }
+            case EMAIL_AND_SMS -> {
+                System.out.println("Email and SMS verification is not implemented yet.");
+            }
 
-        // Todo: Send the OTP via Email for registration
-        String emailHeader = "Welcome to BuildWise Books Support!";
-        String instructionText = "Please use the following OTP to complete your registration:";
-        emailOTPService.generateAndSendEmailOTP(userManger, emailHeader, instructionText);
+            case SMS_AND_WHATSAPP -> {
+                System.out.println("SMS and WhatsApp verification is not implemented yet.");
+            }
+            case WHATSAPP -> {
+                System.out.println("WhatsApp verification is not implemented yet.");
+            }
+            case VOICE_CALL -> {
+                System.out.println("Voice call verification is not implemented yet.");
+            }
+            case PUSH_NOTIFICATION -> {
+                System.out.println("Push notification verification is not implemented yet.");
+            }
+            case ALL_CHANNELS -> {
+                System.out.println("All channels verification is not implemented yet.");
+            }
+            default -> {
+                //Send the OTP via Email
+                emailOTPService.generateAndSendEmailOTP(savedAccount,
+                        "Welcome to BuildWise Books Support!", "Please use the following OTP to complete your registration: ");
+            }
 
-        return saved;
+        }
+
+        return savedAccount;
     }
 
     @Override
-    public LoginResponse loginUser(UserLoginDTO userLoginDTO) throws VerificationException, ItemNotFoundException {
+    public LoginResponse loginAccount(AccountLoginRequest accountLoginRequest) throws VerificationException, ItemNotFoundException {
 
-            String input = userLoginDTO.getPhoneEmailOrUserName();
-            String password = userLoginDTO.getPassword();
+            String input = accountLoginRequest.getPhoneEmailOrUserName();
+            String password = accountLoginRequest.getPassword();
 
             // Determine the type of input (phone number, email, or username)
-            GlobeUserEntity user = null;
+            AccountEntity user = null;
             if (isEmail(input)) {
-                user = globeUserRepository.findByEmail(input).orElseThrow(
+                user = globeAccountRepository.findByEmail(input).orElseThrow(
                         () -> new ItemNotFoundException("User with provided email does not exist")
                 );
             } else if (isPhoneNumber(input)) {
-                user = globeUserRepository.findUserMangerByPhoneNumber(input).orElseThrow(() -> new ItemNotFoundException("phone number do not exist"));
+                user = globeAccountRepository.findAccountEntitiesByPhoneNumber(input).orElseThrow(() -> new ItemNotFoundException("phone number do not exist"));
             } else {
-                user = globeUserRepository.findByUserName(input).orElseThrow(
+                user = globeAccountRepository.findByUserName(input).orElseThrow(
                         () -> new ItemNotFoundException("User with provided username does not exist")
                 );
             }
@@ -142,7 +164,7 @@ public class UserMGMTImpl implements UserManagementService {
             String userName = tokenProvider.getUserName(refreshToken);
 
             // Retrieve user from database
-            GlobeUserEntity user = globeUserRepository.findByUserName(userName)
+            AccountEntity user = globeAccountRepository.findByUserName(userName)
                     .orElseThrow(() -> new ItemNotFoundException("User not found"));
 
             // Create authentication with user authorities
@@ -172,15 +194,14 @@ public class UserMGMTImpl implements UserManagementService {
     }
 
     @Override
-    public List<GlobeUserEntity> getAllUser() {
-        return globeUserRepository.findAll();
+    public List<AccountEntity> getAllAccounts() {
+        return globeAccountRepository.findAll();
     }
 
     @Override
-    public GlobeUserEntity getSingleUser(UUID userId) throws ItemNotFoundException {
-        return globeUserRepository.findById(userId).orElseThrow(() -> new ItemNotFoundException("No such user"));
+    public AccountEntity getAccountByID(UUID userId) throws ItemNotFoundException {
+        return globeAccountRepository.findById(userId).orElseThrow(() -> new ItemNotFoundException("No such user"));
     }
-
 
     private String generateUserName(String email) {
 
@@ -196,11 +217,6 @@ public class UserMGMTImpl implements UserManagementService {
         return username.toString();
     }
 
-
-    //Todo: convert DTO to Entity
-    public GlobeUserEntity convertDTOToEntity(UserRegisterDTO userManagementDTO) {
-        return modelMapper.map(userManagementDTO, GlobeUserEntity.class);
-    }
 
     private boolean isPhoneNumber(String input) {
         // Regular expression pattern for validating phone numbers

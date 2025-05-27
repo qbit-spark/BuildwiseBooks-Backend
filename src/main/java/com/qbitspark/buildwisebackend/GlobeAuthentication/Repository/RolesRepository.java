@@ -1,7 +1,7 @@
 package com.qbitspark.buildwisebackend.GlobeAuthentication.Repository;
 
 
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Entity.Roles;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.Roles;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

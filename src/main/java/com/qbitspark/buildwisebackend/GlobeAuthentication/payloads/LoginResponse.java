@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.GlobeAuthentication.Payloads;
+package com.qbitspark.buildwisebackend.GlobeAuthentication.payloads;
 
 import lombok.Data;
 

@@ -5,8 +5,8 @@ import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.ItemNotFoundExcepti
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.ItemReadyExistException;
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.RandomExceptions;
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.VerificationException;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Payloads.PswResetAndOTPRequestBody;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Payloads.RequestSMSOTPBody;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.PswResetAndOTPRequestBody;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.RequestSMSOTPBody;
 import com.qbitspark.buildwisebackend.GlobeAuthentication.Service.PasswordResetOTPService;
 import com.qbitspark.buildwisebackend.GlobeResponseBody.GlobalJsonResponseBody;
 import jakarta.validation.Valid;

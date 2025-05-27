@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.GlobeAuthentication.Entity;
+package com.qbitspark.buildwisebackend.GlobeAuthentication.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -31,6 +31,6 @@ public class UserOTP {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
-    private GlobeUserEntity user;
+    private AccountEntity user;
 
 }

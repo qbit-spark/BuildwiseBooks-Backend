@@ -1,20 +1,14 @@
-package com.qbitspark.buildwisebackend.GlobeAuthentication.DTOs;
+package com.qbitspark.buildwisebackend.GlobeAuthentication.payloads;
 
+import com.qbitspark.buildwisebackend.GlobeAuthentication.enums.VerificationChannels;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
-import java.util.Date;
-import java.util.UUID;
-
 @Data
-public class UserRegisterDTO {
-
-    private UUID userId;
-    private String userName;
-
-
+public class CreateAccountRequest {
     // Phone number validation for any country using E.164 format
     @NotBlank(message = "Phone number is mandatory")
     @Pattern(
@@ -35,8 +29,7 @@ public class UserRegisterDTO {
     @Email(message = "Email should be valid")
     private String email;
 
-    private Date createdAt;
-    private Date editedAt;
-    private String roles;
-    private Boolean isVerified;
+    @NotNull(message = "Verification channel is mandatory")
+    private VerificationChannels verificationChannel;
+
 }

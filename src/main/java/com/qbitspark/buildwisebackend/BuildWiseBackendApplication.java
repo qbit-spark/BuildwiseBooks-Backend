@@ -1,6 +1,6 @@
 package com.qbitspark.buildwisebackend;
 
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Entity.Roles;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.Roles;
 import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.RolesRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +15,6 @@ public class BuildWiseBackendApplication implements CommandLineRunner {
 
     @Autowired
     private RolesRepository roleRepository;
-
 
     @Bean
     public WebClient webClient(WebClient.Builder builder) {return builder.build();}

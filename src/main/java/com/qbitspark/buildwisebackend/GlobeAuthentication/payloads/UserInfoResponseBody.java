@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.GlobeAuthentication.DTOs;
+package com.qbitspark.buildwisebackend.GlobeAuthentication.payloads;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
@@ -7,7 +7,7 @@ import java.util.Date;
 import java.util.UUID;
 
 @Data
-public class UserRegisterResponseDTO {
+public class UserInfoResponseBody {
     private UUID userId;
     private String phoneNumber;
     private String userName;
@@ -18,4 +18,5 @@ public class UserRegisterResponseDTO {
     private Date editedAt;
     private String roles;
     private Boolean isVerified;
+
 }

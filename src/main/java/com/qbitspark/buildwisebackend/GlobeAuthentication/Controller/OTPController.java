@@ -4,10 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.RandomExceptions;
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.VerificationException;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Entity.GlobeUserEntity;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Payloads.EmailOTPRequestBody;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Payloads.RequestEmailOTPBody;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.GlobeUserRepository;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.EmailOTPRequestBody;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.RequestEmailOTPBody;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.Repository.GlobeAccountRepository;
 import com.qbitspark.buildwisebackend.GlobeAuthentication.Service.EmailOTPService;
 import com.qbitspark.buildwisebackend.GlobeAuthentication.Service.SMSOTPService;
 import com.qbitspark.buildwisebackend.GlobeResponseBody.GlobalJsonResponseBody;
@@ -28,13 +28,13 @@ import java.util.Date;
 public class OTPController {
 
     private final SMSOTPService smsotpService;
-    private final GlobeUserRepository globeUserRepository;
+    private final GlobeAccountRepository globeAccountRepository;
     private final EmailOTPService emailOTPService;
 
 
     @PostMapping("/request-otp")
     public ResponseEntity<GlobalJsonResponseBody> requestEmailOTP(@Valid @RequestBody RequestEmailOTPBody requestEmailOTPBody) throws RandomExceptions, JsonProcessingException, ItemNotFoundException {
-        GlobeUserEntity userAuthEntity = globeUserRepository.findByEmail(requestEmailOTPBody.getEmail()).orElseThrow(
+        AccountEntity userAuthEntity = globeAccountRepository.findByEmail(requestEmailOTPBody.getEmail()).orElseThrow(
                 ()->new ItemNotFoundException("User with provided email does not exist")
         );
 

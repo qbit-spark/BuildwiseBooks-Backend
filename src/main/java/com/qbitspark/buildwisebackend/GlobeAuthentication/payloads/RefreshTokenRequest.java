@@ -1,10 +1,10 @@
-package com.qbitspark.buildwisebackend.GlobeAuthentication.DTOs;
+package com.qbitspark.buildwisebackend.GlobeAuthentication.payloads;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class RefreshTokenDTO {
+public class RefreshTokenRequest {
     @NotBlank(message = "Refresh token should not be empty")
     String refreshToken;
 }

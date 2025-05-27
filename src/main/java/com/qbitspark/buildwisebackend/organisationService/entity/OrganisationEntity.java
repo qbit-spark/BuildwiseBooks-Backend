@@ -1,12 +1,11 @@
 package com.qbitspark.buildwisebackend.organisationService.entity;
 
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Entity.GlobeUserEntity;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.AccountEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.query.sql.internal.ParameterRecognizerImpl;
 
 import java.util.UUID;
 
@@ -27,5 +26,5 @@ public class OrganisationEntity {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private GlobeUserEntity owner;
+    private AccountEntity owner;
 }

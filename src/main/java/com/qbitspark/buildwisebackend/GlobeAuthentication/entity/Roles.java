@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.GlobeAuthentication.Entity;
+package com.qbitspark.buildwisebackend.GlobeAuthentication.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;

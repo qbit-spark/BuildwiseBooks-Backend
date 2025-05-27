@@ -2,14 +2,13 @@ package com.qbitspark.buildwisebackend.GlobeAuthentication.Controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.qbitspark.buildwisebackend.GlobeAdvice.Exceptions.*;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.DTOs.RefreshTokenDTO;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.DTOs.UserLoginDTO;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.DTOs.UserRegisterDTO;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Entity.GlobeUserEntity;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Payloads.LoginResponse;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Payloads.RefreshTokenResponse;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Service.PasswordResetOTPService;
-import com.qbitspark.buildwisebackend.GlobeAuthentication.Service.UserManagementService;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.RefreshTokenRequest;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.AccountLoginRequest;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.CreateAccountRequest;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.LoginResponse;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.payloads.RefreshTokenResponse;
+import com.qbitspark.buildwisebackend.GlobeAuthentication.Service.AccountService;
 import com.qbitspark.buildwisebackend.GlobeResponseBody.GlobalJsonResponseBody;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -25,40 +24,39 @@ import java.util.UUID;
 @RequestMapping("api/v1/auth")
 public class GlobeAuthMngController {
 
-    private final UserManagementService userManagementService;
-    private final PasswordResetOTPService passwordResetOTPService;
+    private final AccountService accountService;
 
     @PostMapping("/register")
-    public ResponseEntity<GlobalJsonResponseBody> userRegistration(@Valid @RequestBody UserRegisterDTO userManagementDTO) throws RandomExceptions, JsonProcessingException, ItemReadyExistException, ItemNotFoundException {
+    public ResponseEntity<GlobalJsonResponseBody> accountRegistration(@Valid @RequestBody CreateAccountRequest createAccountRequest) throws RandomExceptions, JsonProcessingException, ItemReadyExistException, ItemNotFoundException {
 
-        userManagementService.registerUser(userManagementDTO);
+        accountService.registerAccount(createAccountRequest);
         return new ResponseEntity<>(generateGlobalJsonResponseBody("User account created successful, please verify your email",HttpStatus.CREATED,"User account created successful, please verify your email"), HttpStatus.CREATED);
 
     }
 
     @PostMapping("/login")
-    public ResponseEntity<GlobalJsonResponseBody> userLogin(@Valid @RequestBody UserLoginDTO userLoginDTO) throws VerificationException, ItemNotFoundException {
-        LoginResponse loginResponse = userManagementService.loginUser(userLoginDTO);
+    public ResponseEntity<GlobalJsonResponseBody> accountLogin(@Valid @RequestBody AccountLoginRequest accountLoginRequest) throws VerificationException, ItemNotFoundException {
+        LoginResponse loginResponse = accountService.loginAccount(accountLoginRequest);
         return new ResponseEntity<>(generateGlobalJsonResponseBody("Account login successful", HttpStatus.OK, loginResponse), HttpStatus.OK);
     }
 
     @PostMapping("/refreshToken")
-    public ResponseEntity<GlobalJsonResponseBody> refreshToken(@Valid @RequestBody RefreshTokenDTO refreshTokenDTO) throws RandomExceptions, TokenInvalidException {
-        RefreshTokenResponse refreshTokenResponse = userManagementService.refreshToken(refreshTokenDTO.getRefreshToken());
+    public ResponseEntity<GlobalJsonResponseBody> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) throws RandomExceptions, TokenInvalidException {
+        RefreshTokenResponse refreshTokenResponse = accountService.refreshToken(refreshTokenRequest.getRefreshToken());
         return new ResponseEntity<>(generateGlobalJsonResponseBody("Token refreshed successful",HttpStatus.OK, refreshTokenResponse), HttpStatus.ACCEPTED);
     }
 
 
     @GetMapping("/all-users")
     public ResponseEntity<GlobalJsonResponseBody> getAllUsers() {
-        List<GlobeUserEntity> userList = userManagementService.getAllUser();
+        List<AccountEntity> userList = accountService.getAllAccounts();
         return new ResponseEntity<>(generateGlobalJsonResponseBody("All users retried successfully",HttpStatus.OK, userList), HttpStatus.CREATED);
     }
 
 
     @GetMapping("/single-user/{userId}")
     public ResponseEntity<GlobalJsonResponseBody> getSingleUser(@PathVariable UUID userId) throws  ItemNotFoundException {
-        GlobeUserEntity user = userManagementService.getSingleUser(userId);
+        AccountEntity user = accountService.getAccountByID(userId);
         return new ResponseEntity<>(generateGlobalJsonResponseBody("User details retried successfully",HttpStatus.OK,user), HttpStatus.OK);
     }
 
