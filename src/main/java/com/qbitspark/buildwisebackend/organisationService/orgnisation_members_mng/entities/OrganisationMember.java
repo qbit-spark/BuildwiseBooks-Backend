@@ -18,7 +18,17 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "organisation_members")
+@Table(name = "organisation_members",
+        indexes = {
+                @Index(name = "idx_member_org_account", columnList = "organisation_id, account_id", unique = true),
+                @Index(name = "idx_member_account_email_org", columnList = "account_id, organisation_id"),
+                @Index(name = "idx_member_organisation", columnList = "organisation_id"),
+                @Index(name = "idx_member_account", columnList = "account_id"),
+                @Index(name = "idx_member_role", columnList = "role"),
+                @Index(name = "idx_member_status", columnList = "status"),
+                @Index(name = "idx_member_joined_at", columnList = "joinedAt"),
+                @Index(name = "idx_member_invited_by", columnList = "invitedBy")
+        })
 public class OrganisationMember {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -33,13 +43,12 @@ public class OrganisationMember {
     private AccountEntity account;
 
     @Enumerated(EnumType.STRING)
-    private MemberRole role; // OWNER, ADMIN, MEMBER
+    private MemberRole role;
 
     @Enumerated(EnumType.STRING)
-    private MemberStatus status; // ACTIVE, SUSPENDED, LEFT
+    private MemberStatus status;
 
     private LocalDateTime joinedAt;
 
     private UUID invitedBy;
-
 }

@@ -8,6 +8,7 @@ import com.qbitspark.buildwisebackend.organisationService.organisation_mng.paylo
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.payloads.UpdateOrganisationRequest;
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.repo.OrganisationRepo;
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.service.OrganisationService;
+import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.service.OrganisationMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,6 +27,7 @@ public class OrganisationServiceIMPL implements OrganisationService {
 
     private final AccountRepo accountRepo;
     private final OrganisationRepo organisationRepo;
+    private final OrganisationMemberService organisationMemberService;
 
     @Transactional
     @Override
@@ -48,8 +50,12 @@ public class OrganisationServiceIMPL implements OrganisationService {
         organisationEntity.setModifiedDate(LocalDateTime.now());
         organisationEntity.setActive(true);
 
+        OrganisationEntity savedOrganisation = organisationRepo.save(organisationEntity);
 
-        return organisationRepo.save(organisationEntity);
+        // ADD THIS: Automatically add an owner as a member with an OWNER role
+        organisationMemberService.addOwnerAsMember(savedOrganisation, authenticatedAccount);
+
+        return savedOrganisation;
 
     }
 
