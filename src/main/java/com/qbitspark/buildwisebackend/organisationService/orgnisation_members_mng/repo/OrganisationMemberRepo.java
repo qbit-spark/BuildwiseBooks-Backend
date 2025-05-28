@@ -23,4 +23,7 @@ public interface OrganisationMemberRepo extends JpaRepository<OrganisationMember
     long countByOrganisationAndStatus(OrganisationEntity organisation, MemberStatus status);
 
     List<OrganisationMember> findAllByAccount(AccountEntity account);
+
+    Optional<OrganisationMember> findByMemberIdAndOrganisation(UUID memberId, OrganisationEntity organisation);
+
 }

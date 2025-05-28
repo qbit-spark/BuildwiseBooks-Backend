@@ -346,6 +346,61 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         return response;
     }
 
+
+    @Transactional
+    @Override
+    public boolean removeMember(UUID organisationId, UUID memberId) throws ItemNotFoundException, AccessDeniedException {
+
+        // Step 1: Get authenticated user and validate permissions
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        // Step 2: Get current user's membership to check permissions
+        Optional<OrganisationMember> currentUserMembership = organisationMemberRepo
+                .findByAccountAndOrganisation(currentUser, organisation);
+
+        if (currentUserMembership.isEmpty()) {
+            throw new AccessDeniedException("You must be a member of this organisation to remove members");
+        }
+
+        MemberRole currentUserRole = currentUserMembership.get().getRole();
+
+        // Step 3: Get the member to be removed
+        OrganisationMember memberToRemove = organisationMemberRepo.findByMemberIdAndOrganisation(memberId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member not found in this organisation"));
+
+        // Step 4: Apply business rules for removal
+
+        // Rule 1: OWNER cannot be removed
+        if (memberToRemove.getRole() == MemberRole.OWNER) {
+            throw new AccessDeniedException("Organisation owner cannot be removed");
+        }
+
+        // Rule 2: Only OWNER can remove ADMIN
+        if (memberToRemove.getRole() == MemberRole.ADMIN && currentUserRole != MemberRole.OWNER) {
+            throw new AccessDeniedException("Only organisation owner can remove administrators");
+        }
+
+        // Rule 3: ADMIN and OWNER can remove MEMBER
+        if (memberToRemove.getRole() == MemberRole.MEMBER &&
+                currentUserRole != MemberRole.OWNER && currentUserRole != MemberRole.ADMIN) {
+            throw new AccessDeniedException("You do not have permission to remove members");
+        }
+
+        // Rule 4: Users can remove themselves (leave organisation)
+        boolean isSelfRemoval = memberToRemove.getAccount().getId().equals(currentUser.getId());
+        if (isSelfRemoval && memberToRemove.getRole() == MemberRole.OWNER) {
+            throw new AccessDeniedException("Organisation owner cannot leave. Transfer ownership first or delete the organisation");
+        }
+
+        // Step 5: Remove the member
+        organisationMemberRepo.delete(memberToRemove);
+
+        return true;
+    }
+
+
     private boolean hasValidPendingInvitation(String email, OrganisationEntity organisation) {
         Optional<OrganisationInvitation> existingInvitation = organisationInvitationRepo
                 .findByEmailAndOrganisationAndStatus(email, organisation, InvitationStatus.PENDING);

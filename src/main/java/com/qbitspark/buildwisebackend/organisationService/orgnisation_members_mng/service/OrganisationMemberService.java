@@ -32,4 +32,6 @@ public interface OrganisationMemberService {
 
     UserOrganisationsOverviewResponse getMyOrganisations() throws ItemNotFoundException;
 
+    boolean removeMember(UUID organisationId, UUID memberId) throws ItemNotFoundException, AccessDeniedException;
+
 }
