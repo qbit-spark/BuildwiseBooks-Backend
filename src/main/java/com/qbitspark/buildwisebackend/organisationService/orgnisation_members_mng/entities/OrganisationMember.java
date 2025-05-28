@@ -51,4 +51,5 @@ public class OrganisationMember {
     private LocalDateTime joinedAt;
 
     private UUID invitedBy;
+
 }

@@ -2,6 +2,8 @@ package com.qbitspark.buildwisebackend.organisationService.orgnisation_members_m
 
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.RandomExceptions;
+import com.qbitspark.buildwisebackend.globeresponsebody.GlobeFailureResponseBuilder;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.InviteMemberRequest;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.OrganisationMemberResponse;
@@ -27,7 +29,7 @@ public class OrganisationMemberController {
     public ResponseEntity<GlobeSuccessResponseBuilder> inviteMember(
             @PathVariable UUID orgId,
             @RequestBody @Valid InviteMemberRequest request
-    ) throws ItemNotFoundException, AccessDeniedException {
+    ) throws ItemNotFoundException, AccessDeniedException, RandomExceptions {
 
         boolean invited = organisationMemberService.inviteMember(
                 orgId,
@@ -42,11 +44,7 @@ public class OrganisationMemberController {
                     )
             );
         } else {
-            return ResponseEntity.badRequest().body(
-                    GlobeSuccessResponseBuilder.success(
-                            "Unable to send invitation. User may already be a member or have a pending invitation."
-                    )
-            );
+            throw new RandomExceptions("Unable to send invitation. User may already be a member or have a pending invitation.");
         }
     }
 
@@ -93,5 +91,22 @@ public class OrganisationMemberController {
                         pendingInvitations
                 )
         );
+    }
+
+    @DeleteMapping("/{memberId}")
+    public ResponseEntity<GlobeSuccessResponseBuilder> removeMember(
+            @PathVariable UUID orgId,
+            @PathVariable UUID memberId
+    ) throws ItemNotFoundException, AccessDeniedException, RandomExceptions {
+
+        boolean removed = organisationMemberService.removeMember(orgId, memberId);
+
+        if (removed) {
+            return ResponseEntity.ok(
+                    GlobeSuccessResponseBuilder.success("Member removed successfully")
+            );
+        } else {
+            throw new RandomExceptions("Unable to remove member. Member may not exist or you may not have permission to remove them.");
+        }
     }
 }

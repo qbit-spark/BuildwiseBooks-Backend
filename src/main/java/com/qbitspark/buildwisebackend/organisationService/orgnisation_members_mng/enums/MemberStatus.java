@@ -3,5 +3,6 @@ package com.qbitspark.buildwisebackend.organisationService.orgnisation_members_m
 public enum MemberStatus {
     ACTIVE,
     SUSPENDED,
-    LEFT
+    LEFT,
+    REMOVED
 }
