@@ -97,6 +97,19 @@ public class GlobeControllerAdvice {
         return ResponseEntity.status(response.getHttpStatus()).body(response);
     }
 
+    @ExceptionHandler(InvitationExpiredException.class)
+    public ResponseEntity<GlobeFailureResponseBuilder> generateInvitationExpiredException(Exception exception) {
+        GlobeFailureResponseBuilder response = GlobeFailureResponseBuilder.forbidden(exception.getMessage());
+        return ResponseEntity.status(response.getHttpStatus()).body(response);
+    }
+
+    @ExceptionHandler(InvitationAlreadyProcessedException.class)
+    public ResponseEntity<GlobeFailureResponseBuilder> generateInvitationAlreadyProcessedException(Exception exception) {
+        GlobeFailureResponseBuilder response = GlobeFailureResponseBuilder.forbidden(exception.getMessage());
+        return ResponseEntity.status(response.getHttpStatus()).body(response);
+    }
+
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<GlobeFailureResponseBuilder> handleAllExceptions(Exception exception) {
         // Handle the message trimming logic

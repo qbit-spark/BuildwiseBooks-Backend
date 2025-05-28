@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Organisation Invitation</title>
+    <style>
+        .email-container {
+            font-family: Arial, sans-serif;
+            margin: 0 auto;
+            padding: 20px;
+            max-width: 600px;
+            background-color: #f4f4f4;
+            border-radius: 8px;
+        }
+        .email-header {
+            text-align: center;
+            background-color: #2196F3;
+            color: white;
+            padding: 20px 0;
+            border-radius: 8px 8px 0 0;
+        }
+        .email-body {
+            padding: 30px;
+            background-color: white;
+            text-align: center;
+        }
+        .organisation-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .action-buttons {
+            margin: 30px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            margin: 0 10px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .btn-accept {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-decline {
+            background-color: #f44336;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.8;
+        }
+        .email-footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border-radius: 0 0 8px 8px;
+        }
+        .role-badge {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="email-header">
+        <h1>🎉 You're Invited!</h1>
+        <p>Join an amazing team</p>
+    </div>
+
+    <div class="email-body">
+        <p>Hi there!</p>
+
+        <p><strong th:text="${inviterName}">John Doe</strong> has invited you to join:</p>
+
+        <div class="organisation-info">
+            <h2 th:text="${organisationName}">BuildWise Solutions</h2>
+            <p>You've been invited as: <span class="role-badge" th:text="${role}">MEMBER</span></p>
+        </div>
+
+        <p>Click below to respond to this invitation:</p>
+
+        <div class="action-buttons">
+            <a th:href="${acceptLink}" class="btn btn-accept">Accept Invitation</a>
+            <a th:href="${declineLink}" class="btn btn-decline">Decline</a>
+        </div>
+
+        <p><small>This invitation will expire in 7 days.</small></p>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+
+        <p><small>If the buttons don't work, copy and paste these links:</small></p>
+        <p><small>Accept: <a th:href="${acceptLink}" th:text="${acceptLink}">accept-link</a></small></p>
+        <p><small>Decline: <a th:href="${declineLink}" th:text="${declineLink}">decline-link</a></small></p>
+    </div>
+
+    <div class="email-footer">
+        <p>Thank you for choosing BuildWise!</p>
+        <p><small>If you didn't expect this invitation, you can safely ignore this email.</small></p>
+    </div>
+</div>
+</body>
+</html>

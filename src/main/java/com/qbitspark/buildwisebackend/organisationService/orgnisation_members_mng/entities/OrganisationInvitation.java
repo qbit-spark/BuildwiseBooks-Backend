@@ -18,16 +18,27 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "organisation_invitations")
+@Table(name = "organisation_invitations",
+        indexes = {
+                @Index(name = "idx_invitation_token", columnList = "token"),
+                @Index(name = "idx_invitation_email", columnList = "email"),
+                @Index(name = "idx_invitation_status", columnList = "status"),
+                @Index(name = "idx_invitation_expires_at", columnList = "expiresAt"),
+                @Index(name = "idx_invitation_email_org_status", columnList = "email, organisation_id, status"),
+                @Index(name = "idx_invitation_org_status", columnList = "organisation_id, status"),
+                @Index(name = "idx_invitation_inviter", columnList = "inviter_id")
+        })
 public class OrganisationInvitation {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID invitationId;
 
     @ManyToOne
+    @JoinColumn(name = "organisation_id") // Add explicit column name
     private OrganisationEntity organisation;
 
     @ManyToOne
+    @JoinColumn(name = "inviter_id") // Add explicit column name
     private AccountEntity inviter;
 
     private String email;
@@ -36,13 +47,12 @@ public class OrganisationInvitation {
     private MemberRole role;
 
     @Column(name = "token", columnDefinition = "TEXT", unique = true, nullable = false)
-    private String token; // Unique invitation token
+    private String token;
 
     @Enumerated(EnumType.STRING)
-    private InvitationStatus status; // PENDING, ACCEPTED, DECLINED, EXPIRED
+    private InvitationStatus status;
 
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
     private LocalDateTime respondedAt;
-
 }
