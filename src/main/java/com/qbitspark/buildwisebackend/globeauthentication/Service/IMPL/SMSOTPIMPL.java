@@ -8,7 +8,7 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.RandomExceptions;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.VerificationException;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.UserOTP;
-import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccountRepository;
+import com.qbitspark.buildwisebackend.globeauthentication.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.UserOTPRepository;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.SMSOTPService;
 import com.qbitspark.buildwisebackend.globesecurity.JWTProvider;
@@ -30,7 +30,7 @@ import java.util.Random;
 public class SMSOTPIMPL implements SMSOTPService {
 
     private final UserOTPRepository userOTPRepository;
-    private final GlobeAccountRepository userManagerRepository;
+    private final AccountRepo userManagerRepository;
 
     private final JWTProvider tokenProvider;
     private final BasicAuthApiClient basicAuthApiClient;
@@ -102,7 +102,7 @@ public class SMSOTPIMPL implements SMSOTPService {
         throw new VerificationException("OTP or phone number provided is incorrect");
     }
 
-    static GlobeSuccessResponseBuilder buildSMSSuccessResponse(AccountEntity user, LocalDateTime currentTime, LocalDateTime expirationTime, GlobeAccountRepository userManagerRepository, JWTProvider tokenProvider) {
+    static GlobeSuccessResponseBuilder buildSMSSuccessResponse(AccountEntity user, LocalDateTime currentTime, LocalDateTime expirationTime, AccountRepo userManagerRepository, JWTProvider tokenProvider) {
         if (currentTime.isBefore(expirationTime)) {
             // Mark the user as verified
             user.setIsVerified(true);

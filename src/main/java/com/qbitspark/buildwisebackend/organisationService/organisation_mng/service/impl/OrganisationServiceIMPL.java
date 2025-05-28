@@ -1,7 +1,7 @@
 package com.qbitspark.buildwisebackend.organisationService.organisation_mng.service.impl;
 
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
-import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccountRepository;
+import com.qbitspark.buildwisebackend.globeauthentication.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.payloads.CreateOrganisationRequest;
@@ -24,7 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrganisationServiceIMPL implements OrganisationService {
 
-    private final GlobeAccountRepository accountRepo;
+    private final AccountRepo accountRepo;
     private final OrganisationRepo organisationRepo;
 
     @Transactional
