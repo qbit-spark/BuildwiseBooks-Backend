@@ -8,7 +8,7 @@ import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.PasswordResetOTPEntity;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.UserOTP;
 import com.qbitspark.buildwisebackend.globeauthentication.payloads.LoginResponse;
-import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccountRepository;
+import com.qbitspark.buildwisebackend.globeauthentication.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.UserOTPRepository;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.EmailOTPService;
 import com.qbitspark.buildwisebackend.globesecurity.JWTProvider;
@@ -31,7 +31,7 @@ public class EmailOTPIMPL implements EmailOTPService {
 
 
     private final UserOTPRepository otpRepository;
-    private final GlobeAccountRepository globeAccountRepository;
+    private final AccountRepo accountRepo;
     private final UserOTPRepository userOTPRepository;
     private final CustomValidationUtils validationUtils;
     private final JWTProvider tokenProvider;
@@ -45,7 +45,7 @@ public class EmailOTPIMPL implements EmailOTPService {
     @Override
     public void generateAndSendEmailOTP(AccountEntity userAuthEntity, String emailHeader, String instructionText) throws RandomExceptions, ItemNotFoundException {
         // Find the account by email
-        AccountEntity account = globeAccountRepository.findByEmail(userAuthEntity.getEmail())
+        AccountEntity account = accountRepo.findByEmail(userAuthEntity.getEmail())
                 .orElseThrow(() -> new ItemNotFoundException("No such account with the given email"));
 
         // Check if there's an existing OTP
@@ -69,7 +69,7 @@ public class EmailOTPIMPL implements EmailOTPService {
 
         //Update account verification status
         account.setIsEmailVerified(true);
-        globeAccountRepository.save(account);
+        accountRepo.save(account);
 
         // Send the OTP via centralized email service - SIMPLE!
         try {
@@ -87,7 +87,7 @@ public class EmailOTPIMPL implements EmailOTPService {
     @Override
     public void generateAndSendPasswordResetEmail(AccountEntity userAuthEntity, String emailHeader, String instructionText) throws RandomExceptions, ItemNotFoundException {
 
-        AccountEntity account = globeAccountRepository.findByEmail(userAuthEntity.getEmail())
+        AccountEntity account = accountRepo.findByEmail(userAuthEntity.getEmail())
                 .orElseThrow(() -> new ItemNotFoundException("No such account with the given email"));
 
         if (!account.getIsEmailVerified() || !account.getIsVerified() ){
@@ -129,7 +129,7 @@ public class EmailOTPIMPL implements EmailOTPService {
     @Override
     public GlobeSuccessResponseBuilder verifyEmailOTP(String email, String otpCode) throws RandomExceptions, VerificationException, ItemNotFoundException {
         // Find the user by email
-        AccountEntity user = globeAccountRepository.findByEmail(email)
+        AccountEntity user = accountRepo.findByEmail(email)
                 .orElseThrow(() -> new ItemNotFoundException("No such user with the given email"));
 
         // Find the OTP associated with the user
@@ -154,7 +154,7 @@ public class EmailOTPIMPL implements EmailOTPService {
                 userOTPRepository.save(existingOTP);
 
                 // Validate OTP expiration and return response
-                GlobeSuccessResponseBuilder response = buildSuccessResponse(user, currentTime, expirationTime, globeAccountRepository, tokenProvider);
+                GlobeSuccessResponseBuilder response = buildSuccessResponse(user, currentTime, expirationTime, accountRepo, tokenProvider);
                 if (response != null) return response;
             }
         }
@@ -164,11 +164,11 @@ public class EmailOTPIMPL implements EmailOTPService {
     }
 
 
-    static GlobeSuccessResponseBuilder buildSuccessResponse(AccountEntity user, LocalDateTime currentTime, LocalDateTime expirationTime, GlobeAccountRepository globeAccountRepository, JWTProvider tokenProvider) {
+    static GlobeSuccessResponseBuilder buildSuccessResponse(AccountEntity user, LocalDateTime currentTime, LocalDateTime expirationTime, AccountRepo accountRepo, JWTProvider tokenProvider) {
         if (currentTime.isBefore(expirationTime)) {
             // Mark the user as verified
             user.setIsVerified(true);
-            globeAccountRepository.save(user);
+            accountRepo.save(user);
 
             // Generate access and refresh tokens
             Authentication authentication = new UsernamePasswordAuthenticationToken(user.getUserName(), null);

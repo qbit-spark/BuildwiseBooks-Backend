@@ -3,7 +3,7 @@ package com.qbitspark.buildwisebackend.globesecurity;
 
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemReadyExistException;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccountRepository;
+import com.qbitspark.buildwisebackend.globeauthentication.Repository.AccountRepo;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,13 +21,13 @@ import java.util.stream.Collectors;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final GlobeAccountRepository globeAccountRepository;
+    private final AccountRepo accountRepo;
 
     @SneakyThrows
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        AccountEntity user = globeAccountRepository.findAccountEntitiesByUserName(username)
+        AccountEntity user = accountRepo.findAccountEntitiesByUserName(username)
                 .orElseThrow(() -> new ItemReadyExistException("User with given username not found: " + username));
 
         Set<GrantedAuthority> authorities =

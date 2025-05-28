@@ -7,7 +7,7 @@ import com.qbitspark.buildwisebackend.globeauthentication.entity.Roles;
 import com.qbitspark.buildwisebackend.globeauthentication.payloads.CreateAccountRequest;
 import com.qbitspark.buildwisebackend.globeauthentication.payloads.LoginResponse;
 import com.qbitspark.buildwisebackend.globeauthentication.payloads.RefreshTokenResponse;
-import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccountRepository;
+import com.qbitspark.buildwisebackend.globeauthentication.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.RolesRepository;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.EmailOTPService;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.AccountService;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @Service
 public class AccountServiceIMPL implements AccountService {
 
-    private final GlobeAccountRepository globeAccountRepository;
+    private final AccountRepo accountRepo;
     private final RolesRepository rolesRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -45,7 +45,7 @@ public class AccountServiceIMPL implements AccountService {
     public AccountEntity registerAccount(CreateAccountRequest createAccountRequest) throws ItemReadyExistException, RandomExceptions, ItemNotFoundException {
 
         //check the existence of user
-        if (globeAccountRepository.existsByPhoneNumberOrEmailOrUserName(createAccountRequest.getPhoneNumber(),
+        if (accountRepo.existsByPhoneNumberOrEmailOrUserName(createAccountRequest.getPhoneNumber(),
                 createAccountRequest.getEmail(),
                 generateUserName(createAccountRequest.getEmail()))) {
             throw new ItemReadyExistException("User with provided credentials already exist, please login");
@@ -65,7 +65,7 @@ public class AccountServiceIMPL implements AccountService {
         roles.add(userRoles);
         account.setRoles(roles);
 
-        AccountEntity savedAccount = globeAccountRepository.save(account);
+        AccountEntity savedAccount = accountRepo.save(account);
 
         //Check a selected verification channel
         switch (createAccountRequest.getVerificationChannel()) {
@@ -113,13 +113,13 @@ public class AccountServiceIMPL implements AccountService {
             // Determine the type of input (phone number, email, or username)
             AccountEntity user = null;
             if (isEmail(input)) {
-                user = globeAccountRepository.findByEmail(input).orElseThrow(
+                user = accountRepo.findByEmail(input).orElseThrow(
                         () -> new ItemNotFoundException("User with provided email does not exist")
                 );
             } else if (isPhoneNumber(input)) {
-                user = globeAccountRepository.findAccountEntitiesByPhoneNumber(input).orElseThrow(() -> new ItemNotFoundException("phone number do not exist"));
+                user = accountRepo.findAccountEntitiesByPhoneNumber(input).orElseThrow(() -> new ItemNotFoundException("phone number do not exist"));
             } else {
-                user = globeAccountRepository.findByUserName(input).orElseThrow(
+                user = accountRepo.findByUserName(input).orElseThrow(
                         () -> new ItemNotFoundException("User with provided username does not exist")
                 );
             }
@@ -164,7 +164,7 @@ public class AccountServiceIMPL implements AccountService {
             String userName = tokenProvider.getUserName(refreshToken);
 
             // Retrieve user from database
-            AccountEntity user = globeAccountRepository.findByUserName(userName)
+            AccountEntity user = accountRepo.findByUserName(userName)
                     .orElseThrow(() -> new ItemNotFoundException("User not found"));
 
             // Create authentication with user authorities
@@ -195,12 +195,12 @@ public class AccountServiceIMPL implements AccountService {
 
     @Override
     public List<AccountEntity> getAllAccounts() {
-        return globeAccountRepository.findAll();
+        return accountRepo.findAll();
     }
 
     @Override
     public AccountEntity getAccountByID(UUID userId) throws ItemNotFoundException {
-        return globeAccountRepository.findById(userId).orElseThrow(() -> new ItemNotFoundException("No such user"));
+        return accountRepo.findById(userId).orElseThrow(() -> new ItemNotFoundException("No such user"));
     }
 
     private String generateUserName(String email) {

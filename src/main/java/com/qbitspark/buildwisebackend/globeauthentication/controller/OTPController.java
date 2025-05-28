@@ -7,7 +7,7 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.VerificationExcepti
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeauthentication.payloads.EmailOTPRequestBody;
 import com.qbitspark.buildwisebackend.globeauthentication.payloads.RequestEmailOTPBody;
-import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccountRepository;
+import com.qbitspark.buildwisebackend.globeauthentication.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.EmailOTPService;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.SMSOTPService;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
@@ -25,13 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class OTPController {
 
     private final SMSOTPService smsotpService;
-    private final GlobeAccountRepository globeAccountRepository;
+    private final AccountRepo accountRepo;
     private final EmailOTPService emailOTPService;
 
     @PostMapping("/request-otp")
     public ResponseEntity<GlobeSuccessResponseBuilder> requestEmailOTP(@Valid @RequestBody RequestEmailOTPBody requestEmailOTPBody) throws RandomExceptions, JsonProcessingException, ItemNotFoundException {
 
-        AccountEntity userAuthEntity = globeAccountRepository.findByEmail(requestEmailOTPBody.getEmail())
+        AccountEntity userAuthEntity = accountRepo.findByEmail(requestEmailOTPBody.getEmail())
                 .orElseThrow(() -> new ItemNotFoundException("User with provided email does not exist"));
 
         // Send the OTP via Email for password reset

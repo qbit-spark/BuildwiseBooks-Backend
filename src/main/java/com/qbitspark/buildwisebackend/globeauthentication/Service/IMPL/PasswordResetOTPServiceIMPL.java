@@ -7,7 +7,7 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.VerificationExcepti
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.PasswordResetOTPRepo;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.PasswordResetOTPEntity;
-import com.qbitspark.buildwisebackend.globeauthentication.Repository.GlobeAccountRepository;
+import com.qbitspark.buildwisebackend.globeauthentication.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.UserOTPRepository;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.EmailOTPService;
 import com.qbitspark.buildwisebackend.globeauthentication.Service.PasswordResetOTPService;
@@ -26,7 +26,7 @@ public class PasswordResetOTPServiceIMPL implements PasswordResetOTPService {
     @Value("${otp.expire_time.minutes}")
     private String EXPIRE_TIME;
 
-   private final GlobeAccountRepository globeAccountRepository;
+   private final AccountRepo accountRepo;
     private final CustomValidationUtils validationUtils;
     private final PasswordEncoder passwordEncoder;
     private final EmailOTPService emailOTPService;
@@ -36,7 +36,7 @@ public class PasswordResetOTPServiceIMPL implements PasswordResetOTPService {
     @Override
     public String generateAndSendPSWDResetOTP(String email) throws RandomExceptions, JsonProcessingException, ItemNotFoundException {
 
-            AccountEntity accountEntity = globeAccountRepository.findByEmail(email)
+            AccountEntity accountEntity = accountRepo.findByEmail(email)
                 .orElseThrow(()-> new ItemNotFoundException("No such user with given email"));
 
             if (accountEntity.getIsVerified().equals(false)){
@@ -60,7 +60,7 @@ public class PasswordResetOTPServiceIMPL implements PasswordResetOTPService {
     public boolean verifyOTPAndResetPassword(String email, String otpCode, String newPassword) throws RandomExceptions, ItemNotFoundException, VerificationException {
 
         // Fetch the user by phone number
-        AccountEntity account = globeAccountRepository.findByEmail(email)
+        AccountEntity account = accountRepo.findByEmail(email)
                 .orElseThrow(() -> new ItemNotFoundException("No such user with given phone number"));
 
         PasswordResetOTPEntity existingOTP = passwordResetOTPRepo.findPasswordResetOTPEntitiesByAccount(account);
@@ -85,7 +85,7 @@ public class PasswordResetOTPServiceIMPL implements PasswordResetOTPService {
 
                 // Reset the password
                 account.setPassword(passwordEncoder.encode(newPassword));
-                globeAccountRepository.save(account);
+                accountRepo.save(account);
 
                 // Make the OTP expire after a successful password reset
                 LocalDateTime expiration = existingOTP.getSentTime().minusHours(20);
