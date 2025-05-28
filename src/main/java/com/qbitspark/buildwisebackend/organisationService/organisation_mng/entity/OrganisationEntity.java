@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.organisationService.entity;
+package com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity;
 
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import jakarta.persistence.*;

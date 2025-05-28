@@ -1,9 +1,9 @@
-package com.qbitspark.buildwisebackend.organisationService.service;
+package com.qbitspark.buildwisebackend.organisationService.organisation_mng.service;
 
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
-import com.qbitspark.buildwisebackend.organisationService.entity.OrganisationEntity;
-import com.qbitspark.buildwisebackend.organisationService.payloads.CreateOrganisationRequest;
-import com.qbitspark.buildwisebackend.organisationService.payloads.UpdateOrganisationRequest;
+import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisationService.organisation_mng.payloads.CreateOrganisationRequest;
+import com.qbitspark.buildwisebackend.organisationService.organisation_mng.payloads.UpdateOrganisationRequest;
 
 import java.util.List;
 import java.util.UUID;
