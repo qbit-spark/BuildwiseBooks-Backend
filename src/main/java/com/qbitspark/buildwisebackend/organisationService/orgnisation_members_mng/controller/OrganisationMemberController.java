@@ -4,12 +4,16 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedExcepti
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.InviteMemberRequest;
+import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.OrganisationMemberResponse;
+import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.OrganisationMembersOverviewResponse;
+import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.PendingInvitationResponse;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.service.OrganisationMemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -44,5 +48,50 @@ public class OrganisationMemberController {
                     )
             );
         }
+    }
+
+    @GetMapping
+    public ResponseEntity<GlobeSuccessResponseBuilder> getAllMembersAndInvitations(
+            @PathVariable UUID orgId
+    ) throws ItemNotFoundException, AccessDeniedException {
+
+        OrganisationMembersOverviewResponse overview = organisationMemberService.getAllMembersAndInvitations(orgId);
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Organisation members and invitations retrieved successfully",
+                        overview
+                )
+        );
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getActiveMembers(
+            @PathVariable UUID orgId
+    ) throws ItemNotFoundException, AccessDeniedException {
+
+        List<OrganisationMemberResponse> activeMembers = organisationMemberService.getActiveMembers(orgId);
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Active members retrieved successfully",
+                        activeMembers
+                )
+        );
+    }
+
+    @GetMapping("/invitations/pending")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getPendingInvitations(
+            @PathVariable UUID orgId
+    ) throws ItemNotFoundException, AccessDeniedException {
+
+        List<PendingInvitationResponse> pendingInvitations = organisationMemberService.getPendingInvitations(orgId);
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Pending invitations retrieved successfully",
+                        pendingInvitations
+                )
+        );
     }
 }

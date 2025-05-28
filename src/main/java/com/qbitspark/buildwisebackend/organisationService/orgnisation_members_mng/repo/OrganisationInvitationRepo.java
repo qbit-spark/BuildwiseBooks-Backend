@@ -5,6 +5,7 @@ import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mn
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.InvitationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,5 +14,11 @@ public interface OrganisationInvitationRepo extends JpaRepository<OrganisationIn
     boolean existsByEmailAndOrganisationAndStatus(String email, OrganisationEntity organisation, InvitationStatus status);
 
     Optional<OrganisationInvitation> findByEmailAndOrganisationAndStatus(String email, OrganisationEntity organisation, InvitationStatus status);
+
+    List<OrganisationInvitation> findAllByOrganisationAndStatus(OrganisationEntity organisation, InvitationStatus status);
+
+    List<OrganisationInvitation> findAllByOrganisation(OrganisationEntity organisation);
+
+    long countByOrganisationAndStatus(OrganisationEntity organisation, InvitationStatus status);
 
 }

@@ -6,8 +6,9 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationExpiredEx
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.InvitationInfoResponse;
+import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.*;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface OrganisationMemberService {
@@ -22,4 +23,13 @@ public interface OrganisationMemberService {
     //This method is used
     // to add the owner of the organization as a member automatically when the organization is created.
     void addOwnerAsMember(OrganisationEntity organisation, AccountEntity owner);
+
+    OrganisationMembersOverviewResponse getAllMembersAndInvitations(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
+
+    List<OrganisationMemberResponse> getActiveMembers(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
+
+    List<PendingInvitationResponse> getPendingInvitations(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
+
+    UserOrganisationsOverviewResponse getMyOrganisations() throws ItemNotFoundException;
+
 }

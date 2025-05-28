@@ -14,7 +14,7 @@ import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mn
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.InvitationStatus;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.MemberRole;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.MemberStatus;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.InvitationInfoResponse;
+import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.*;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.repo.OrganisationInvitationRepo;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.service.OrganisationMemberService;
@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -229,6 +230,121 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         return extractAccount(authentication);
     }
 
+    @Override
+    public OrganisationMembersOverviewResponse getAllMembersAndInvitations(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
+
+        // Step 1: Get authenticated user and validate permissions
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        if (!canManageMembers(currentUser, organisation)) {
+            throw new AccessDeniedException("You do not have permission to view members of this organisation");
+        }
+
+        // Step 2: Get all members
+        List<OrganisationMember> allMembers = organisationMemberRepo.findAllByOrganisation(organisation);
+        List<OrganisationMemberResponse> memberResponses = allMembers.stream()
+                .map(this::mapToMemberResponse)
+                .toList();
+
+        // Step 3: Get pending invitations
+        List<OrganisationInvitation> pendingInvitations = organisationInvitationRepo
+                .findAllByOrganisationAndStatus(organisation, InvitationStatus.PENDING);
+        List<PendingInvitationResponse> pendingResponses = pendingInvitations.stream()
+                .map(this::mapToPendingInvitationResponse)
+                .toList();
+
+        // Step 4: Get declined invitations
+        List<OrganisationInvitation> declinedInvitations = organisationInvitationRepo
+                .findAllByOrganisationAndStatus(organisation, InvitationStatus.DECLINED);
+        List<PendingInvitationResponse> declinedResponses = declinedInvitations.stream()
+                .map(this::mapToPendingInvitationResponse)
+                .toList();
+
+        // Step 5: Build overview response
+        OrganisationMembersOverviewResponse response = new OrganisationMembersOverviewResponse();
+        response.setOrganisationName(organisation.getOrganisationName());
+        response.setTotalMembers(allMembers.size());
+        response.setTotalPendingInvitations(pendingInvitations.size());
+        response.setTotalActiveMembers((int) organisationMemberRepo.countByOrganisationAndStatus(organisation, MemberStatus.ACTIVE));
+        response.setTotalSuspendedMembers((int) organisationMemberRepo.countByOrganisationAndStatus(organisation, MemberStatus.SUSPENDED));
+        response.setMembers(memberResponses);
+        response.setPendingInvitations(pendingResponses);
+        response.setDeclinedInvitations(declinedResponses);
+
+        return response;
+    }
+
+    @Override
+    public List<OrganisationMemberResponse> getActiveMembers(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        if (!canManageMembers(currentUser, organisation)) {
+            throw new AccessDeniedException("You do not have permission to view members of this organisation");
+        }
+
+        List<OrganisationMember> activeMembers = organisationMemberRepo
+                .findAllByOrganisationAndStatus(organisation, MemberStatus.ACTIVE);
+
+        return activeMembers.stream()
+                .map(this::mapToMemberResponse)
+                .toList();
+    }
+
+    @Override
+    public List<PendingInvitationResponse> getPendingInvitations(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        if (!canManageMembers(currentUser, organisation)) {
+            throw new AccessDeniedException("You do not have permission to view invitations of this organisation");
+        }
+
+        List<OrganisationInvitation> pendingInvitations = organisationInvitationRepo
+                .findAllByOrganisationAndStatus(organisation, InvitationStatus.PENDING);
+
+        return pendingInvitations.stream()
+                .map(this::mapToPendingInvitationResponse)
+                .toList();
+    }
+
+    @Override
+    public UserOrganisationsOverviewResponse getMyOrganisations() throws ItemNotFoundException {
+
+        // Step 1: Get authenticated user
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        // Step 2: Get all memberships for this user
+        List<OrganisationMember> userMemberships = organisationMemberRepo.findAllByAccount(currentUser);
+
+        // Step 3: Map to response objects
+        List<UserOrganisationResponse> organisationResponses = userMemberships.stream()
+                .map(this::mapToUserOrganisationResponse)
+                .toList();
+
+        // Step 4: Calculate statistics
+        int totalOrganisations = organisationResponses.size();
+        int ownedOrganisations = (int) organisationResponses.stream()
+                .filter(UserOrganisationResponse::isOwner)
+                .count();
+        int memberOrganisations = totalOrganisations - ownedOrganisations;
+
+        // Step 5: Build overview response
+        UserOrganisationsOverviewResponse response = new UserOrganisationsOverviewResponse();
+        response.setUserName(currentUser.getUserName());
+        response.setTotalOrganisations(totalOrganisations);
+        response.setOwnedOrganisations(ownedOrganisations);
+        response.setMemberOrganisations(memberOrganisations);
+        response.setOrganisations(organisationResponses);
+
+        return response;
+    }
 
     private boolean hasValidPendingInvitation(String email, OrganisationEntity organisation) {
         Optional<OrganisationInvitation> existingInvitation = organisationInvitationRepo
@@ -326,5 +442,73 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         } else {
             throw new ItemNotFoundException("User is not authenticated");
         }
+    }
+
+
+    private OrganisationMemberResponse mapToMemberResponse(OrganisationMember member) {
+        OrganisationMemberResponse response = new OrganisationMemberResponse();
+        response.setMemberId(member.getMemberId());
+        response.setUserName(member.getAccount().getUserName());
+        response.setEmail(member.getAccount().getEmail());
+        response.setRole(member.getRole().toString());
+        response.setStatus(member.getStatus().toString());
+        response.setJoinedAt(member.getJoinedAt());
+
+        // Get inviter username
+        if (member.getInvitedBy() != null) {
+            accountRepo.findById(member.getInvitedBy())
+                    .ifPresent(inviter -> response.setInvitedByUserName(inviter.getUserName()));
+        }
+
+        response.setOwner(member.getRole() == MemberRole.OWNER);
+        response.setAdmin(member.getRole() == MemberRole.ADMIN);
+        response.setCanManageMembers(member.getRole() == MemberRole.OWNER || member.getRole() == MemberRole.ADMIN);
+
+        return response;
+    }
+
+    private PendingInvitationResponse mapToPendingInvitationResponse(OrganisationInvitation invitation) {
+        PendingInvitationResponse response = new PendingInvitationResponse();
+        response.setInvitationId(invitation.getInvitationId());
+        response.setEmail(invitation.getEmail());
+        response.setRole(invitation.getRole().toString());
+        response.setStatus(invitation.getStatus().toString());
+        response.setInvitedAt(invitation.getCreatedAt());
+        response.setExpiresAt(invitation.getExpiresAt());
+        response.setInvitedByUserName(invitation.getInviter().getUserName());
+
+        boolean isExpired = invitation.getExpiresAt().isBefore(LocalDateTime.now());
+        response.setExpired(isExpired);
+        response.setCanResend(invitation.getStatus() == InvitationStatus.PENDING || invitation.getStatus() == InvitationStatus.EXPIRED);
+        response.setCanRevoke(invitation.getStatus() == InvitationStatus.PENDING && !isExpired);
+
+        return response;
+    }
+
+    private UserOrganisationResponse mapToUserOrganisationResponse(OrganisationMember membership) {
+        UserOrganisationResponse response = new UserOrganisationResponse();
+        OrganisationEntity org = membership.getOrganisation();
+
+        response.setOrganisationId(org.getOrganisationId());
+        response.setOrganisationName(org.getOrganisationName());
+        response.setOrganisationDescription(org.getOrganisationDescription());
+        response.setMyRole(membership.getRole().toString());
+        response.setMyStatus(membership.getStatus().toString());
+        response.setJoinedAt(membership.getJoinedAt());
+        response.setOwnerUserName(org.getOwner().getUserName());
+
+        // Set role-based flags
+        boolean isOwner = membership.getRole() == MemberRole.OWNER;
+        boolean isAdmin = membership.getRole() == MemberRole.ADMIN;
+        response.setOwner(isOwner);
+        response.setAdmin(isAdmin);
+        response.setCanManageMembers(isOwner || isAdmin);
+        response.setCanInviteMembers(isOwner || isAdmin);
+
+        // Get organization statistics
+        response.setTotalMembers((int) organisationMemberRepo.countByOrganisationAndStatus(org, MemberStatus.ACTIVE));
+        response.setTotalPendingInvitations((int) organisationInvitationRepo.countByOrganisationAndStatus(org, InvitationStatus.PENDING));
+
+        return response;
     }
 }
