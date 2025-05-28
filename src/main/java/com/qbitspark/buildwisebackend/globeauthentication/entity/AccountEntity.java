@@ -1,7 +1,7 @@
 package com.qbitspark.buildwisebackend.globeauthentication.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.qbitspark.buildwisebackend.organisationService.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

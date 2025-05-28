@@ -1,12 +1,12 @@
-package com.qbitspark.buildwisebackend.organisationService.controller;
+package com.qbitspark.buildwisebackend.organisationService.organisation_mng.controller;
 
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
-import com.qbitspark.buildwisebackend.organisationService.entity.OrganisationEntity;
-import com.qbitspark.buildwisebackend.organisationService.payloads.CreateOrganisationRequest;
-import com.qbitspark.buildwisebackend.organisationService.payloads.OrganisationResponse;
-import com.qbitspark.buildwisebackend.organisationService.payloads.UpdateOrganisationRequest;
-import com.qbitspark.buildwisebackend.organisationService.service.OrganisationService;
+import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisationService.organisation_mng.payloads.CreateOrganisationRequest;
+import com.qbitspark.buildwisebackend.organisationService.organisation_mng.payloads.OrganisationResponse;
+import com.qbitspark.buildwisebackend.organisationService.organisation_mng.payloads.UpdateOrganisationRequest;
+import com.qbitspark.buildwisebackend.organisationService.organisation_mng.service.OrganisationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
