@@ -1,5 +1,4 @@
 package com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.service.impl;
-
 import com.qbitspark.buildwisebackend.emails.service.GlobeMailService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationAlreadyProcessedException;
@@ -25,7 +24,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;

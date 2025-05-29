@@ -4,6 +4,7 @@ import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.MemberRole;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.MemberStatus;
+import com.qbitspark.buildwisebackend.projectmngService.entity.ProjectEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,6 +12,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -51,5 +55,7 @@ public class OrganisationMember {
     private LocalDateTime joinedAt;
 
     private UUID invitedBy;
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "teamMembers")
+    private List<ProjectEntity> projects;
 
 }
