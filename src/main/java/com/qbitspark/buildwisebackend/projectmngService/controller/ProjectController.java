@@ -45,7 +45,6 @@ public class ProjectController {
                             .message(e.getMessage())
                             .build());
         } catch (DataIntegrityViolationException e) {
-            // Handle database constraint violations (like budget overflow)
             String errorMessage = "Data validation error: ";
             if (e.getMessage().contains("numeric field overflow")) {
                 errorMessage += "Budget value is too large. Maximum supported value is 9,999,999,999,999.99";
@@ -60,7 +59,6 @@ public class ProjectController {
                             .message(errorMessage)
                             .build());
         } catch (Exception e) {
-            // Handle any other unexpected errors
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(GlobeSuccessResponseBuilder.builder()
                             .success(false)
@@ -69,32 +67,92 @@ public class ProjectController {
                             .build());
         }
     }
+
     // Retrieves a project by its ID, ensuring the requester has access
-    @GetMapping("/{projectId}")
+    @GetMapping("/{projectId}/{requesterId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectById(
             @PathVariable UUID projectId,
-            @RequestHeader("X-Member-Id") UUID requesterId) throws ItemNotFoundException {
-        ProjectResponse response = projectService.getProjectById(projectId, requesterId);
-        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project retrieved successfully", response));
+            @PathVariable UUID requesterId) {
+        try {
+            ProjectResponse response = projectService.getProjectById(projectId, requesterId);
+            return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project retrieved successfully", response));
+        } catch (ItemNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.NOT_FOUND)
+                            .message(e.getMessage())
+                            .build());
+        }
     }
 
     // Updates an existing project's details
-    @PutMapping("/{projectId}")
+    @PutMapping("/{organisationId}/{projectId}/{updaterMemberId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> updateProject(
+            @PathVariable UUID organisationId,
             @PathVariable UUID projectId,
-            @Valid @RequestBody ProjectUpdateRequest request,
-            @RequestHeader("X-Member-Id") UUID updaterMemberId) throws ItemNotFoundException {
-        ProjectResponse response = projectService.updateProject(projectId, request, updaterMemberId);
-        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project updated successfully", response));
+            @PathVariable UUID updaterMemberId,
+            @Valid @RequestBody ProjectUpdateRequest request) {
+        try {
+            ProjectResponse response = projectService.updateProject(projectId, organisationId, request, updaterMemberId);
+            return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project updated successfully", response));
+        } catch (ItemNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                            .message(e.getMessage())
+                            .build());
+        } catch (DataIntegrityViolationException e) {
+            String errorMessage = "Data validation error: ";
+            if (e.getMessage().contains("numeric field overflow")) {
+                errorMessage += "Budget value is too large. Maximum supported value is 9,999,999,999,999.99";
+            } else {
+                errorMessage += "Invalid data provided";
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.BAD_REQUEST)
+                            .message(errorMessage)
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .message("An unexpected error occurred while updating the project")
+                            .build());
+        }
+    }
+
+    // Retrieves all projects in the database
+    @GetMapping
+    public ResponseEntity<GlobeSuccessResponseBuilder> getAllProjects(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection) {
+        Page<ProjectListResponse> response = projectService.getAllProjects(page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("All projects retrieved successfully", response));
     }
 
     // Soft deletes a project by marking it as cancelled
-    @DeleteMapping("/{projectId}")
+    @DeleteMapping("/{projectId}/{deleterMemberId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> deleteProject(
             @PathVariable UUID projectId,
-            @RequestHeader("X-Member-Id") UUID deleterMemberId) throws ItemNotFoundException {
-        String response = projectService.deleteProject(projectId, deleterMemberId);
-        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(response, null));
+            @PathVariable UUID deleterMemberId) {
+        try {
+            String response = projectService.deleteProject(projectId, deleterMemberId);
+            return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(response, null));
+        } catch (ItemNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.NOT_FOUND)
+                            .message(e.getMessage())
+                            .build());
+        }
     }
 
     // Retrieves paginated projects for an organisation
@@ -107,9 +165,7 @@ public class ProjectController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDirection) throws ItemNotFoundException {
 
-        // If requesterId is null, you might want to get it from authentication context
         if (requesterId == null) {
-            // Get from authentication context or return error
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(GlobeSuccessResponseBuilder.builder()
                             .success(false)
@@ -127,7 +183,7 @@ public class ProjectController {
     @PostMapping("/search")
     public ResponseEntity<GlobeSuccessResponseBuilder> searchProjects(
             @Valid @RequestBody ProjectSearchRequest searchRequest,
-            @RequestHeader("X-Member-Id") UUID requesterId) throws ItemNotFoundException {
+            @RequestHeader(value = "X-Member-Id", required = false) UUID requesterId) throws ItemNotFoundException {
         Page<ProjectListResponse> response = projectService.searchProjects(searchRequest, requesterId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Projects search completed successfully", response));
     }
@@ -137,7 +193,7 @@ public class ProjectController {
     public ResponseEntity<GlobeSuccessResponseBuilder> updateProjectTeam(
             @PathVariable UUID projectId,
             @Valid @RequestBody ProjectTeamUpdateRequest request,
-            @RequestHeader("X-Member-Id") UUID updaterMemberId) throws ItemNotFoundException {
+            @RequestHeader(value = "X-Member-Id", required = false) UUID updaterMemberId) throws ItemNotFoundException {
         ProjectResponse response = projectService.updateProjectTeam(projectId, request, updaterMemberId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project team updated successfully", response));
     }
@@ -147,7 +203,7 @@ public class ProjectController {
     public ResponseEntity<GlobeSuccessResponseBuilder> removeTeamMember(
             @PathVariable UUID projectId,
             @PathVariable UUID memberToRemoveId,
-            @RequestHeader("X-Member-Id") UUID removerMemberId) throws ItemNotFoundException {
+            @RequestHeader(value = "X-Member-Id", required = false) UUID removerMemberId) throws ItemNotFoundException {
         ProjectResponse response = projectService.removeTeamMember(projectId, memberToRemoveId, removerMemberId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Team member removed successfully", response));
     }
@@ -166,7 +222,7 @@ public class ProjectController {
     @GetMapping("/organisation/{organisationId}/statistics")
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectStatistics(
             @PathVariable UUID organisationId,
-            @RequestHeader("X-Member-Id") UUID requesterId) throws ItemNotFoundException {
+            @RequestHeader(value = "X-Member-Id", required = false) UUID requesterId) throws ItemNotFoundException {
         ProjectStatisticsResponse response = projectService.getProjectStatistics(organisationId, requesterId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project statistics retrieved successfully", response));
     }

@@ -44,12 +44,10 @@ public class ProjectServiceImpl implements ProjectService {
     // Creates a new project in the specified organisation with the given details and team members
     @Override
     public ProjectResponse createProject(ProjectCreateRequest request, UUID creatorMemberId, UUID organisationId) throws ItemNotFoundException {
-        // Validate that creator is authenticated account
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationMember creator = validateMemberPermissions(creatorMemberId, organisationId,
                 Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
 
-        // Ensure creator is the authenticated user
         if (!creator.getAccount().getAccountId().equals(authenticatedAccount.getAccountId())) {
             throw new ItemNotFoundException("Creator must be the authenticated user");
         }
@@ -66,13 +64,12 @@ public class ProjectServiceImpl implements ProjectService {
         project.setDescription(request.getDescription());
         project.setBudget(request.getBudget());
         project.setOrganisation(organisation);
-        organisation.addProject(project); // Maintain bidirectional relationship
+        organisation.addProject(project);
         project.setCreatedBy(creator);
         project.setStatus(ProjectStatus.ACTIVE);
         project.setCreatedAt(LocalDateTime.now());
         project.setUpdatedAt(LocalDateTime.now());
 
-        // Add team members using helper method to maintain bidirectional relationship
         if (request.getTeamMemberIds() != null && !request.getTeamMemberIds().isEmpty()) {
             Set<OrganisationMember> teamMembers = validateAndGetTeamMembers(request.getTeamMemberIds(), organisationId);
             for (OrganisationMember member : teamMembers) {
@@ -82,7 +79,6 @@ public class ProjectServiceImpl implements ProjectService {
 
         ProjectEntity savedProject = projectRepo.save(project);
 
-        // Log project creation
         log.info("Project '{}' created successfully with ID: {} in organisation: {}",
                 savedProject.getName(), savedProject.getProjectId(), organisationId);
 
@@ -95,7 +91,6 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
 
-        // Ensure requester is authenticated and has access
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationMember requesterMember = validateMemberAccess(requesterId, project.getOrganisation().getOrganisationId());
 
@@ -108,13 +103,17 @@ public class ProjectServiceImpl implements ProjectService {
 
     // Updates an existing project's details, such as name, description, budget, or team members
     @Override
-    public ProjectResponse updateProject(UUID projectId, ProjectUpdateRequest request, UUID updaterMemberId) throws ItemNotFoundException {
+    public ProjectResponse updateProject(UUID projectId, UUID organisationId, ProjectUpdateRequest request, UUID updaterMemberId) throws ItemNotFoundException {
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
 
-        // Validate updater permissions and authentication
+        // Validate organisation ID matches project's organisation
+        if (!project.getOrganisation().getOrganisationId().equals(organisationId)) {
+            throw new ItemNotFoundException("Project does not belong to the specified organisation");
+        }
+
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
-        OrganisationMember updater = validateMemberPermissions(updaterMemberId, project.getOrganisation().getOrganisationId(),
+        OrganisationMember updater = validateMemberPermissions(updaterMemberId, organisationId,
                 Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
 
         if (!updater.getAccount().getAccountId().equals(authenticatedAccount.getAccountId())) {
@@ -154,7 +153,6 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
 
-        // Validate deleter permissions and authentication
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationMember deleter = validateMemberPermissions(deleterMemberId, project.getOrganisation().getOrganisationId(),
                 Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
@@ -163,7 +161,6 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ItemNotFoundException("Deleter must be the authenticated user");
         }
 
-        // Soft delete by marking as cancelled
         project.setStatus(ProjectStatus.CANCELLED);
         project.setUpdatedAt(LocalDateTime.now());
         projectRepo.save(project);
@@ -178,7 +175,6 @@ public class ProjectServiceImpl implements ProjectService {
     public Page<ProjectListResponse> getOrganisationProjects(
             UUID organisationId, UUID requesterId, int page, int size, String sortBy, String sortDirection) throws ItemNotFoundException {
 
-        // Validate requester authentication and access
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationMember requesterMember = validateMemberAccess(requesterId, organisationId);
 
@@ -189,16 +185,22 @@ public class ProjectServiceImpl implements ProjectService {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Filter out cancelled projects for regular listing
         Page<ProjectEntity> projects = projectRepo.findByOrganisationOrganisationIdAndStatusNot(
                 organisationId, ProjectStatus.CANCELLED, pageable);
+        return projects.map(this::mapToProjectListResponse);
+    }
+// Get all projects available
+    @Override
+    public Page<ProjectListResponse> getAllProjects(int page, int size, String sortBy, String sortDirection) {
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<ProjectEntity> projects = projectRepo.findByStatusNot(ProjectStatus.CANCELLED, pageable);
         return projects.map(this::mapToProjectListResponse);
     }
 
     // Searches for projects in an organisation based on status, with pagination and sorting
     @Override
     public Page<ProjectListResponse> searchProjects(ProjectSearchRequest searchRequest, UUID requesterId) throws ItemNotFoundException {
-        // Validate requester authentication and access
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationMember requesterMember = validateMemberAccess(requesterId, searchRequest.getOrganisationId());
 
@@ -215,7 +217,6 @@ public class ProjectServiceImpl implements ProjectService {
             projects = projectRepo.findByOrganisationOrganisationIdAndStatus(
                     searchRequest.getOrganisationId(), status, pageable);
         } else {
-            // Don't include cancelled projects in general search
             projects = projectRepo.findByOrganisationOrganisationIdAndStatusNot(
                     searchRequest.getOrganisationId(), ProjectStatus.CANCELLED, pageable);
         }
@@ -229,7 +230,6 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
 
-        // Validate updater permissions and authentication
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationMember updater = validateMemberPermissions(updaterMemberId, project.getOrganisation().getOrganisationId(),
                 Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
@@ -253,7 +253,6 @@ public class ProjectServiceImpl implements ProjectService {
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Only show active projects that member belongs to
         Page<ProjectEntity> projects = projectRepo.findByTeamMembersMemberIdAndStatusNot(
                 memberId, ProjectStatus.CANCELLED, pageable);
         return projects.map(this::mapToProjectListResponse);
@@ -262,7 +261,6 @@ public class ProjectServiceImpl implements ProjectService {
     // Generates statistics for all projects in an organisation, including counts and budget information
     @Override
     public ProjectStatisticsResponse getProjectStatistics(UUID organisationId, UUID requesterId) throws ItemNotFoundException {
-        // Validate requester authentication and access
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationMember requesterMember = validateMemberAccess(requesterId, organisationId);
 
@@ -298,38 +296,32 @@ public class ProjectServiceImpl implements ProjectService {
         );
     }
 
-    // New method to handle team member removal
-    public ProjectResponse removeTeamMember(UUID projectId, UUID memberToRemoveId, UUID removerMemberId) {
-        try {
-            ProjectEntity project = projectRepo.findById(projectId)
-                    .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
+    // Removes a specific team member from a project
+    @Override
+    public ProjectResponse removeTeamMember(UUID projectId, UUID memberToRemoveId, UUID removerMemberId) throws ItemNotFoundException {
+        ProjectEntity project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
 
-            // Validate remover permissions and authentication
-            AccountEntity authenticatedAccount = getAuthenticatedAccount();
-            OrganisationMember remover = validateMemberPermissions(removerMemberId, project.getOrganisation().getOrganisationId(),
-                    Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
+        AccountEntity authenticatedAccount = getAuthenticatedAccount();
+        OrganisationMember remover = validateMemberPermissions(removerMemberId, project.getOrganisation().getOrganisationId(),
+                Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
 
-            if (!remover.getAccount().getAccountId().equals(authenticatedAccount.getAccountId())) {
-                throw new ItemNotFoundException("Remover must be the authenticated user");
-            }
-
-            // Find and remove the team member
-            OrganisationMember memberToRemove = project.getTeamMembers().stream()
-                    .filter(member -> member.getMemberId().equals(memberToRemoveId))
-                    .findFirst()
-                    .orElseThrow(() -> new ItemNotFoundException("Member not found in project team"));
-
-            project.removeTeamMember(memberToRemove);
-            project.setUpdatedAt(LocalDateTime.now());
-            ProjectEntity updatedProject = projectRepo.save(project);
-
-            log.info("Member {} removed from project '{}'", memberToRemoveId, project.getName());
-
-            return mapToProjectResponse(updatedProject);
-        } catch (ItemNotFoundException e) {
-            // Re-throw as RuntimeException or handle appropriately based on your error handling strategy
-            throw new RuntimeException(e.getMessage(), e);
+        if (!remover.getAccount().getAccountId().equals(authenticatedAccount.getAccountId())) {
+            throw new ItemNotFoundException("Remover must be the authenticated user");
         }
+
+        OrganisationMember memberToRemove = project.getTeamMembers().stream()
+                .filter(member -> member.getMemberId().equals(memberToRemoveId))
+                .findFirst()
+                .orElseThrow(() -> new ItemNotFoundException("Member not found in project team"));
+
+        project.removeTeamMember(memberToRemove);
+        project.setUpdatedAt(LocalDateTime.now());
+        ProjectEntity updatedProject = projectRepo.save(project);
+
+        log.info("Member {} removed from project '{}'", memberToRemoveId, project.getName());
+
+        return mapToProjectResponse(updatedProject);
     }
 
     // Helper method to update project team members efficiently
@@ -338,7 +330,6 @@ public class ProjectServiceImpl implements ProjectService {
                 .map(OrganisationMember::getMemberId)
                 .collect(Collectors.toSet());
 
-        // Remove members not in new list
         Set<UUID> membersToRemove = new HashSet<>(currentMemberIds);
         membersToRemove.removeAll(newTeamMemberIds);
 
@@ -352,7 +343,6 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
 
-        // Add new members
         Set<UUID> membersToAdd = new HashSet<>(newTeamMemberIds);
         membersToAdd.removeAll(currentMemberIds);
 
@@ -385,7 +375,7 @@ public class ProjectServiceImpl implements ProjectService {
     // Validates that a member has the required permissions (role) in an organisation
     private OrganisationMember validateMemberPermissions(UUID memberId, UUID organisationId, List<MemberRole> allowedRoles) throws ItemNotFoundException {
         OrganisationMember member = organisationMemberRepo.findByMemberIdAndOrganisationOrganisationId(memberId, organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Member is  not found in organisation"));
+                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
 
         if (member.getStatus() != MemberStatus.ACTIVE) {
             throw new ItemNotFoundException("Member is not active");
@@ -421,7 +411,7 @@ public class ProjectServiceImpl implements ProjectService {
             Set<UUID> missingMemberIds = new HashSet<>(memberIds);
             missingMemberIds.removeAll(foundMemberIds);
 
-            throw new ItemNotFoundException("The following team members are not valid or active in the organisation: ");
+            throw new ItemNotFoundException("The following team members are not valid or active in the organisation: " + missingMemberIds);
         }
 
         return new HashSet<>(members);

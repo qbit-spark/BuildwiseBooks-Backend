@@ -48,4 +48,7 @@ public interface ProjectRepo extends JpaRepository<ProjectEntity, UUID> {
 
     Page<ProjectEntity> findByTeamMembersMemberIdAndStatusNot(
             UUID memberId, ProjectStatus excludeStatus, Pageable pageable);
+
+    Page<ProjectEntity> findByStatusNot(ProjectStatus projectStatus, Pageable pageable);
+
 }
