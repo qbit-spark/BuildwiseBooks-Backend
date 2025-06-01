@@ -2,6 +2,7 @@ package com.qbitspark.buildwisebackend.organisationService.organisation_mng.repo
 
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.entities.OrganisationMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,4 +14,6 @@ public interface OrganisationRepo extends JpaRepository<OrganisationEntity, UUID
     Optional<OrganisationEntity> findOrganisationEntityByOwner(AccountEntity owner);
     Optional<OrganisationEntity> findByOrganisationIdAndOwner(UUID organisationId, AccountEntity owner);
     List<OrganisationEntity> findAllByOwner(AccountEntity owner);
+    // Add this method to your OrganisationMemberRepo interface
+
 }

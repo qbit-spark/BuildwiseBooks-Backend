@@ -5,11 +5,11 @@ import com.qbitspark.buildwisebackend.projectmngService.payloads.*;
 import com.qbitspark.buildwisebackend.projectmngService.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.UUID;
 
 @RestController
@@ -25,12 +25,50 @@ public class ProjectController {
     public ResponseEntity<GlobeSuccessResponseBuilder> createProject(
             @PathVariable UUID organisationId,
             @PathVariable UUID creatorMemberId,
-            @Valid @RequestBody ProjectCreateRequest request) throws ItemNotFoundException {
-        ProjectResponse response = projectService.createProject(request, creatorMemberId, organisationId);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(GlobeSuccessResponseBuilder.success("Project created successfully", response));
-    }
+            @Valid @RequestBody ProjectCreateRequest request) {
 
+        try {
+            ProjectResponse projectResponse = projectService.createProject(request, creatorMemberId, organisationId);
+
+            return ResponseEntity.ok(
+                    GlobeSuccessResponseBuilder.success(
+                            "Project created successfully",
+                            projectResponse
+                    )
+            );
+
+        } catch (ItemNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                            .message(e.getMessage())
+                            .build());
+        } catch (DataIntegrityViolationException e) {
+            // Handle database constraint violations (like budget overflow)
+            String errorMessage = "Data validation error: ";
+            if (e.getMessage().contains("numeric field overflow")) {
+                errorMessage += "Budget value is too large. Maximum supported value is 9,999,999,999,999.99";
+            } else {
+                errorMessage += "Invalid data provided";
+            }
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.BAD_REQUEST)
+                            .message(errorMessage)
+                            .build());
+        } catch (Exception e) {
+            // Handle any other unexpected errors
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .message("An unexpected error occurred while creating the project")
+                            .build());
+        }
+    }
     // Retrieves a project by its ID, ensuring the requester has access
     @GetMapping("/{projectId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectById(
@@ -50,24 +88,36 @@ public class ProjectController {
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project updated successfully", response));
     }
 
-    // Deletes a project by marking it as cancelled
+    // Soft deletes a project by marking it as cancelled
     @DeleteMapping("/{projectId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> deleteProject(
             @PathVariable UUID projectId,
             @RequestHeader("X-Member-Id") UUID deleterMemberId) throws ItemNotFoundException {
         String response = projectService.deleteProject(projectId, deleterMemberId);
-        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project deleted successfully", response));
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(response, null));
     }
 
     // Retrieves paginated projects for an organisation
     @GetMapping("/organisation/{organisationId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getOrganisationProjects(
             @PathVariable UUID organisationId,
-            @RequestHeader("X-Member-Id") UUID requesterId,
+            @RequestHeader(value = "X-Member-Id", required = false) UUID requesterId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDirection) throws ItemNotFoundException {
+
+        // If requesterId is null, you might want to get it from authentication context
+        if (requesterId == null) {
+            // Get from authentication context or return error
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.BAD_REQUEST)
+                            .message("Member is not authenticated")
+                            .build());
+        }
+
         Page<ProjectListResponse> response = projectService.getOrganisationProjects(
                 organisationId, requesterId, page, size, sortBy, sortDirection);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Organisation projects retrieved successfully", response));
@@ -90,6 +140,16 @@ public class ProjectController {
             @RequestHeader("X-Member-Id") UUID updaterMemberId) throws ItemNotFoundException {
         ProjectResponse response = projectService.updateProjectTeam(projectId, request, updaterMemberId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project team updated successfully", response));
+    }
+
+    // Removes a specific team member from a project
+    @DeleteMapping("/{projectId}/team/{memberToRemoveId}")
+    public ResponseEntity<GlobeSuccessResponseBuilder> removeTeamMember(
+            @PathVariable UUID projectId,
+            @PathVariable UUID memberToRemoveId,
+            @RequestHeader("X-Member-Id") UUID removerMemberId) throws ItemNotFoundException {
+        ProjectResponse response = projectService.removeTeamMember(projectId, memberToRemoveId, removerMemberId);
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Team member removed successfully", response));
     }
 
     // Retrieves paginated projects for a specific member

@@ -1,9 +1,12 @@
 package com.qbitspark.buildwisebackend.projectmngService.payloads;
 
+import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,4 +26,5 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> error(String message) {
         return new ApiResponse<>(false, message, null);
     }
+
 }

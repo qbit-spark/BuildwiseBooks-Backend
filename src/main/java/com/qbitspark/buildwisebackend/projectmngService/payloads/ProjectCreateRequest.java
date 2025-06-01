@@ -1,7 +1,7 @@
 package com.qbitspark.buildwisebackend.projectmngService.payloads;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,12 +20,9 @@ public class ProjectCreateRequest {
     @NotBlank(message = "Project description is required")
     private String description;
 
-    @NotNull(message = "Budget is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Budget must be greater than 0")
+    @DecimalMax(value = "9999999999999.99", message = "Budget cannot exceed 9,999,999,999,999.99")
+    @DecimalMin(value = "0.00", message = "Budget cannot be negative")
     private BigDecimal budget;
-
-    @NotNull(message = "Organisation ID is required")
-    private UUID organisationId;
 
     private Set<UUID> teamMemberIds;
 }

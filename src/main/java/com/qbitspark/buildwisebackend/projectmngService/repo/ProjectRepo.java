@@ -6,7 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -43,4 +42,10 @@ public interface ProjectRepo extends JpaRepository<ProjectEntity, UUID> {
     List<ProjectEntity> findByOrganisationOrganisationIdOrderByCreatedAtDesc(UUID organisationId, Pageable pageable);
 
     Page<ProjectEntity> findByTeamMembersMemberId(UUID memberId, Pageable pageable);
+
+    Page<ProjectEntity> findByOrganisationOrganisationIdAndStatusNot(
+            UUID organisationId, ProjectStatus excludeStatus, Pageable pageable);
+
+    Page<ProjectEntity> findByTeamMembersMemberIdAndStatusNot(
+            UUID memberId, ProjectStatus excludeStatus, Pageable pageable);
 }

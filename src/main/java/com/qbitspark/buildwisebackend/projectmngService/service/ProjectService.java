@@ -15,6 +15,8 @@ public interface ProjectService {
 
     String deleteProject(UUID projectId, UUID deleterMemberId) throws ItemNotFoundException;
 
+
+    // Retrieves a paginated list of projects for an organisation, sorted by the specified field and direction
     Page<ProjectListResponse> getOrganisationProjects(
             UUID organisationId, UUID requesterId, int page, int size, String sortBy, String sortDirection) throws ItemNotFoundException;
 
@@ -24,4 +26,8 @@ public interface ProjectService {
 
     Page<ProjectListResponse> getMemberProjects(UUID memberId, int page, int size) throws ItemNotFoundException;
     ProjectStatisticsResponse getProjectStatistics(UUID organisationId, UUID requesterId) throws ItemNotFoundException;
+
+    ProjectResponse removeTeamMember(UUID projectId, UUID memberToRemoveId, UUID removerMemberId);
+
+
 }

@@ -9,6 +9,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TeamMemberResponse {
+
     private UUID memberId;
     private String memberName;
     private String email;

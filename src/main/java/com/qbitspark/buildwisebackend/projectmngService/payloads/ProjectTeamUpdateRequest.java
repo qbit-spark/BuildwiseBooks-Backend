@@ -1,5 +1,4 @@
 package com.qbitspark.buildwisebackend.projectmngService.payloads;
-
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,4 +12,5 @@ import java.util.UUID;
 public class ProjectTeamUpdateRequest {
     @NotNull(message = "Team member IDs are required")
     private Set<UUID> teamMemberIds;
+
 }

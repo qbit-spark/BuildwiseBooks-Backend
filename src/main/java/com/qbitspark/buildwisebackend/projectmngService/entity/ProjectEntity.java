@@ -3,8 +3,6 @@ import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entit
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmngService.enums.ProjectStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -39,16 +37,12 @@ public class ProjectEntity {
     @Column(name = "project_id", nullable = false, updatable = false)
     private UUID projectId;
 
-    @NotBlank(message = "Project name is required")
     @Column(name = "name", nullable = false)
     private String name;
 
-    @NotBlank(message = "Project description is required")
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @NotNull(message = "Budget is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Budget must be greater than 0")
     @Column(name = "budget", nullable = false, precision = 15, scale = 2)
     private BigDecimal budget;
 

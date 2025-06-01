@@ -68,4 +68,9 @@ public class AccountEntity {
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrganisationEntity> userOrganisations;
 
+    // Add the getAccountId() method that returns the id field
+    public UUID getAccountId() {
+        return this.id;
+    }
+
 }
