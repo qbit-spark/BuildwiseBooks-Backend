@@ -189,7 +189,8 @@ public class ProjectServiceImpl implements ProjectService {
                 organisationId, ProjectStatus.CANCELLED, pageable);
         return projects.map(this::mapToProjectListResponse);
     }
-// Get all projects available
+
+    // Get all projects available
     @Override
     public Page<ProjectListResponse> getAllProjects(int page, int size, String sortBy, String sortDirection) {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);

@@ -189,13 +189,22 @@ public class ProjectController {
     }
 
     // Updates the team members assigned to a project
-    @PutMapping("/{projectId}/team")
+    @PutMapping("/{projectId}/team/{updaterMemberId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> updateProjectTeam(
             @PathVariable UUID projectId,
-            @Valid @RequestBody ProjectTeamUpdateRequest request,
-            @RequestHeader(value = "X-Member-Id", required = false) UUID updaterMemberId) throws ItemNotFoundException {
-        ProjectResponse response = projectService.updateProjectTeam(projectId, request, updaterMemberId);
-        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project team updated successfully", response));
+            @PathVariable UUID updaterMemberId,
+            @Valid @RequestBody ProjectTeamUpdateRequest request) {
+        try {
+            ProjectResponse response = projectService.updateProjectTeam(projectId, request, updaterMemberId);
+            return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project team updated successfully", response));
+        } catch (ItemNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.NOT_FOUND)
+                            .message(e.getMessage())
+                            .build());
+        }
     }
 
     // Removes a specific team member from a project
