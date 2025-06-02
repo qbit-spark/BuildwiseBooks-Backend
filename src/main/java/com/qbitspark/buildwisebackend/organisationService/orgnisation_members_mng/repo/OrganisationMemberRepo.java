@@ -5,9 +5,9 @@ import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entit
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.MemberStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface OrganisationMemberRepo extends JpaRepository<OrganisationMember, UUID> {
@@ -25,5 +25,11 @@ public interface OrganisationMemberRepo extends JpaRepository<OrganisationMember
     List<OrganisationMember> findAllByAccount(AccountEntity account);
 
     Optional<OrganisationMember> findByMemberIdAndOrganisation(UUID memberId, OrganisationEntity organisation);
+
+    Optional<OrganisationMember> findByMemberIdAndOrganisationOrganisationId(UUID memberId, UUID organisationId);
+
+    List<OrganisationMember> findByMemberIdInAndOrganisationOrganisationIdAndStatus(
+            Set<UUID> memberIds, UUID organisationId, MemberStatus status);
+
 
 }

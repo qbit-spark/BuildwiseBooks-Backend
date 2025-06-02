@@ -1,13 +1,14 @@
 package com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity;
-
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.projectmngService.entity.ProjectEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -40,4 +41,18 @@ public class OrganisationEntity {
 
     private LocalDateTime deletedDate;
 
+    @OneToMany(mappedBy = "organisation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ProjectEntity> projects;
+
+    public void addProject(ProjectEntity project) {
+        if (project != null) {
+            if (this.projects == null) {
+                this.projects = new ArrayList<>();
+            }
+            if (!this.projects.contains(project)) {
+                this.projects.add(project);
+                project.setOrganisation(this); // Maintain bidirectional relationship
+            }
+        }
+    }
 }
