@@ -19,5 +19,6 @@ public class ProjectListResponse {
     private String organisationName;
     private int teamMembersCount;
     private LocalDateTime createdAt;
+    private String contractNumber;
 
 }

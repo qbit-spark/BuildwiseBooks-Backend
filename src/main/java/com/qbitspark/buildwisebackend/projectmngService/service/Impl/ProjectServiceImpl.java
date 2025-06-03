@@ -452,6 +452,7 @@ public class ProjectServiceImpl implements ProjectService {
         response.setStatus(project.getStatus().name());
         response.setCreatedAt(project.getCreatedAt());
         response.setUpdatedAt(project.getUpdatedAt());
+        response.setContractNumber(project.getContractNumber());
 
         if (project.getCreatedBy() != null) {
             response.setCreatedBy(mapToTeamMemberResponse(project.getCreatedBy()));
@@ -459,7 +460,13 @@ public class ProjectServiceImpl implements ProjectService {
 
         // Modified mapping to use the OrganisationMember from ProjectTeamMember
         Set<TeamMemberResponse> teamMemberResponses = project.getTeamMembers().stream()
-                .map(projectTeamMember -> mapToTeamMemberResponse(projectTeamMember.getMember()))
+                .map(projectTeamMember -> {
+                    TeamMemberResponse teamMemberResponse = mapToTeamMemberResponse(projectTeamMember.getMember());
+                    teamMemberResponse.setContractNumber(projectTeamMember.getContractNumber());
+                    teamMemberResponse.setRole(projectTeamMember.getRole());
+                    teamMemberResponse.setRoleDisplayName(projectTeamMember.getRole().getDisplayName());
+                    return teamMemberResponse;
+                })
                 .collect(Collectors.toSet());
         response.setTeamMembers(teamMemberResponses);
 
@@ -476,6 +483,7 @@ public class ProjectServiceImpl implements ProjectService {
         response.setOrganisationName(project.getOrganisation().getOrganisationName());
         response.setTeamMembersCount(project.getTeamMembersCount());
         response.setCreatedAt(project.getCreatedAt());
+        response.setContractNumber(project.getContractNumber());
         return response;
     }
 
@@ -501,6 +509,7 @@ public class ProjectServiceImpl implements ProjectService {
         response.setRole(mapMemberRoleToTeamMemberRole(member.getRole()));
         response.setStatus(member.getStatus().name());
         response.setJoinedAt(member.getJoinedAt());
+        response.setUpdatedAt(LocalDateTime.now());
         return response;
     }
 //
