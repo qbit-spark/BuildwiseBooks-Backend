@@ -5,6 +5,7 @@ import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entit
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.MemberRole;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.projectmngService.entity.ProjectEntity;
+import com.qbitspark.buildwisebackend.projectmngService.entity.ProjectTeamMember;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -55,7 +56,9 @@ public class OrganisationMember {
     private LocalDateTime joinedAt;
 
     private UUID invitedBy;
-    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "teamMembers")
-    private List<ProjectEntity> projects;
+
+
+    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ProjectTeamMember> projectMemberships = new HashSet<>();
 
 }

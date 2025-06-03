@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProjectStatisticsResponse {
+
     private long totalProjects;
     private long activeProjects;
     private long completedProjects;
@@ -17,4 +18,5 @@ public class ProjectStatisticsResponse {
     private BigDecimal averageBudget;
     private int totalTeamMembers;
     private double averageTeamSize;
+
 }

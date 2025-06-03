@@ -1,4 +1,5 @@
 package com.qbitspark.buildwisebackend.projectmngService.service;
+
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.projectmngService.payloads.*;
 import org.springframework.data.domain.Page;
@@ -10,7 +11,7 @@ public interface ProjectService {
     ProjectResponse updateProject(UUID projectId, UUID organisationId, ProjectUpdateRequest request, UUID updaterMemberId) throws ItemNotFoundException;
     String deleteProject(UUID projectId, UUID deleterMemberId) throws ItemNotFoundException;
     Page<ProjectListResponse> getOrganisationProjects(UUID organisationId, UUID requesterId, int page, int size, String sortBy, String sortDirection) throws ItemNotFoundException;
-    Page<ProjectListResponse> getAllProjects(int page, int size, String sortBy, String sortDirection); // New method
+    Page<ProjectListResponse> getAllProjects(int page, int size, String sortBy, String sortDirection);
     Page<ProjectListResponse> searchProjects(ProjectSearchRequest searchRequest, UUID requesterId) throws ItemNotFoundException;
     ProjectResponse updateProjectTeam(UUID projectId, ProjectTeamUpdateRequest request, UUID updaterMemberId) throws ItemNotFoundException;
     ProjectResponse removeTeamMember(UUID projectId, UUID memberToRemoveId, UUID removerMemberId) throws ItemNotFoundException;

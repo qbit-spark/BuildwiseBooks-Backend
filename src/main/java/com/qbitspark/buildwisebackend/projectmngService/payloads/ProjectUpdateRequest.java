@@ -24,5 +24,9 @@ public class ProjectUpdateRequest {
     @DecimalMin(value = "0.0", inclusive = false, message = "Budget must be greater than 0")
     private BigDecimal budget;
 
-    private Set<UUID> teamMemberIds;
+    @NotBlank(message = "The contract number is required")
+    private String contractNumber;
+
+    private Set<AddTeamMemberRequest> teamMembers;
+
 }

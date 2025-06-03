@@ -5,6 +5,8 @@ import com.qbitspark.buildwisebackend.projectmngService.enums.ProjectStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Set;
@@ -41,14 +43,10 @@ public interface ProjectRepo extends JpaRepository<ProjectEntity, UUID> {
 
     List<ProjectEntity> findByOrganisationOrganisationIdOrderByCreatedAtDesc(UUID organisationId, Pageable pageable);
 
-    Page<ProjectEntity> findByTeamMembersMemberId(UUID memberId, Pageable pageable);
-
-    Page<ProjectEntity> findByOrganisationOrganisationIdAndStatusNot(
-            UUID organisationId, ProjectStatus excludeStatus, Pageable pageable);
-
-    Page<ProjectEntity> findByTeamMembersMemberIdAndStatusNot(
-            UUID memberId, ProjectStatus excludeStatus, Pageable pageable);
-
     Page<ProjectEntity> findByStatusNot(ProjectStatus projectStatus, Pageable pageable);
 
+    @Query("SELECT p FROM ProjectEntity p JOIN p.teamMembers tm WHERE tm.member.memberId = :memberId AND p.status != :status")
+    Page<ProjectEntity> findByTeamMembersMemberIdAndStatusNot(@Param("memberId") UUID memberId, @Param("status") ProjectStatus status, Pageable pageable);
+
+    Page<ProjectEntity> findByOrganisationOrganisationIdAndStatusNot(UUID organisationId, ProjectStatus projectStatus, Pageable pageable);
 }

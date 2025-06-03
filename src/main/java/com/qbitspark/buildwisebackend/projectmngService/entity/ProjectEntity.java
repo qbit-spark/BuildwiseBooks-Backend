@@ -1,7 +1,9 @@
 package com.qbitspark.buildwisebackend.projectmngService.entity;
+
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmngService.enums.ProjectStatus;
+import com.qbitspark.buildwisebackend.projectmngService.enums.TeamMemberRole;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -46,20 +48,13 @@ public class ProjectEntity {
     @Column(name = "budget", nullable = false, precision = 15, scale = 2)
     private BigDecimal budget;
 
-    // Many-to-One relationship with Organisation
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organisation_id", nullable = false)
     @NotNull(message = "Organisation is required")
     private OrganisationEntity organisation;
 
-    // Many-to-Many relationship with Organisation Members (Team)
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "project_team_members",
-            joinColumns = @JoinColumn(name = "project_id", referencedColumnName = "project_id"),
-            inverseJoinColumns = @JoinColumn(name = "member_id", referencedColumnName = "memberId")
-    )
-    private Set<OrganisationMember> teamMembers = new HashSet<>();
+    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ProjectTeamMember> teamMembers = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -73,33 +68,35 @@ public class ProjectEntity {
     @Column(name = "updatedAt")
     private LocalDateTime updatedAt;
 
-    // Created by (tracking who created the project)
+    @Column(name = "contract_number", nullable = false, length = 100)
+    @NotNull(message = "Contract number is required")
+    private String contractNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     private OrganisationMember createdBy;
 
-    // Helper method to add a team member to the project
-    public void addTeamMember(OrganisationMember member) {
-        if (member != null) {
-            this.teamMembers.add(member);
-            member.getProjects().add(this); // Maintain bidirectional relationship
+    public void addTeamMember(OrganisationMember member, TeamMemberRole role, String contractNumber) {
+        if (member != null && role != null && contractNumber != null) {
+            ProjectTeamMember teamMember = new ProjectTeamMember();
+            teamMember.setProject(this);
+            teamMember.setMember(member);
+            teamMember.setRole(role);
+            teamMember.setContractNumber(contractNumber);
+            this.teamMembers.add(teamMember);
         }
     }
 
-    // Helper method to remove a team member from the project
     public void removeTeamMember(OrganisationMember member) {
         if (member != null) {
-            this.teamMembers.remove(member);
-            member.getProjects().remove(this); // Maintain bidirectional relationship
+            teamMembers.removeIf(teamMember -> teamMember.getMember().equals(member));
         }
     }
 
-    // Helper method to check if a member is part of the project
     public boolean isTeamMember(OrganisationMember member) {
-        return this.teamMembers.contains(member);
+        return teamMembers.stream().anyMatch(teamMember -> teamMember.getMember().equals(member));
     }
 
-    // Helper method to get the count of team members in the project
     public int getTeamMembersCount() {
         return this.teamMembers != null ? this.teamMembers.size() : 0;
     }

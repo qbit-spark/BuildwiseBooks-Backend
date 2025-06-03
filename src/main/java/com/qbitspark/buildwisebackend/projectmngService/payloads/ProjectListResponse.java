@@ -1,5 +1,4 @@
 package com.qbitspark.buildwisebackend.projectmngService.payloads;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,6 +10,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProjectListResponse {
+
     private UUID projectId;
     private String projectName;
     private String projectDescription;
