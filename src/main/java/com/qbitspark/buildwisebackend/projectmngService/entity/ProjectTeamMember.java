@@ -1,5 +1,4 @@
 package com.qbitspark.buildwisebackend.projectmngService.entity;
-
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmngService.enums.TeamMemberRole;
 import jakarta.persistence.*;
