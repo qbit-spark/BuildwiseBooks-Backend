@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.organisationService.organisation_mng.payloads;
+package com.qbitspark.buildwisebackend.organisationservice.organisation_mng.payloads;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

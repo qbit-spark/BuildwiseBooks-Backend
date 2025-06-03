@@ -1,4 +1,5 @@
-package com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.service.impl;
+package com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.service.impl;
+
 import com.qbitspark.buildwisebackend.emails.service.GlobeMailService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationAlreadyProcessedException;
@@ -6,17 +7,17 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationExpiredEx
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
-import com.qbitspark.buildwisebackend.organisationService.organisation_mng.repo.OrganisationRepo;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.entities.OrganisationInvitation;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.entities.OrganisationMember;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.InvitationStatus;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.MemberRole;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.MemberStatus;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.*;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.repo.OrganisationInvitationRepo;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.repo.OrganisationMemberRepo;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.service.OrganisationMemberService;
+import com.qbitspark.buildwisebackend.organisationservice.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisationservice.organisation_mng.repo.OrganisationRepo;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.entities.OrganisationInvitation;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.entities.OrganisationMember;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.enums.InvitationStatus;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.enums.MemberRole;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.enums.MemberStatus;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.payloads.*;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.repo.OrganisationInvitationRepo;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.service.OrganisationMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;

@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity;
+package com.qbitspark.buildwisebackend.organisationservice.organisation_mng.entity;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.projectmngService.entity.ProjectEntity;
 import jakarta.persistence.*;
@@ -44,15 +44,4 @@ public class OrganisationEntity {
     @OneToMany(mappedBy = "organisation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProjectEntity> projects;
 
-    public void addProject(ProjectEntity project) {
-        if (project != null) {
-            if (this.projects == null) {
-                this.projects = new ArrayList<>();
-            }
-            if (!this.projects.contains(project)) {
-                this.projects.add(project);
-                project.setOrganisation(this); // Maintain bidirectional relationship
-            }
-        }
-    }
 }
