@@ -1,9 +1,9 @@
-package com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.entities;
+package com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.entities;
 
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.InvitationStatus;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums.MemberRole;
+import com.qbitspark.buildwisebackend.organisationservice.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.enums.InvitationStatus;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.enums.MemberRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

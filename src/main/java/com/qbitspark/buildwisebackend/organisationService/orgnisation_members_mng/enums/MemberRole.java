@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.enums;
+package com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.enums;
 
 public enum MemberRole {
     OWNER,   // Can do everything, delete org

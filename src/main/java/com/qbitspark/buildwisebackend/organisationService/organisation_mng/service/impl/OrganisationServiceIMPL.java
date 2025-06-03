@@ -1,14 +1,14 @@
-package com.qbitspark.buildwisebackend.organisationService.organisation_mng.service.impl;
+package com.qbitspark.buildwisebackend.organisationservice.organisation_mng.service.impl;
 
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeauthentication.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
-import com.qbitspark.buildwisebackend.organisationService.organisation_mng.payloads.CreateOrganisationRequest;
-import com.qbitspark.buildwisebackend.organisationService.organisation_mng.payloads.UpdateOrganisationRequest;
-import com.qbitspark.buildwisebackend.organisationService.organisation_mng.repo.OrganisationRepo;
-import com.qbitspark.buildwisebackend.organisationService.organisation_mng.service.OrganisationService;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.service.OrganisationMemberService;
+import com.qbitspark.buildwisebackend.organisationservice.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisationservice.organisation_mng.payloads.CreateOrganisationRequest;
+import com.qbitspark.buildwisebackend.organisationservice.organisation_mng.payloads.UpdateOrganisationRequest;
+import com.qbitspark.buildwisebackend.organisationservice.organisation_mng.repo.OrganisationRepo;
+import com.qbitspark.buildwisebackend.organisationservice.organisation_mng.service.OrganisationService;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.service.OrganisationMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

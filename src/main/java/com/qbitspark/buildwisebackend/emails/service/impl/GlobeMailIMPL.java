@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.emails.service.IMPL;
+package com.qbitspark.buildwisebackend.emails.service.impl;
 
 import com.qbitspark.buildwisebackend.emails.service.GlobeMailService;
 import lombok.RequiredArgsConstructor;
@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 

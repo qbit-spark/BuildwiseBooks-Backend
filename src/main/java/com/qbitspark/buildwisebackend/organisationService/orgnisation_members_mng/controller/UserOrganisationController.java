@@ -1,9 +1,9 @@
-package com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.controller;
+package com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.controller;
 
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.UserOrganisationsOverviewResponse;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.service.OrganisationMemberService;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.payloads.UserOrganisationsOverviewResponse;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.service.OrganisationMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

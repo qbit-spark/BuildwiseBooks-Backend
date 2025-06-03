@@ -1,12 +1,13 @@
-package com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.service;
+package com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.service;
+
 
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationAlreadyProcessedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationExpiredException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads.*;
+import com.qbitspark.buildwisebackend.organisationservice.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.payloads.*;
 
 import java.util.List;
 import java.util.UUID;

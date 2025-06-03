@@ -1,8 +1,8 @@
-package com.qbitspark.buildwisebackend.organisationService.organisation_mng.repo;
+package com.qbitspark.buildwisebackend.organisationservice.organisation_mng.repo;
 
 import com.qbitspark.buildwisebackend.globeauthentication.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
-import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.entities.OrganisationMember;
+import com.qbitspark.buildwisebackend.organisationservice.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.entities.OrganisationMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.payloads;
+package com.qbitspark.buildwisebackend.organisationservice.orgnisation_members_mng.payloads;
 
 import lombok.Data;
 
