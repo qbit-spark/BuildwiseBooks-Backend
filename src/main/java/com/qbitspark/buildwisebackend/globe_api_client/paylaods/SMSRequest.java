@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.globeAPIclient.paylaods;
+package com.qbitspark.buildwisebackend.globe_api_client.paylaods;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

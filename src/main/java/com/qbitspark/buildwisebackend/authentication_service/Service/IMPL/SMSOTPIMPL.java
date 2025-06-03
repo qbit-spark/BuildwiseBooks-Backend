@@ -2,7 +2,7 @@ package com.qbitspark.buildwisebackend.authentication_service.Service.IMPL;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import com.qbitspark.buildwisebackend.globeAPIclient.BasicAuthApiClient;
+import com.qbitspark.buildwisebackend.globe_api_client.BasicAuthApiClient;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.RandomExceptions;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.VerificationException;

@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.globeAPIclient;
+package com.qbitspark.buildwisebackend.globe_api_client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
