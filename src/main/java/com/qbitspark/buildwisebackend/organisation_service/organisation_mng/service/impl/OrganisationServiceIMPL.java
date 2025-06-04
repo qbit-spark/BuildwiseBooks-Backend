@@ -58,7 +58,8 @@ public class OrganisationServiceIMPL implements OrganisationService {
         organisationMemberService.addOwnerAsMember(savedOrganisation, authenticatedAccount);
 
         // Create default chart of accounts for the organisation
-        chartOfAccountService.createDefaultChartOfAccounts(savedOrganisation);
+        //chartOfAccountService.createDefaultChartOfAccounts(savedOrganisation);
+        chartOfAccountService.createDefaultChartOfAccountsAndReturnHierarchical(savedOrganisation);
 
         return savedOrganisation;
 

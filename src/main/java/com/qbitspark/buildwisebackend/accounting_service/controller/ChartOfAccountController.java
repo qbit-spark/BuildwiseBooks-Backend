@@ -2,6 +2,7 @@ package com.qbitspark.buildwisebackend.accounting_service.controller;
 
 import com.qbitspark.buildwisebackend.accounting_service.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.payload.ChartOfAccountsResponse;
+import com.qbitspark.buildwisebackend.accounting_service.payload.GroupedChartOfAccountsResponse;
 import com.qbitspark.buildwisebackend.accounting_service.service.ChartOfAccountService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
@@ -32,5 +33,14 @@ public class ChartOfAccountController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/organisation/{organisationId}/grouped-hierarchical")
+    public ResponseEntity<GroupedChartOfAccountsResponse> getGroupedHierarchicalChartOfAccounts(
+            @PathVariable UUID organisationId) throws ItemNotFoundException {
+
+            GroupedChartOfAccountsResponse response = chartOfAccountService
+                    .getGroupedHierarchicalChartOfAccounts(organisationId);
+            return ResponseEntity.ok(response);
     }
 }

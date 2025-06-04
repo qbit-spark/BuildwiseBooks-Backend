@@ -30,8 +30,13 @@ public class ChartOfAccountsMapper {
                 .createdBy(entity.getCreatedBy())
                 .organisationId(entity.getOrganisation() != null ? entity.getOrganisation().getOrganisationId() : null)
                 .organisationName(entity.getOrganisation() != null ? entity.getOrganisation().getOrganisationName() : null)
+                // ADD THESE 3 LINES:
+                .parentAccountId(entity.getParentAccountId())
+                .isHeader(entity.getIsHeader())
+                .isPostable(entity.getIsPostable())
                 .build();
     }
+
 
     /**
      * Convert list of ChartOfAccounts entities to Response list
@@ -66,6 +71,10 @@ public class ChartOfAccountsMapper {
                 .createdBy(entity.getCreatedBy())
                 .organisationId(entity.getOrganisation() != null ? entity.getOrganisation().getOrganisationId() : null)
                 .organisationName(entity.getOrganisation() != null ? entity.getOrganisation().getOrganisationName() : null)
+
+                .parentAccountId(entity.getParentAccountId())
+                .isHeader(entity.getIsHeader())
+                .isPostable(entity.getIsPostable())
                 .build();
     }
 
@@ -88,7 +97,10 @@ public class ChartOfAccountsMapper {
         entity.setCreatedDate(response.getCreatedDate());
         entity.setModifiedDate(response.getModifiedDate());
         entity.setCreatedBy(response.getCreatedBy());
-        // Note: Organisation entity should be set in service layer
+        // ADD THESE 3 LINES:
+        entity.setParentAccountId(response.getParentAccountId());
+        entity.setIsHeader(response.isHeader());
+        entity.setIsPostable(response.isPostable());
 
         return entity;
     }

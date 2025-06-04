@@ -42,7 +42,7 @@ public class ChartOfAccounts {
     @Column(name = "account_type", nullable = false)
     private AccountType accountType;
 
-    @Column(name = "account_code", unique = true, nullable = false)
+    @Column(name = "account_code", nullable = false)
     private String accountCode;
 
     @Column(name = "is_active", nullable = false)
@@ -56,5 +56,14 @@ public class ChartOfAccounts {
 
     @Column(name = "created_by", nullable = false)
     private String createdBy;
+
+    @Column(name = "parent_account_id")
+    private UUID parentAccountId;
+
+    @Column(name = "is_header", nullable = false)
+    private Boolean isHeader = false;
+
+    @Column(name = "is_postable", nullable = false)
+    private Boolean isPostable = true;
 
 }
