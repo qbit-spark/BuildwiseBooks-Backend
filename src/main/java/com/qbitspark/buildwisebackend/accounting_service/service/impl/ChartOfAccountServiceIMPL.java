@@ -40,38 +40,10 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
     private final HierarchicalChartOfAccountsMapper hierarchicalMapper; // ADD THIS
 
 
-//    @Override
-//    @Transactional
-//    public void createDefaultChartOfAccounts(OrganisationEntity organisation) throws ItemNotFoundException {
-//        List<ChartOfAccounts> defaultAccounts = DefaultChartOfAccountsUtils.createConstructionChart(organisation);
-//        chartOfAccountsRepository.saveAll(defaultAccounts);
-//    }
-//
-    @Override
-    public List<ChartOfAccountsResponse> getChartOfAccountsByOrganisationId(UUID organisationId) throws ItemNotFoundException {
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, false);
-
-        List<ChartOfAccounts> accounts = chartOfAccountsRepository.findByOrganisation_OrganisationId(organisationId);
-        return chartOfAccountsMapper.toResponseList(accounts); // ADD THIS MAPPING
-    }
-
-    @Override
-    @Transactional
-    public void createDefaultChartOfAccounts(OrganisationEntity organisation) throws ItemNotFoundException {
-        // PASS 1: Create and save all accounts without parent relationships
-        List<ChartOfAccounts> defaultAccounts = DefaultChartOfAccountsUtils.createConstructionChart(organisation);
-        List<ChartOfAccounts> savedAccounts = chartOfAccountsRepository.saveAll(defaultAccounts);
-
-        // PASS 2: Update parent relationships using saved IDs
-        updateParentRelationships(savedAccounts);
-        chartOfAccountsRepository.saveAll(savedAccounts);
-    }
-
     // ADD THIS NEW METHOD for the hierarchical response
     @Override
     @Transactional
-    public GroupedChartOfAccountsResponse createDefaultChartOfAccountsAndReturnHierarchical(OrganisationEntity organisation) {
+    public void createDefaultChartOfAccountsAndReturnHierarchical(OrganisationEntity organisation) {
 
         // PASS 1: Create and save all accounts without parent relationships
         List<ChartOfAccounts> defaultAccounts = DefaultChartOfAccountsUtils.createConstructionChart(organisation);
@@ -82,8 +54,28 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
         List<ChartOfAccounts> updatedAccounts = chartOfAccountsRepository.saveAll(savedAccounts);
 
         // Convert to hierarchical structure and return
-        return hierarchicalMapper.toGroupedHierarchicalResponse(updatedAccounts);
+        hierarchicalMapper.toGroupedHierarchicalResponse(updatedAccounts);
     }
+
+
+    @Override
+    public GroupedChartOfAccountsResponse getGroupedHierarchicalChartOfAccounts(UUID organisationId)
+            throws ItemNotFoundException {
+
+        AccountEntity account = getAuthenticatedAccount();
+        validateUserPermission(account, organisationId, false);
+
+        List<ChartOfAccounts> allAccounts = chartOfAccountsRepository
+                .findByOrganisation_OrganisationId(organisationId);
+
+        if (allAccounts.isEmpty()) {
+            throw new ItemNotFoundException("No accounts found for organisation");
+        }
+
+        return hierarchicalMapper.toGroupedHierarchicalResponse(allAccounts);
+    }
+
+
 
 
 
@@ -113,24 +105,6 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
                 }
             }
         }
-    }
-
-
-    @Override
-    public GroupedChartOfAccountsResponse getGroupedHierarchicalChartOfAccounts(UUID organisationId)
-            throws ItemNotFoundException {
-
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, false);
-
-        List<ChartOfAccounts> allAccounts = chartOfAccountsRepository
-                .findByOrganisation_OrganisationId(organisationId);
-
-        if (allAccounts.isEmpty()) {
-            throw new ItemNotFoundException("No accounts found for organisation");
-        }
-
-        return hierarchicalMapper.toGroupedHierarchicalResponse(allAccounts);
     }
 
 

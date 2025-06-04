@@ -9,9 +9,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ChartOfAccountService {
-  void createDefaultChartOfAccounts(OrganisationEntity organisation) throws ItemNotFoundException;
-  List<ChartOfAccountsResponse> getChartOfAccountsByOrganisationId(UUID organisationId) throws ItemNotFoundException;
-
   /**
    * Get grouped hierarchical chart of accounts by organisation ID
    * Groups accounts by type (ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE)
@@ -20,6 +17,6 @@ public interface ChartOfAccountService {
   GroupedChartOfAccountsResponse getGroupedHierarchicalChartOfAccounts(UUID organisationId) throws ItemNotFoundException;
 
 
-  GroupedChartOfAccountsResponse createDefaultChartOfAccountsAndReturnHierarchical(OrganisationEntity organisation);
+  void createDefaultChartOfAccountsAndReturnHierarchical(OrganisationEntity organisation);
 
 }
