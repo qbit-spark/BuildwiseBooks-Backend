@@ -48,6 +48,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final AccountRepo accountRepo;
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
 
+    //Create the new projects
     @Override
     public ProjectResponse createProject(ProjectCreateRequest request, UUID creatorMemberId, UUID organisationId) throws ItemNotFoundException {
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
@@ -97,6 +98,7 @@ public class ProjectServiceImpl implements ProjectService {
         return mapToProjectResponse(savedProject);
     }
 
+    //Get the project by Id
     @Override
     public ProjectResponse getProjectById(UUID projectId, UUID requesterId) throws ItemNotFoundException {
         ProjectEntity project = projectRepo.findById(projectId)
@@ -112,6 +114,7 @@ public class ProjectServiceImpl implements ProjectService {
         return mapToProjectResponse(project);
     }
 
+    //Update the projects details
     @Override
     public ProjectResponse updateProject(UUID projectId, UUID organisationId, ProjectUpdateRequest request, UUID updaterMemberId) throws ItemNotFoundException {
         ProjectEntity project = projectRepo.findById(projectId)
@@ -159,6 +162,7 @@ public class ProjectServiceImpl implements ProjectService {
         return mapToProjectResponse(updatedProject);
     }
 
+    //Soft Delete of the project
     @Override
     public String deleteProject(UUID projectId, UUID deleterMemberId) throws ItemNotFoundException {
         ProjectEntity project = projectRepo.findById(projectId)
@@ -181,6 +185,7 @@ public class ProjectServiceImpl implements ProjectService {
         return "Project cancelled successfully";
     }
 
+    //get organisation projects
     @Override
     public Page<ProjectListResponse> getOrganisationProjects(
             UUID organisationId, UUID requesterId, int page, int size, String sortBy, String sortDirection) throws ItemNotFoundException {
@@ -200,6 +205,7 @@ public class ProjectServiceImpl implements ProjectService {
         return projects.map(this::mapToProjectListResponse);
     }
 
+    //Get all projects
     @Override
     public Page<ProjectListResponse> getAllProjects(int page, int size, String sortBy, String sortDirection) {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
@@ -208,6 +214,7 @@ public class ProjectServiceImpl implements ProjectService {
         return projects.map(this::mapToProjectListResponse);
     }
 
+    //Search the project available
     @Override
     public Page<ProjectListResponse> searchProjects(ProjectSearchRequest searchRequest, UUID requesterId) throws ItemNotFoundException {
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
@@ -233,6 +240,7 @@ public class ProjectServiceImpl implements ProjectService {
         return projects.map(this::mapToProjectListResponse);
     }
 
+    //Update the project Team
     @Override
     public ProjectResponse updateProjectTeam(UUID projectId, ProjectTeamUpdateRequest request, UUID updaterMemberId) throws ItemNotFoundException {
         ProjectEntity project = projectRepo.findById(projectId)
@@ -319,6 +327,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
+    //Get the project Statistics
     @Override
     public ProjectStatisticsResponse getProjectStatistics(UUID organisationId, UUID requesterId) throws ItemNotFoundException {
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
@@ -356,6 +365,7 @@ public class ProjectServiceImpl implements ProjectService {
         );
     }
 
+    //Remove the team_member
     @Override
     public ProjectResponse removeTeamMember(UUID projectId, UUID memberToRemoveId, UUID removerMemberId) throws ItemNotFoundException {
         ProjectEntity project = projectRepo.findById(projectId)
@@ -385,6 +395,7 @@ public class ProjectServiceImpl implements ProjectService {
         return mapToProjectResponse(updatedProject);
     }
 
+    //Update the Team member
     private void updateProjectTeamMembers(ProjectEntity project, @NotNull Set<AddTeamMemberRequest> newTeamMembers) throws ItemNotFoundException {
         Set<UUID> newMemberIds = newTeamMembers.stream()
                 .map(AddTeamMemberRequest::getMemberId)
