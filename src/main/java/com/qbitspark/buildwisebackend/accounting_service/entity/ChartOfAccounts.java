@@ -46,7 +46,7 @@ public class ChartOfAccounts {
     private String accountCode;
 
     @Column(name = "is_active", nullable = false)
-    private boolean isActive;
+    private Boolean isActive;
 
     @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate;

@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.organisation_service.organisation_mng.service.impl;
 
+import com.qbitspark.buildwisebackend.accounting_service.service.ChartOfAccountService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
@@ -28,6 +29,7 @@ public class OrganisationServiceIMPL implements OrganisationService {
     private final AccountRepo accountRepo;
     private final OrganisationRepo organisationRepo;
     private final OrganisationMemberService organisationMemberService;
+    private final ChartOfAccountService chartOfAccountService;
 
     @Transactional
     @Override
@@ -54,6 +56,9 @@ public class OrganisationServiceIMPL implements OrganisationService {
 
         // ADD THIS: Automatically add an owner as a member with an OWNER role
         organisationMemberService.addOwnerAsMember(savedOrganisation, authenticatedAccount);
+
+        // Create default chart of accounts for the organisation
+        chartOfAccountService.createDefaultChartOfAccounts(savedOrganisation);
 
         return savedOrganisation;
 

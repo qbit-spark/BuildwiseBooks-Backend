@@ -331,7 +331,7 @@ public class DefaultChartOfAccountsUtils {
         account.setDescription(description);
         account.setAccountType(accountType);
         account.setOrganisation(organisation);
-        account.setActive(true);
+        account.setIsActive(true);
         account.setCreatedDate(LocalDateTime.now());
         account.setCreatedBy(SYSTEM_USER);
         return account;
