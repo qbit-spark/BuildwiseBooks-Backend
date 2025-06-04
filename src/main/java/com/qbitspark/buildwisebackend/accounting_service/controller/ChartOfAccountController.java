@@ -21,20 +21,6 @@ public class ChartOfAccountController {
 
     private final ChartOfAccountService chartOfAccountService;
 
-//    @GetMapping("/organisation/{organisationId}")
-//    public ResponseEntity<GlobeSuccessResponseBuilder> getChartOfAccountsByOrganisation(
-//            @PathVariable UUID organisationId) throws ItemNotFoundException {
-//
-//        List<ChartOfAccountsResponse> accounts = chartOfAccountService.getChartOfAccountsByOrganisationId(organisationId); // CHANGE TYPE
-//
-//        GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-//                "Chart of accounts retrieved successfully",
-//                accounts
-//        );
-//
-//        return ResponseEntity.ok(response);
-//    }
-
     @GetMapping("/organisation/{organisationId}")
     public ResponseEntity<GroupedChartOfAccountsResponse> getGroupedHierarchicalChartOfAccounts(
             @PathVariable UUID organisationId) throws ItemNotFoundException {
