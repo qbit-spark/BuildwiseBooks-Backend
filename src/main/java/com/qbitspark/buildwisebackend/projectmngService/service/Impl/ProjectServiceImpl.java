@@ -29,6 +29,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -254,14 +255,68 @@ public class ProjectServiceImpl implements ProjectService {
         return mapToProjectResponse(updatedProject);
     }
 
-    @Override
-    public Page<ProjectListResponse> getMemberProjects(UUID memberId, int page, int size) throws ItemNotFoundException {
-        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
-        Pageable pageable = PageRequest.of(page, size, sort);
+// FIXED: Corrected service methods with proper validation
 
-        Page<ProjectEntity> projects = projectRepo.findByTeamMembersMemberIdAndStatusNot(
-                memberId, ProjectStatus.CANCELLED, pageable);
-        return projects.map(this::mapToProjectListResponse);
+    @Override
+    public TeamMemberResponse getCurrentUserDetails(UUID organisationId, UUID requesterId) throws ItemNotFoundException {
+        // Since user is already authenticated, just find the member in the organisation
+        OrganisationMember member = organisationMemberRepo.findByMemberIdAndOrganisationOrganisationId(requesterId, organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Member not found in this organisation"));
+
+        // Validate that the member is active
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Your membership is not active in this organisation");
+        }
+
+        return mapOrganisationMemberToTeamMemberResponse(member);
+    }
+
+    @Override
+    public List<TeamMemberResponse> getProjectTeamMembers(UUID projectId) throws ItemNotFoundException {
+        System.out.println("DEBUG - getProjectTeamMembers called:");
+        System.out.println("  projectId: " + projectId);
+
+        // Find the project
+        ProjectEntity project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
+
+        System.out.println("  Project found: " + project.getName());
+
+        // Get authenticated account and validate access to the project's organization
+        AccountEntity authenticatedAccount = getAuthenticatedAccount();
+
+        // Find the authenticated user as a member in this project's organization
+        OrganisationMember authenticatedMember = organisationMemberRepo
+                .findByAccountIdAndOrganisationOrganisationId(
+                        authenticatedAccount.getAccountId(),
+                        project.getOrganisation().getOrganisationId())
+                .orElseThrow(() -> new ItemNotFoundException("You don't have access to this project's organization"));
+
+        if (authenticatedMember.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Your membership is not active in this organization");
+        }
+
+        System.out.println("  Found " + project.getTeamMembers().size() + " team members");
+
+        // Map project team members to response objects
+        return project.getTeamMembers().stream()
+                .map(this::mapProjectTeamMemberToTeamMemberResponse)
+                .collect(Collectors.toList());
+    }
+    // HELPER METHOD: Add this method to handle authentication validation
+    private void validateAuthenticatedUser(UUID requesterId, UUID organisationId) throws ItemNotFoundException {
+        AccountEntity authenticatedAccount = getAuthenticatedAccount();
+
+        OrganisationMember requesterMember = organisationMemberRepo.findByMemberIdAndOrganisationOrganisationId(requesterId, organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Requester not found in organisation"));
+
+        if (!authenticatedAccount.getAccountId().equals(requesterMember.getAccount().getAccountId())) {
+            throw new SecurityException("Authentication mismatch");
+        }
+
+        if (requesterMember.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Requester membership is not active");
+        }
     }
 
     @Override
@@ -455,18 +510,11 @@ public class ProjectServiceImpl implements ProjectService {
         response.setContractNumber(project.getContractNumber());
 
         if (project.getCreatedBy() != null) {
-            response.setCreatedBy(mapToTeamMemberResponse(project.getCreatedBy()));
+            response.setCreatedBy(mapOrganisationMemberToTeamMemberResponse(project.getCreatedBy()));
         }
 
-        // Modified mapping to use the OrganisationMember from ProjectTeamMember
         Set<TeamMemberResponse> teamMemberResponses = project.getTeamMembers().stream()
-                .map(projectTeamMember -> {
-                    TeamMemberResponse teamMemberResponse = mapToTeamMemberResponse(projectTeamMember.getMember());
-                    teamMemberResponse.setContractNumber(projectTeamMember.getContractNumber());
-                    teamMemberResponse.setRole(projectTeamMember.getRole());
-                    teamMemberResponse.setRoleDisplayName(projectTeamMember.getRole().getDisplayName());
-                    return teamMemberResponse;
-                })
+                .map(this::mapProjectTeamMemberToTeamMemberResponse)
                 .collect(Collectors.toSet());
         response.setTeamMembers(teamMemberResponses);
 
@@ -487,30 +535,41 @@ public class ProjectServiceImpl implements ProjectService {
         return response;
     }
 
-    // Alternative approach - create a proper mapping method:
     private TeamMemberRole mapMemberRoleToTeamMemberRole(MemberRole memberRole) {
         switch (memberRole) {
             case OWNER:
-                return TeamMemberRole.PROJECT_MANAGER;
-            case ADMIN:
-                return TeamMemberRole.PROJECT_MANAGER;
+                return TeamMemberRole.OWNER;
             case MEMBER:
             default:
                 return TeamMemberRole.MEMBER;
         }
     }
 
-    // Then use it in the method:
-    private TeamMemberResponse mapToTeamMemberResponse(OrganisationMember member) {
+    private TeamMemberResponse mapOrganisationMemberToTeamMemberResponse(OrganisationMember member) {
         TeamMemberResponse response = new TeamMemberResponse();
         response.setMemberId(member.getMemberId());
         response.setMemberName(member.getAccount().getUserName());
         response.setEmail(member.getAccount().getEmail());
         response.setRole(mapMemberRoleToTeamMemberRole(member.getRole()));
+        response.setRoleDisplayName(mapMemberRoleToTeamMemberRole(member.getRole()).getDisplayName());
         response.setStatus(member.getStatus().name());
         response.setJoinedAt(member.getJoinedAt());
-        response.setUpdatedAt(LocalDateTime.now());
+//        response.setUpdatedAt(member.getUpdatedAt());
         return response;
     }
-//
+
+    private TeamMemberResponse mapProjectTeamMemberToTeamMemberResponse(ProjectTeamMember projectTeamMember) {
+        TeamMemberResponse response = new TeamMemberResponse();
+        OrganisationMember member = projectTeamMember.getMember();
+        response.setMemberId(member.getMemberId());
+        response.setMemberName(member.getAccount().getUserName());
+        response.setEmail(member.getAccount().getEmail());
+        response.setRole(projectTeamMember.getRole());
+        response.setRoleDisplayName(projectTeamMember.getRole().getDisplayName());
+        response.setStatus(member.getStatus().name());
+        response.setJoinedAt(member.getJoinedAt());
+//        response.setUpdatedAt(member.getUpdatedAt());
+        response.setContractNumber(projectTeamMember.getContractNumber());
+        return response;
+    }
 }

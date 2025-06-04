@@ -49,4 +49,10 @@ public interface ProjectRepo extends JpaRepository<ProjectEntity, UUID> {
     Page<ProjectEntity> findByTeamMembersMemberIdAndStatusNot(@Param("memberId") UUID memberId, @Param("status") ProjectStatus status, Pageable pageable);
 
     Page<ProjectEntity> findByOrganisationOrganisationIdAndStatusNot(UUID organisationId, ProjectStatus projectStatus, Pageable pageable);
+
+    Page<ProjectEntity> findByTeamMembersMemberAccountAccountIdAndStatusNot(UUID memberId, ProjectStatus projectStatus, Pageable pageable);
+
+    Page<ProjectEntity> findByTeamMembersMemberMemberIdAndStatusNot(UUID memberId, ProjectStatus projectStatus, Pageable pageable);
+
+    List<ProjectEntity> findByTeamMembersMemberMemberIdAndStatusNotOrderByCreatedAtDesc(UUID memberId, ProjectStatus projectStatus);
 }

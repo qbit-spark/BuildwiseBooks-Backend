@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -208,15 +210,69 @@ public class ProjectController {
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Team member removed successfully", response));
     }
 
-    @GetMapping("/member/{memberId}")
-    public ResponseEntity<GlobeSuccessResponseBuilder> getMemberProjects(
-            @PathVariable UUID memberId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) throws ItemNotFoundException {
-        Page<ProjectListResponse> response = projectService.getMemberProjects(memberId, page, size);
-        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Member projects retrieved successfully", response));
+    // FIXED: Added proper authentication validation and error handling
+    @GetMapping("/{projectId}/team-members")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getProjectTeamMembers(
+            @PathVariable UUID projectId) {
+        try {
+            List<TeamMemberResponse> response = projectService.getProjectTeamMembers(projectId);
+            return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project team members retrieved successfully", response));
+        } catch (ItemNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.NOT_FOUND)
+                            .message(e.getMessage())
+                            .build());
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.FORBIDDEN)
+                            .message(e.getMessage())
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .message("An unexpected error occurred while retrieving project team members: " + e.getMessage())
+                            .build());
+        }
     }
 
+    @GetMapping("/users/me/{organisationId}/{requesterId}")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getCurrentUserDetails(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID requesterId) {
+
+        try {
+            TeamMemberResponse response = projectService.getCurrentUserDetails(organisationId, requesterId);
+            return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("User details retrieved successfully", response));
+
+        } catch (ItemNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.NOT_FOUND)
+                            .message(e.getMessage())
+                            .build());
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.FORBIDDEN)
+                            .message(e.getMessage())
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(GlobeSuccessResponseBuilder.builder()
+                            .success(false)
+                            .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .message("An unexpected error occurred while retrieving user details: " + e.getMessage())
+                            .build());
+        }
+    }
     @GetMapping("/organisation/{organisationId}/statistics")
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectStatistics(
             @PathVariable UUID organisationId,
