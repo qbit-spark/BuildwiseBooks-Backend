@@ -132,7 +132,6 @@ public class DefaultChartOfAccountsUtils {
                                                  AccountType accountType, OrganisationEntity organisation,
                                                  boolean isHeader, boolean isPostable) {
         ChartOfAccounts account = new ChartOfAccounts();
-        // DON'T SET ID - let Hibernate generate it
         account.setAccountCode(accountCode);
         account.setName(name);
         account.setDescription(description);
@@ -143,7 +142,6 @@ public class DefaultChartOfAccountsUtils {
         account.setCreatedBy(SYSTEM_USER);
         account.setIsHeader(isHeader);
         account.setIsPostable(isPostable);
-        // Don't set parentAccountId here - will be set in service layer
         account.setParentAccountId(null);
         return account;
     }
