@@ -32,4 +32,5 @@ public class SimpleTransactionEvent extends BusinessEvent {
                 this.amount.compareTo(BigDecimal.ZERO) > 0 &&
                 !this.debitAccountId.equals(this.creditAccountId);
     }
+
 }

@@ -47,4 +47,5 @@ public interface AccountLookupService {
      * Used for: General expenses when no specific expense account is specified
      */
     UUID getDefaultExpenseAccountId(UUID organisationId);
+
 }

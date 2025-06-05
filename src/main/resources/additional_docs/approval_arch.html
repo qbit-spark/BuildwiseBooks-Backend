@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div class="section" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+    <h2 style="color: white; text-align: center; font-size: 2.2rem; margin-bottom: 30px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); font-weight: 700;">🎯 Approval Workflow Architecture</h2>
+
+    <div class="diagram-container" style="background: rgba(255,255,255,0.95); border-radius: 15px; padding: 30px; backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+
+        <!-- Approval Modes Legend -->
+        <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; background: #e3f2fd; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
+                <span style="width: 10px; height: 10px; background: #2196f3; border-radius: 50%; margin-right: 8px;"></span>
+                🔄 Sequential
+            </div>
+            <div style="display: flex; align-items: center; background: #e8f5e8; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
+                <span style="width: 10px; height: 10px; background: #4caf50; border-radius: 50%; margin-right: 8px;"></span>
+                ⚡ Parallel
+            </div>
+            <div style="display: flex; align-items: center; background: #fff3e0; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
+                <span style="width: 10px; height: 10px; background: #ff9800; border-radius: 50%; margin-right: 8px;"></span>
+                🎯 Any One
+            </div>
+            <div style="display: flex; align-items: center; background: #f3e5f5; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
+                <span style="width: 10px; height: 10px; background: #9c27b0; border-radius: 50%; margin-right: 8px;"></span>
+                📊 Majority
+            </div>
+        </div>
+
+        <div class="mermaid" style="text-align: center;">
+            graph TD
+            subgraph "PROJECT SETUP PHASE"
+            PS1["Project Creation<br/>📋 SETUP"]
+            PS2["Team Assignment<br/>👥 ROLES"]
+            PS3["Approval Flow Configuration<br/>⚙️ TEMPLATES"]
+            end
+
+            subgraph "APPROVAL FLOW TEMPLATES"
+            AFT1["Payment Approval<br/>💳 TEMPLATE"]
+            AFT2["Expense Approval<br/>🧾 TEMPLATE"]
+            AFT3["Invoice Approval<br/>📄 TEMPLATE"]
+            AFT4["Budget Change Approval<br/>💰 TEMPLATE"]
+            end
+
+            subgraph "APPROVAL MODES (THE GREAT FEATURE)"
+            AM1["Sequential Mode<br/>🔄 ONE BY ONE"]
+            AM2["Parallel Mode<br/>⚡ ALL TOGETHER"]
+            AM3["Any One Mode<br/>🎯 FIRST WINS"]
+            AM4["Majority Mode<br/>📊 2 OF 3"]
+            end
+
+            subgraph "RUNTIME APPROVAL ENGINE"
+            RAE1["Transaction Submitted<br/>📤 REQUEST"]
+            RAE2["Approval Template Lookup<br/>🔍 MATCH TYPE"]
+            RAE3["Approval Chain Builder<br/>🔗 BUILD CHAIN"]
+            RAE4["Mode Executor<br/>⚡ RUN MODE"]
+            end
+
+            subgraph "APPROVER INTERACTION & REVISION CYCLE"
+            AI1["Notification Service<br/>📧 NOTIFY"]
+            AI2["Approval Interface<br/>✅ APPROVE/REJECT/REVISE"]
+            AI3["Comment & Revision Handler<br/>💬 FEEDBACK"]
+            AI4["Status Tracker<br/>📊 PROGRESS"]
+            AI5["Revision Loop Controller<br/>🔄 CYCLE MANAGER"]
+            end
+
+            subgraph "DECISION OUTCOMES"
+            DO1["✅ APPROVED<br/>Continue to Accounting"]
+            DO2["❌ REJECTED<br/>Stop Process"]
+            DO3["🔄 REVISION REQUIRED<br/>Back to Submitter"]
+            end
+
+            subgraph "COMPLETION & INTEGRATION"
+            CI1["Final Decision Logger<br/>📝 RECORD"]
+            CI2["Transaction Release<br/>🚀 TO ACCOUNTING"]
+            CI3["Audit Trail<br/>📋 LOG EVERYTHING"]
+            end
+
+            PS1 --> PS2
+            PS2 --> PS3
+            PS3 --> AFT1
+            PS3 --> AFT2
+            PS3 --> AFT3
+            PS3 --> AFT4
+
+            AFT1 --> AM1
+            AFT1 --> AM2
+            AFT1 --> AM3
+            AFT1 --> AM4
+
+            RAE1 --> RAE2
+            RAE2 --> RAE3
+            RAE3 --> RAE4
+
+            RAE4 --> AM1
+            RAE4 --> AM2
+            RAE4 --> AM3
+            RAE4 --> AM4
+
+            AM1 --> AI1
+            AM2 --> AI1
+            AM3 --> AI1
+            AM4 --> AI1
+
+            AI1 --> AI2
+            AI2 --> AI3
+            AI3 --> AI4
+            AI4 --> AI5
+
+            AI5 --> DO1
+            AI5 --> DO2
+            AI5 --> DO3
+
+            DO1 --> CI1
+            DO2 --> CI1
+            DO3 --> CI1
+            CI1 --> CI2
+            CI1 --> CI3
+
+            CI1 --> CI2
+            CI1 --> CI3
+
+            style PS1 fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+            style PS2 fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+            style PS3 fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+
+            style AFT1 fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+            style AFT2 fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+            style AFT3 fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+            style AFT4 fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+
+            style AM1 fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
+            style AM2 fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
+            style AM3 fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
+            style AM4 fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
+
+            style RAE1 fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+            style RAE2 fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+            style RAE3 fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+            style RAE4 fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+
+            style CI1 fill:#ffebee,stroke:#f44336,stroke-width:2px
+            style CI2 fill:#ffebee,stroke:#f44336,stroke-width:2px
+            style CI3 fill:#ffebee,stroke:#f44336,stroke-width:2px
+        </div>
+
+        <!-- Approval Actions & Revision Cycle -->
+        <div style="margin-top: 30px; background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 25px; border-radius: 12px; border-left: 5px solid #ff9800;">
+            <h3 style="color: #ef6c00; margin: 0 0 15px 0; font-size: 1.4rem; font-weight: 600;">💬 Approver Actions & Revision Flow</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #4caf50;">
+                    <h4 style="color: #4caf50; margin: 0 0 10px 0; font-size: 1.1rem;">✅ APPROVE</h4>
+                    <div style="color: #666; font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Action:</strong> Accept the transaction<br/>
+                        <strong>Optional:</strong> Add approval comments<br/>
+                        <strong>Result:</strong> Move to next approver or complete<br/>
+                        <strong>Example:</strong> "Approved for Q4 budget"
+                    </div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #f44336;">
+                    <h4 style="color: #f44336; margin: 0 0 10px 0; font-size: 1.1rem;">❌ REJECT</h4>
+                    <div style="color: #666; font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Action:</strong> Completely deny the transaction<br/>
+                        <strong>Required:</strong> Rejection reason/comments<br/>
+                        <strong>Result:</strong> Stop approval process entirely<br/>
+                        <strong>Example:</strong> "Exceeds budget limits"
+                    </div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #ff9800;">
+                    <h4 style="color: #ff9800; margin: 0 0 10px 0; font-size: 1.1rem;">🔄 REQUEST REVISION</h4>
+                    <div style="color: #666; font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Action:</strong> Send back for modifications<br/>
+                        <strong>Required:</strong> Specific revision comments<br/>
+                        <strong>Result:</strong> Return to submitter for changes<br/>
+                        <strong>Example:</strong> "Please add vendor quotes"
+                    </div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #9c27b0;">
+                    <h4 style="color: #9c27b0; margin: 0 0 10px 0; font-size: 1.1rem;">💬 COMMENT ONLY</h4>
+                    <div style="color: #666; font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Action:</strong> Add comments without decision<br/>
+                        <strong>Purpose:</strong> Questions or clarifications<br/>
+                        <strong>Result:</strong> Stay in current approval state<br/>
+                        <strong>Example:</strong> "Is this vendor pre-approved?"
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revision Cycle Example -->
+        <div style="margin-top: 25px; background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); padding: 25px; border-radius: 12px; border-left: 5px solid #9c27b0;">
+            <h3 style="color: #6a1b9a; margin: 0 0 15px 0; font-size: 1.4rem; font-weight: 600;">🔄 Revision Cycle Example</h3>
+            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <div style="color: #666; font-size: 0.95rem; line-height: 2;">
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #2196f3;">1. Initial Submission:</strong><br/>
+                        <span style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">
+                            "Payment request: $5,000 for office equipment"
+                        </span>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #ff9800;">2. PM Requests Revision:</strong><br/>
+                        <span style="background: #fff3e0; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">
+                            "Please provide 3 vendor quotes and delivery timeline"
+                        </span>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #4caf50;">3. Revised Submission:</strong><br/>
+                        <span style="background: #e8f5e8; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">
+                            "Updated with quotes from VendorA ($4,800), VendorB ($5,200), VendorC ($5,500). Delivery: 2 weeks"
+                        </span>
+                    </div>
+
+                    <div>
+                        <strong style="color: #4caf50;">4. Final Approval:</strong><br/>
+                        <span style="background: #e8f5e8; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">
+                            "Approved - Go with VendorA quote. Good research!"
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 30px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 25px; border-radius: 12px; border-left: 5px solid #667eea;">
+            <h3 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 1.4rem; font-weight: 600;">⚡ The Four Approval Modes (Your Great Feature)</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #2196f3;">
+                    <h4 style="color: #2196f3; margin: 0 0 10px 0; font-size: 1.1rem;">🔄 Sequential Mode</h4>
+                    <div style="color: #666; font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Flow:</strong> PM → CEO → Accountant<br/>
+                        <strong>Rule:</strong> Must approve in exact order<br/>
+                        <strong>Use Case:</strong> Traditional hierarchy<br/>
+                        <strong>Time:</strong> Slower but controlled
+                    </div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #4caf50;">
+                    <h4 style="color: #4caf50; margin: 0 0 10px 0; font-size: 1.1rem;">⚡ Parallel Mode</h4>
+                    <div style="color: #666; font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Flow:</strong> PM + CEO + Accountant<br/>
+                        <strong>Rule:</strong> All must approve (any order)<br/>
+                        <strong>Use Case:</strong> High-value transactions<br/>
+                        <strong>Time:</strong> Faster but requires all
+                    </div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #ff9800;">
+                    <h4 style="color: #ff9800; margin: 0 0 10px 0; font-size: 1.1rem;">🎯 Any One Mode</h4>
+                    <div style="color: #666; font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Flow:</strong> PM OR CEO OR Accountant<br/>
+                        <strong>Rule:</strong> First to approve wins<br/>
+                        <strong>Use Case:</strong> Emergency transactions<br/>
+                        <strong>Time:</strong> Fastest approval
+                    </div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #9c27b0;">
+                    <h4 style="color: #9c27b0; margin: 0 0 10px 0; font-size: 1.1rem;">📊 Majority Mode</h4>
+                    <div style="color: #666; font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Flow:</strong> 2 out of 3 approvers<br/>
+                        <strong>Rule:</strong> Democratic majority wins<br/>
+                        <strong>Use Case:</strong> Balanced decisions<br/>
+                        <strong>Time:</strong> Balanced speed/security
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Setup Example -->
+        <div style="margin-top: 25px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 25px; border-radius: 12px; border-left: 5px solid #2196f3;">
+            <h3 style="color: #1565c0; margin: 0 0 15px 0; font-size: 1.4rem; font-weight: 600;">🏗️ Project Setup Example</h3>
+            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <div style="color: #666; font-size: 0.95rem; line-height: 1.8;">
+                    <strong style="color: #2196f3;">Project:</strong> Office Building Construction<br/>
+                    <strong style="color: #2196f3;">Team:</strong> John (PM), Sarah (CEO), Mike (Accountant)<br/><br/>
+
+                    <strong style="color: #4caf50;">Approval Flows Configured:</strong><br/>
+                    • <strong>Payment Approval:</strong> Sequential (PM → CEO → Accountant)<br/>
+                    • <strong>Expense Approval:</strong> Majority (2 out of 3)<br/>
+                    • <strong>Emergency Payments:</strong> Any One (fastest)<br/>
+                    • <strong>Budget Changes:</strong> Parallel (all must approve)<br/>
+                </div>
+            </div>
+        </div>
+
+        <!-- Integration Points -->
+        <div style="margin-top: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 12px; color: white;">
+            <h3 style="margin: 0 0 15px 0; font-size: 1.4rem; font-weight: 600;">🔗 Integration with Your Transaction System</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 1.5rem; margin-right: 10px;">📤</span>
+                    <span>Transaction submitted from any controller</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 1.5rem; margin-right: 10px;">🔍</span>
+                    <span>Approval template lookup by transaction type</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 1.5rem; margin-right: 10px;">⚡</span>
+                    <span>Mode executor runs configured approval logic</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 1.5rem; margin-right: 10px;">🚀</span>
+                    <span>Approved transactions flow to your accounting engine</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'base',
+        themeVariables: {
+            fontFamily: 'arial',
+            fontSize: '14px',
+            primaryColor: '#f9f9f9',
+            primaryTextColor: '#333',
+            primaryBorderColor: '#ddd',
+            lineColor: '#666',
+            secondaryColor: '#f0f0f0',
+            tertiaryColor: '#f9f9f9'
+        },
+        flowchart: {
+            nodeSpacing: 20,
+            rankSpacing: 40,
+            curve: 'cardinal'
+        }
+    });
+</script></div>
+</body>
+</html>

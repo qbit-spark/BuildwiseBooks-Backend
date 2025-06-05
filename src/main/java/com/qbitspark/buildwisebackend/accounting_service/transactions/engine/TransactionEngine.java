@@ -104,7 +104,7 @@ public class TransactionEngine {
     }
 
     /**
-     * Generate a reference number based on transaction type
+     * Generate a reference number based on a transaction type
      */
     public String generateReferenceNumber(TransactionLevel level, UUID organisationId) {
         String prefix = switch (level) {

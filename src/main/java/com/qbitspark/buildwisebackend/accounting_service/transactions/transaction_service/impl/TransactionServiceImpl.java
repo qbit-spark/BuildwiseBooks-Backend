@@ -89,7 +89,7 @@ public class TransactionServiceImpl implements TransactionService {
             throw new RandomExceptions("Transaction requires approval - approval workflow not implemented yet");
         }
 
-        // LAYER 6: Save the journal entry to database
+        // LAYER 6: Save the journal entry to a database
         JournalEntry savedEntry = journalEntryRepo.save(journalEntry);
 
         log.info("Successfully created journal entry with ID: {} and {} lines",
