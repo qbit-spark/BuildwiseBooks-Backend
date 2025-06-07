@@ -1,4 +1,5 @@
 package com.qbitspark.buildwisebackend.projectmngService.repo;
+
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.projectmngService.entity.ProjectEntity;
 import com.qbitspark.buildwisebackend.projectmngService.enums.ProjectStatus;
@@ -8,8 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -17,31 +18,13 @@ public interface ProjectRepo extends JpaRepository<ProjectEntity, UUID> {
 
     boolean existsByNameAndOrganisation(String name, OrganisationEntity organisation);
 
-    List<ProjectEntity> findByOrganisation(OrganisationEntity organisation);
-
-    Page<ProjectEntity> findByOrganisation(OrganisationEntity organisation, Pageable pageable);
-
     List<ProjectEntity> findByOrganisationOrganisationId(UUID organisationId);
-
-    Page<ProjectEntity> findByOrganisationOrganisationId(UUID organisationId, Pageable pageable);
-
-    List<ProjectEntity> findByStatus(ProjectStatus status);
-
-    List<ProjectEntity> findByOrganisationAndStatus(OrganisationEntity organisation, ProjectStatus status);
-
-    List<ProjectEntity> findByOrganisationOrganisationIdAndStatus(UUID organisationId, ProjectStatus status);
 
     Page<ProjectEntity> findByOrganisationOrganisationIdAndStatus(UUID organisationId, ProjectStatus status, Pageable pageable);
 
     long countByOrganisationOrganisationId(UUID organisationId);
 
     long countByOrganisationOrganisationIdAndStatus(UUID organisationId, ProjectStatus status);
-
-    List<ProjectEntity> findByOrganisationOrganisationIdAndStatusIn(UUID organisationId, Set<ProjectStatus> statuses);
-
-    Page<ProjectEntity> findByOrganisationOrganisationIdAndStatusIn(UUID organisationId, Set<ProjectStatus> statuses, Pageable pageable);
-
-    List<ProjectEntity> findByOrganisationOrganisationIdOrderByCreatedAtDesc(UUID organisationId, Pageable pageable);
 
     Page<ProjectEntity> findByStatusNot(ProjectStatus projectStatus, Pageable pageable);
 
@@ -50,9 +33,24 @@ public interface ProjectRepo extends JpaRepository<ProjectEntity, UUID> {
 
     Page<ProjectEntity> findByOrganisationOrganisationIdAndStatusNot(UUID organisationId, ProjectStatus projectStatus, Pageable pageable);
 
-    Page<ProjectEntity> findByTeamMembersMemberAccountAccountIdAndStatusNot(UUID memberId, ProjectStatus projectStatus, Pageable pageable);
+    // Find projects by client ID and ProjectStatus enum
+    @Query("SELECT p FROM ProjectEntity p WHERE p.client.clientId = :clientId AND p.status = :status")
+    List<ProjectEntity> findByClientIdAndProjectStatus(@Param("clientId") UUID clientId, @Param("status") ProjectStatus status);
 
-    Page<ProjectEntity> findByTeamMembersMemberMemberIdAndStatusNot(UUID memberId, ProjectStatus projectStatus, Pageable pageable);
+    // Find active projects for a client (assuming you have an active status)
+    @Query("SELECT p FROM ProjectEntity p WHERE p.client.clientId = :clientId AND p.status != 'CANCELLED' AND p.status != 'COMPLETED'")
+    List<ProjectEntity> findActiveProjectsByClientId(@Param("clientId") UUID clientId);
 
-    List<ProjectEntity> findByTeamMembersMemberMemberIdAndStatusNotOrderByCreatedAtDesc(UUID memberId, ProjectStatus projectStatus);
+    List<ProjectEntity> findByClientClientId(UUID clientId);
+
+    Page<ProjectEntity> findByClientClientId(UUID clientId, Pageable pageable);
+
+    Long countByClientClientId(UUID clientId);
+
+    // For status queries, use explicit JPQL to avoid issues
+    @Query("SELECT p FROM ProjectEntity p WHERE p.client.clientId = :clientId AND p.status = :status")
+    List<ProjectEntity> findByClientIdAndStatus(@Param("clientId") UUID clientId, @Param("status") String status);
+
+    // Exists query
+    boolean existsByNameAndOrganisationOrganisationId(String name, UUID organisationId);
 }
