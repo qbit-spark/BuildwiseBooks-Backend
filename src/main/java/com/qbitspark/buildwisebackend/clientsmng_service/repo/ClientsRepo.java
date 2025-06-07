@@ -1,6 +1,6 @@
-package com.qbitspark.buildwisebackend.clientsmngService.repo;
+package com.qbitspark.buildwisebackend.clientsmng_service.repo;
 
-import com.qbitspark.buildwisebackend.clientsmngService.entity.ClientEntity;
+import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

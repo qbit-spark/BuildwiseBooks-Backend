@@ -1,8 +1,8 @@
-package com.qbitspark.buildwisebackend.clientsmngService.controller;
-import com.qbitspark.buildwisebackend.clientsmngService.payloads.ClientResponse;
-import com.qbitspark.buildwisebackend.clientsmngService.payloads.CreateClientRequest;
-import com.qbitspark.buildwisebackend.clientsmngService.payloads.UpdateClientRequest;
-import com.qbitspark.buildwisebackend.clientsmngService.service.ClientService;
+package com.qbitspark.buildwisebackend.clientsmng_service.controller;
+import com.qbitspark.buildwisebackend.clientsmng_service.payloads.ClientResponse;
+import com.qbitspark.buildwisebackend.clientsmng_service.payloads.CreateClientRequest;
+import com.qbitspark.buildwisebackend.clientsmng_service.payloads.UpdateClientRequest;
+import com.qbitspark.buildwisebackend.clientsmng_service.service.ClientService;
 import com.qbitspark.buildwisebackend.projectmngService.payloads.ApiResponse;
 import com.qbitspark.buildwisebackend.projectmngService.payloads.ProjectResponse;
 import jakarta.validation.Valid;

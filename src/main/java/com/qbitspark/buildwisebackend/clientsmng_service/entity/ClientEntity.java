@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.clientsmngService.entity;
+package com.qbitspark.buildwisebackend.clientsmng_service.entity;
 import com.qbitspark.buildwisebackend.projectmngService.entity.ProjectEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

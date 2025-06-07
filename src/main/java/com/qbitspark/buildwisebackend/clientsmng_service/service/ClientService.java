@@ -1,8 +1,8 @@
-package com.qbitspark.buildwisebackend.clientsmngService.service;
+package com.qbitspark.buildwisebackend.clientsmng_service.service;
 
-import com.qbitspark.buildwisebackend.clientsmngService.payloads.ClientResponse;
-import com.qbitspark.buildwisebackend.clientsmngService.payloads.CreateClientRequest;
-import com.qbitspark.buildwisebackend.clientsmngService.payloads.UpdateClientRequest;
+import com.qbitspark.buildwisebackend.clientsmng_service.payloads.ClientResponse;
+import com.qbitspark.buildwisebackend.clientsmng_service.payloads.CreateClientRequest;
+import com.qbitspark.buildwisebackend.clientsmng_service.payloads.UpdateClientRequest;
 import com.qbitspark.buildwisebackend.projectmngService.payloads.ProjectResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

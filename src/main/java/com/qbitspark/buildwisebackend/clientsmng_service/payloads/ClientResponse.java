@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.clientsmngService.payloads;
+package com.qbitspark.buildwisebackend.clientsmng_service.payloads;
 
 import com.qbitspark.buildwisebackend.projectmngService.payloads.ProjectResponse;
 import lombok.AllArgsConstructor;

@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.clientsmngService.payloads;
+package com.qbitspark.buildwisebackend.clientsmng_service.payloads;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

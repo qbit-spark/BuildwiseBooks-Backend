@@ -1,5 +1,5 @@
 package com.qbitspark.buildwisebackend.projectmngService.entity;
-import com.qbitspark.buildwisebackend.clientsmngService.entity.ClientEntity;
+import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.organisationService.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisationService.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmngService.enums.ProjectStatus;
