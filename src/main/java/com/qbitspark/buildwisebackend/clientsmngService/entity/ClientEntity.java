@@ -79,6 +79,15 @@ public class ClientEntity {
         }
     }
 
+    protected void onUpdate() {
+        if (updatedAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+
     // Helper method to add project (maintains bidirectional relationship)
     public void addProject(ProjectEntity project) {
         if (project != null) {
