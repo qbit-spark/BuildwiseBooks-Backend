@@ -1,6 +1,6 @@
 package com.qbitspark.buildwisebackend.organisation_service.organisation_mng.service.impl;
 
-import com.qbitspark.buildwisebackend.accounting_service.service.ChartOfAccountService;
+import com.qbitspark.buildwisebackend.accounting_service.coa.service.ChartOfAccountService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
