@@ -1,30 +1,20 @@
 package com.qbitspark.buildwisebackend.projectmng_service.payloads;
 
 import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class TeamMemberResponse {
-
+public class ProjectTeamMemberResponse {
     private UUID memberId;
     private String memberName;
-    private String email;
+    private String memberEmail;
     private TeamMemberRole role;
     private String roleDisplayName;
-    private String status;
+    private String organisationRole; // OWNER, ADMIN, MEMBER
+    private String status; // ACTIVE, SUSPENDED, etc.
     private LocalDateTime joinedAt;
-    private LocalDateTime updatedAt;
-
-
-    public void setRole(TeamMemberRole role) {
-        this.role = role;
-        this.roleDisplayName = role != null ? role.getDisplayName() : null;
-    }
 }

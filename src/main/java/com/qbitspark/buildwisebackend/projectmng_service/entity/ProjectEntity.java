@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.projectmng_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmng_service.enums.ProjectStatus;
@@ -53,8 +54,9 @@ public class ProjectEntity {
     @NotNull(message = "Organisation is required")
     private OrganisationEntity organisation;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<ProjectTeamMember> teamMembers = new HashSet<>();
+    private Set<ProjectTeamMemberEntity> teamMembers = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -76,22 +78,7 @@ public class ProjectEntity {
     @JoinColumn(name = "created_by_id")
     private OrganisationMember createdBy;
 
-    public void addTeamMember(OrganisationMember member, TeamMemberRole role, String contractNumber) {
-        if (member != null && role != null && contractNumber != null) {
-            ProjectTeamMember teamMember = new ProjectTeamMember();
-            teamMember.setProject(this);
-            teamMember.setMember(member);
-            teamMember.setRole(role);
-            teamMember.setContractNumber(contractNumber);
-            this.teamMembers.add(teamMember);
-        }
-    }
-
-    public void removeTeamMember(OrganisationMember member) {
-        if (member != null) {
-            teamMembers.removeIf(teamMember -> teamMember.getMember().equals(member));
-        }
-    }
+    private UUID deletedByMemberId;
 
     public boolean isTeamMember(OrganisationMember member) {
         return teamMembers.stream().anyMatch(teamMember -> teamMember.getMember().equals(member));

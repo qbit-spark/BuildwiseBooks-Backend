@@ -4,7 +4,7 @@ import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntit
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberRole;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
-import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMember;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -57,6 +57,6 @@ public class OrganisationMember {
 
 
     @OneToMany(mappedBy = "member", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<ProjectTeamMember> projectMemberships = new HashSet<>();
+    private Set<ProjectTeamMemberEntity> projectMemberships = new HashSet<>();
 
 }

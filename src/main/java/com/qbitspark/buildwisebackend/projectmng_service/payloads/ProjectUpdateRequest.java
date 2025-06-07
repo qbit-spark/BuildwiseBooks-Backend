@@ -13,19 +13,13 @@ import java.util.Set;
 @AllArgsConstructor
 public class ProjectUpdateRequest {
 
-    @NotBlank(message = "Project name is required")
     private String name;
 
-    @NotBlank(message = "Project description is required")
     private String description;
 
-    @NotNull(message = "Budget is required")
     @DecimalMin(value = "0.0", inclusive = false, message = "Budget must be greater than 0")
     private BigDecimal budget;
 
-    @NotBlank(message = "The contract number is required")
     private String contractNumber;
-
-    private Set<AddTeamMemberRequest> teamMembers;
 
 }

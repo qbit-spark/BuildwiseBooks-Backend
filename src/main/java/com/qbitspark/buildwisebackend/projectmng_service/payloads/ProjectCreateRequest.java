@@ -27,5 +27,4 @@ public class ProjectCreateRequest {
     @DecimalMin(value = "0.00", message = "Budget cannot be negative")
     private BigDecimal budget;
 
-    private Set<AddTeamMemberRequest> teamMembers;
 }

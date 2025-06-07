@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organisation Invitation</title>
+    <title>Welcome to Project Team</title>
     <!--[if mso]>
     <noscript>
         <xml>
@@ -24,7 +24,7 @@
 
                 <!-- Header -->
                 <tr>
-                    <td style="background-color: #2196F3; padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <td style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
                         <table width="100%" cellpadding="0" cellspacing="0" border="0">
                             <tr>
                                 <td align="center">
@@ -33,10 +33,10 @@
                                         BW
                                     </div>
                                     <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">
-                                        🎉 You're Invited!
+                                        🚀 <span th:text="${emailHeader}">Welcome to the Team!</span>
                                     </h1>
                                     <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">
-                                        Join an amazing team
+                                        You've been added to a project
                                     </p>
                                 </td>
                             </tr>
@@ -52,50 +52,39 @@
                             <tr>
                                 <td style="padding-bottom: 20px;">
                                     <h2 style="color: #2c3e50; margin: 0; font-size: 20px; font-weight: 600;">
-                                        Hi there! 👋
+                                        Hello <span th:text="${userName}">Team Member</span>! 👋
                                     </h2>
                                 </td>
                             </tr>
 
-                            <!-- Invitation Message -->
+                            <!-- Welcome Message -->
                             <tr>
                                 <td style="padding-bottom: 30px;">
                                     <p style="color: #555; margin: 0; font-size: 16px; line-height: 1.6;">
-                                        <strong th:text="${inviterName}">John Doe</strong> has invited you to join an exciting organization. We'd love to have you as part of our team!
+                                        <strong th:text="${welcomeMessage}">You have been added to a new project</strong>
+                                        and we're thrilled to have you on board. Your expertise and contributions will be invaluable to our team's success.
                                     </p>
                                 </td>
                             </tr>
 
-                            <!-- Organization Info Card -->
+                            <!-- Project Info Card -->
                             <tr>
                                 <td style="padding-bottom: 30px;">
                                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8f9fa; border-radius: 12px; border-left: 4px solid #2196F3;">
                                         <tr>
                                             <td style="padding: 25px;">
                                                 <h3 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">
-                                                    🏢 Organization Details
+                                                    📋 Project Information
                                                 </h3>
 
-                                                <!-- Organization Name Row -->
+                                                <!-- Project Name Row -->
                                                 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
                                                     <tr>
-                                                        <td style="width: 120px; color: #4a5568; font-weight: 600; font-size: 15px; vertical-align: top;">
-                                                            Organization:
+                                                        <td style="width: 100px; color: #4a5568; font-weight: 600; font-size: 15px; vertical-align: top;">
+                                                            Project:
                                                         </td>
-                                                        <td style="color: #2d3748; font-weight: 500; font-size: 18px;">
-                                                            <strong th:text="${organisationName}">BuildWise Solutions</strong>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-
-                                                <!-- Inviter Row -->
-                                                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
-                                                    <tr>
-                                                        <td style="width: 120px; color: #4a5568; font-weight: 600; font-size: 15px; vertical-align: top;">
-                                                            Invited by:
-                                                        </td>
-                                                        <td style="color: #2d3748; font-weight: 500;">
-                                                            <span th:text="${inviterName}">John Doe</span>
+                                                        <td style="color: #2d3748; font-weight: 500; background-color: white; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                                            <span th:text="${projectName}">Project Name</span>
                                                         </td>
                                                     </tr>
                                                 </table>
@@ -103,11 +92,11 @@
                                                 <!-- Role Row -->
                                                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                                     <tr>
-                                                        <td style="width: 120px; color: #4a5568; font-weight: 600; font-size: 15px; vertical-align: top;">
+                                                        <td style="width: 100px; color: #4a5568; font-weight: 600; font-size: 15px; vertical-align: top;">
                                                             Your Role:
                                                         </td>
                                                         <td>
-                                                            <span style="background-color: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: bold;" th:text="${role}">MEMBER</span>
+                                                            <span style="background-color: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: bold;" th:text="${role}">Team Member</span>
                                                         </td>
                                                     </tr>
                                                 </table>
@@ -117,39 +106,45 @@
                                 </td>
                             </tr>
 
-                            <!-- Benefits Section -->
+                            <!-- Features Section -->
                             <tr>
                                 <td style="padding-bottom: 30px;">
                                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8f9fa; border-radius: 12px;">
                                         <tr>
                                             <td style="padding: 25px;">
                                                 <h4 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 16px; font-weight: 600; text-align: center;">
-                                                    🌟 What you'll get:
+                                                    🎯 What you can do now:
                                                 </h4>
 
                                                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                                     <tr>
                                                         <td style="padding: 5px 0;">
                                                             <span style="color: #48bb78; font-weight: bold; margin-right: 10px;">✓</span>
-                                                            <span style="color: #4a5568; font-size: 14px;">Access to organization projects and resources</span>
+                                                            <span style="color: #4a5568; font-size: 14px;">Access the project dashboard and overview</span>
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td style="padding: 5px 0;">
                                                             <span style="color: #48bb78; font-weight: bold; margin-right: 10px;">✓</span>
-                                                            <span style="color: #4a5568; font-size: 14px;">Collaborate with talented team members</span>
+                                                            <span style="color: #4a5568; font-size: 14px;">Collaborate with team members in real-time</span>
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td style="padding: 5px 0;">
                                                             <span style="color: #48bb78; font-weight: bold; margin-right: 10px;">✓</span>
-                                                            <span style="color: #4a5568; font-size: 14px;">Participate in project planning and execution</span>
+                                                            <span style="color: #4a5568; font-size: 14px;">View project tasks and milestones</span>
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td style="padding: 5px 0;">
                                                             <span style="color: #48bb78; font-weight: bold; margin-right: 10px;">✓</span>
-                                                            <span style="color: #4a5568; font-size: 14px;">Share files and communicate seamlessly</span>
+                                                            <span style="color: #4a5568; font-size: 14px;">Contribute to project discussions</span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 5px 0;">
+                                                            <span style="color: #48bb78; font-weight: bold; margin-right: 10px;">✓</span>
+                                                            <span style="color: #4a5568; font-size: 14px;">Upload and share project files</span>
                                                         </td>
                                                     </tr>
                                                 </table>
@@ -159,65 +154,16 @@
                                 </td>
                             </tr>
 
-                            <!-- Call to Action Message -->
+                            <!-- CTA Button -->
                             <tr>
                                 <td style="text-align: center; padding-bottom: 30px;">
-                                    <p style="color: #555; margin: 0; font-size: 16px; font-weight: 600;">
-                                        Ready to join? Click below to respond:
-                                    </p>
-                                </td>
-                            </tr>
-
-                            <!-- Action Buttons -->
-                            <tr>
-                                <td style="text-align: center; padding-bottom: 20px;">
                                     <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
                                         <tr>
-                                            <!-- Accept Button -->
-                                            <td style="padding-right: 10px;">
-                                                <table cellpadding="0" cellspacing="0" border="0">
-                                                    <tr>
-                                                        <td style="background-color: #4CAF50; border-radius: 6px;">
-                                                            <a th:href="${acceptLink}" style="display: inline-block; padding: 12px 30px; color: white; text-decoration: none; font-weight: bold; font-size: 16px;">
-                                                                Accept Invitation
-                                                            </a>
-                                                        </td>
-                                                    </tr>
-                                                </table>
+                                            <td style="background-color: #4CAF50; border-radius: 6px;">
+                                                <a th:href="${projectLink}" style="display: inline-block; padding: 16px 32px; color: white; text-decoration: none; font-weight: 600; font-size: 16px;">
+                                                    🚀 Access Your Project
+                                                </a>
                                             </td>
-
-                                            <!-- Decline Button -->
-                                            <td style="padding-left: 10px;">
-                                                <table cellpadding="0" cellspacing="0" border="0">
-                                                    <tr>
-                                                        <td style="background-color: #f44336; border-radius: 6px;">
-                                                            <a th:href="${declineLink}" style="display: inline-block; padding: 12px 30px; color: white; text-decoration: none; font-weight: bold; font-size: 16px;">
-                                                                Decline
-                                                            </a>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </td>
-                            </tr>
-
-                            <!-- Expiry Notice -->
-                            <tr>
-                                <td style="text-align: center; padding-bottom: 30px;">
-                                    <p style="color: #e67e22; margin: 0; font-size: 14px; font-weight: 600; background-color: #fef9e7; padding: 10px 15px; border-radius: 6px; border: 1px solid #f39c12;">
-                                        ⏰ This invitation will expire in 7 days
-                                    </p>
-                                </td>
-                            </tr>
-
-                            <!-- Separator Line -->
-                            <tr>
-                                <td style="padding: 20px 0;">
-                                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                        <tr>
-                                            <td style="border-top: 1px solid #eee;"></td>
                                         </tr>
                                     </table>
                                 </td>
@@ -225,35 +171,28 @@
 
                             <!-- Link Fallback -->
                             <tr>
-                                <td>
+                                <td style="padding-bottom: 20px;">
                                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
                                         <tr>
-                                            <td style="padding: 15px;">
-                                                <p style="margin: 0 0 10px; font-size: 14px; color: #4a5568; text-align: center;">
-                                                    <strong>If the buttons don't work, copy and paste these links:</strong>
+                                            <td style="padding: 15px; text-align: center;">
+                                                <p style="margin: 0 0 10px; font-size: 14px; color: #4a5568;">
+                                                    If the button above doesn't work, copy and paste this link:
                                                 </p>
-
-                                                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px;">
-                                                    <tr>
-                                                        <td style="padding: 5px 0; font-size: 12px;">
-                                                            <strong style="color: #4a5568;">Accept:</strong>
-                                                            <div style="background-color: white; padding: 6px 10px; border-radius: 4px; font-family: 'Courier New', monospace; word-break: break-all; color: #2d3748; border: 1px solid #e2e8f0; margin-top: 5px;">
-                                                                <span th:text="${acceptLink}">accept-link</span>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="padding: 5px 0; font-size: 12px;">
-                                                            <strong style="color: #4a5568;">Decline:</strong>
-                                                            <div style="background-color: white; padding: 6px 10px; border-radius: 4px; font-family: 'Courier New', monospace; word-break: break-all; color: #2d3748; border: 1px solid #e2e8f0; margin-top: 5px;">
-                                                                <span th:text="${declineLink}">decline-link</span>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                </table>
+                                                <div style="background-color: white; padding: 8px 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; word-break: break-all; color: #2d3748; border: 1px solid #e2e8f0;">
+                                                    <span th:text="${projectLink}">Project Link</span>
+                                                </div>
                                             </td>
                                         </tr>
                                     </table>
+                                </td>
+                            </tr>
+
+                            <!-- Final Message -->
+                            <tr>
+                                <td>
+                                    <p style="color: #555; margin: 0; font-size: 16px; line-height: 1.6;">
+                                        Ready to make an impact? We're excited to see what we'll accomplish together. If you have any questions or need help getting started, don't hesitate to reach out to your project team or administrator.
+                                    </p>
                                 </td>
                             </tr>
                         </table>
@@ -264,11 +203,11 @@
                 <tr>
                     <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; border-radius: 0 0 8px 8px;">
                         <p style="color: #4a5568; margin: 0 0 15px; font-size: 14px; font-weight: bold;">
-                            Thank you for choosing BuildWise!
+                            BuildWise Project Management
                         </p>
                         <p style="color: #718096; margin: 0; font-size: 14px; line-height: 1.6;">
-                            If you didn't expect this invitation, you can safely ignore this email.<br>
-                            This is an automated notification from BuildWise Project Management.
+                            This is an automated notification. Please do not reply to this email.<br>
+                            For support, contact your project administrator or visit our help center.
                         </p>
                         <table cellpadding="0" cellspacing="0" border="0" style="margin: 15px auto 0;">
                             <tr>
