@@ -7,7 +7,10 @@ public enum TeamMemberRole {
     ARCHITECT("Architect"),
     PROJECT_MANAGER("Project Manager"),
     LEAD_CONSULTANT("Lead Consultant"),
-    MEMBER("Member");
+    MEMBER("Member"),
+    DEVELOPER("Developer"),
+    OWNER("Owner"),
+    ACCOUNTANT("Accountant");
 
     private final String displayName;
 

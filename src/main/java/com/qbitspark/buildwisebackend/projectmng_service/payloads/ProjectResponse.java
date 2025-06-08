@@ -23,4 +23,6 @@ public class ProjectResponse {
     private TeamMemberResponse createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UUID clientId;
+    private String clientName;
 }
