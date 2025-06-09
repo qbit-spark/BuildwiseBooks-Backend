@@ -2,6 +2,7 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.entity;
 
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.enums.InvoiceStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.enums.InvoiceType;
+import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import jakarta.persistence.*;
@@ -17,7 +18,31 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "invoice_business_docs")
+@Table(name = "invoice_business_docs", indexes = {
+        @Index(name = "idx_invoice_number", columnList = "invoice_number", unique = true),
+        @Index(name = "idx_invoice_project_id", columnList = "project_id"),
+        @Index(name = "idx_invoice_client_id", columnList = "client_id"),
+        @Index(name = "idx_invoice_organisation_id", columnList = "organisation_id"),
+        @Index(name = "idx_invoice_status", columnList = "invoice_status"),
+        @Index(name = "idx_invoice_type", columnList = "invoice_type"),
+        @Index(name = "idx_invoice_date_of_issue", columnList = "date_of_issue"),
+        @Index(name = "idx_invoice_due_date", columnList = "due_date"),
+        @Index(name = "idx_invoice_created_at", columnList = "created_at"),
+        @Index(name = "idx_invoice_created_by", columnList = "created_by"),
+        // Composite indexes for common query patterns
+        @Index(name = "idx_invoice_org_status", columnList = "organisation_id, invoice_status"),
+        @Index(name = "idx_invoice_client_status", columnList = "client_id, invoice_status"),
+        @Index(name = "idx_invoice_project_status", columnList = "project_id, invoice_status"),
+        @Index(name = "idx_invoice_status_date", columnList = "invoice_status, date_of_issue"),
+        @Index(name = "idx_invoice_org_date", columnList = "organisation_id, date_of_issue"),
+        @Index(name = "idx_invoice_client_date", columnList = "client_id, date_of_issue"),
+        @Index(name = "idx_invoice_client_due_date", columnList = "client_id, due_date"),
+        @Index(name = "idx_invoice_status_due_date", columnList = "invoice_status, due_date"),
+        @Index(name = "idx_invoice_org_status_date", columnList = "organisation_id, invoice_status, date_of_issue")
+
+
+})
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -37,11 +62,9 @@ public class InvoiceDocEntity {
     @JoinColumn(name = "project_id")
     private ProjectEntity project;
 
-    @Column(name = "client_id")
-    private UUID clientId;
-
-    @Column(name = "client_name")
-    private String clientName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id")
+    private ClientEntity client;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "invoice_type")

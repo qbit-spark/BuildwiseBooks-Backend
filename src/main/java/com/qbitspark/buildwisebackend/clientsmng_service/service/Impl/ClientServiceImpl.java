@@ -53,6 +53,7 @@ public class ClientServiceImpl implements ClientService {
         AccountEntity currentUser = getAuthenticatedAccount();
         validateMemberPermissions(currentUser, organisation, List.of(MemberRole.OWNER, MemberRole.ADMIN));
 
+
         // Check for duplicates (now with original values using IgnoreCase methods)
         if (clientsRepo.existsByNameIgnoreCaseAndOrganisationAndIsActiveTrue(request.getName(), organisation)) {
             throw new ItemNotFoundException("Client with this name already exists in the organisation");

@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository
 public interface ClientsRepo extends JpaRepository<ClientEntity, UUID> {
     boolean existsByNameIgnoreCaseAndOrganisationAndIsActiveTrue(String name, OrganisationEntity organisation);
     boolean existsByAddressIgnoreCaseAndOrganisationAndIsActiveTrue(String address, OrganisationEntity organisation);
@@ -23,4 +22,5 @@ public interface ClientsRepo extends JpaRepository<ClientEntity, UUID> {
     boolean existsByEmailIgnoreCaseAndOrganisationAndIsActiveTrue(String email, OrganisationEntity organisation);
 
     Optional<ClientEntity> findClientEntitiesByClientIdAndOrganisation(UUID clientId, OrganisationEntity organisation);
+
 }

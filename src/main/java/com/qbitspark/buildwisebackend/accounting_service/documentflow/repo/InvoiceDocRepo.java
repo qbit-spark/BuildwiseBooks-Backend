@@ -23,12 +23,4 @@ public interface InvoiceDocRepo extends JpaRepository<InvoiceDocEntity, UUID> {
 
     Optional<InvoiceDocEntity> findByInvoiceNumber(String invoiceNumber);
 
-    @Query("SELECT i FROM InvoiceDocEntity i WHERE i.dueDate < :date AND i.invoiceStatus = :status")
-    List<InvoiceDocEntity> findOverdueInvoices(@Param("date") LocalDate date, @Param("status") InvoiceStatus status);
-
-    @Query("SELECT i FROM InvoiceDocEntity i WHERE i.organisation.organisationId = :orgId AND i.invoiceStatus = :status")
-    List<InvoiceDocEntity> findByOrganisationAndStatus(@Param("orgId") UUID organisationId, @Param("status") InvoiceStatus status);
-
-    @Query("SELECT i FROM InvoiceDocEntity i WHERE i.project.projectId = :projectId AND i.invoiceStatus = :status")
-    List<InvoiceDocEntity> findByProjectAndStatus(@Param("projectId") UUID projectId, @Param("status") InvoiceStatus status);
 }

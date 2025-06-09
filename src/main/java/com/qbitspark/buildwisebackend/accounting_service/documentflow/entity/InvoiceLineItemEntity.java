@@ -11,7 +11,15 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "invoice_line_items")
+@Table(name = "invoice_line_items", indexes = {
+        @Index(name = "idx_line_invoice_id", columnList = "invoice_id"),
+        @Index(name = "idx_line_invoice_order", columnList = "line_order"),
+        @Index(name = "idx_line_invoice_tax_type", columnList = "tax_type"),
+        @Index(name = "idx_line_invoice_created_at", columnList = "created_at"),
+        // Composite indexes
+        @Index(name = "idx_line_invoice_order", columnList = "invoice_id, line_order"),
+        @Index(name = "idx_line_invoice_tax", columnList = "invoice_id, tax_type")
+})
 @Getter
 @Setter
 @NoArgsConstructor
