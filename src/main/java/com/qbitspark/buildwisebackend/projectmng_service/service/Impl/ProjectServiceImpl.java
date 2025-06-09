@@ -19,6 +19,7 @@ import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
 import com.qbitspark.buildwisebackend.projectmng_service.payloads.*;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
+import com.qbitspark.buildwisebackend.projectmng_service.service.ProjectCodeSequenceService;
 import com.qbitspark.buildwisebackend.projectmng_service.service.ProjectService;
 import com.qbitspark.buildwisebackend.projectmng_service.service.ProjectTeamMemberService;
 import jakarta.validation.constraints.NotNull;
@@ -51,6 +52,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final AccountRepo accountRepo;
     private final ProjectTeamMemberService projectTeamMemberService;
     private final ClientsRepo clientsRepo;
+    private final ProjectCodeSequenceService projectCodeSequenceService;
 
     @Transactional
     @Override
@@ -72,6 +74,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ItemNotFoundException("Project with name " + request.getName() + " already exists in this organisation");
         }
 
+        String projectCode = projectCodeSequenceService.generateProjectCode(organisation.getOrganisationId());
 
         ProjectEntity project = new ProjectEntity();
         project.setName(request.getName());
@@ -80,6 +83,7 @@ public class ProjectServiceImpl implements ProjectService {
         project.setOrganisation(organisation);
         organisation.addProject(project);
         project.setCreatedBy(creator);
+        project.setProjectCode(projectCode);
         project.setClient(client);
         project.setContractNumber(request.getContractNumber());
         project.setStatus(ProjectStatus.ACTIVE);
@@ -266,6 +270,7 @@ public class ProjectServiceImpl implements ProjectService {
         response.setOrganisationName(project.getOrganisation().getOrganisationName());
         response.setOrganisationId(project.getOrganisation().getOrganisationId());
         response.setStatus(project.getStatus().name());
+        response.setProjectCode(project.getProjectCode());
         response.setCreatedAt(project.getCreatedAt());
         response.setUpdatedAt(project.getUpdatedAt());
         response.setClientId(project.getClient().getClientId());

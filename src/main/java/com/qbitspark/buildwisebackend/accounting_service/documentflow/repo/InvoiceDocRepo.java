@@ -13,14 +13,4 @@ import java.util.UUID;
 
 public interface InvoiceDocRepo extends JpaRepository<InvoiceDocEntity, UUID> {
 
-    List<InvoiceDocEntity> findByProjectProjectId(UUID projectId);
-
-    List<InvoiceDocEntity> findByOrganisationOrganisationId(UUID organisationId);
-
-    List<InvoiceDocEntity> findByInvoiceStatus(InvoiceStatus status);
-
-    List<InvoiceDocEntity> findByClientId(UUID clientId);
-
-    Optional<InvoiceDocEntity> findByInvoiceNumber(String invoiceNumber);
-
 }

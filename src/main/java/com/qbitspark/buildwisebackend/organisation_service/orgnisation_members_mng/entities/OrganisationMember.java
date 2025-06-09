@@ -55,8 +55,8 @@ public class OrganisationMember {
 
     private UUID invitedBy;
 
-
-    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "organisationMember", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectTeamMemberEntity> projectMemberships = new HashSet<>();
+
 
 }

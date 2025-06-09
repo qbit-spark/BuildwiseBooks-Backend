@@ -7,10 +7,14 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.enums.Invo
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.paylaod.*;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.repo.InvoiceDocRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.service.InvoiceDocService;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.service.InvoiceNumberService;
 import com.qbitspark.buildwisebackend.accounting_service.transactions_pipeline.events.user_transaction.InvoiceEvent;
 import com.qbitspark.buildwisebackend.accounting_service.transactions_pipeline.transaction_service.TransactionService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
+import com.qbitspark.buildwisebackend.clientsmng_service.repo.ClientsRepo;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
@@ -18,7 +22,10 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
+import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -28,10 +35,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,32 +52,39 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     private final AccountRepo accountRepo;
     private final TransactionService transactionService;
     private final OrganisationMemberRepo organisationMemberRepo;
+    private final ClientsRepo clientsRepo;
+    private final ProjectTeamMemberRepo projectTeamMemberRepo;
+    private final InvoiceNumberService invoiceNumberService;
 
 
     @Override
-    public CreateInvoiceDocResponse createInvoice(CreateInvoiceDocRequest request) throws ItemNotFoundException {
+    public CreateInvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
+
         ProjectEntity project = projectRepo.findById(request.getProjectId())
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
-        OrganisationEntity organisation = organisationRepo.findById(request.getOrganisationId())
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-
-        // Validate user is an active member of this organisation
-        validateUserIsActiveMember(currentUser, organisation);
 
 
         // Validate project belongs to this organisation
-        if (!project.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
-            throw new ItemNotFoundException("Project does not belong to this organisation");
-        }
+        validateProject(project, organisation);
+
+
+        // Validate user is an active member of this organisation
+        validateProjectMemberPermissions(currentUser, project, List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+
+
+        //Validate client exists
+        ClientEntity client = validateClientExists(request.getClientId(), project.getOrganisation());
+
+        String invoiceNumber = invoiceNumberService.generateInvoiceNumber(project, client, organisation);
 
         InvoiceDocEntity invoice = new InvoiceDocEntity();
-        invoice.setInvoiceNumber(generateInvoiceNumber(project, organisation));
         invoice.setProject(project);
-        invoice.setClientId(request.getClientId());
-        invoice.setClientName("Name no set");
+        invoice.setClient(client);
         invoice.setInvoiceType(request.getInvoiceType());
         invoice.setInvoiceStatus(InvoiceStatus.DRAFT);
         invoice.setDateOfIssue(request.getDateOfIssue());
@@ -84,6 +96,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         invoice.setCurrency(request.getCurrency());
         invoice.setCreatedBy(currentUser.getId());
         invoice.setUpdatedBy(currentUser.getId());
+        invoice.setInvoiceNumber(invoiceNumber);
 
         List<InvoiceLineItemEntity> lineItems = new ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO;
@@ -125,13 +138,16 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         CreateInvoiceDocResponse response = new CreateInvoiceDocResponse();
         response.setInvoiceId(savedInvoice.getId());
         response.setInvoiceNumber(savedInvoice.getInvoiceNumber());
-        response.setStatus(savedInvoice.getInvoiceStatus().getDisplayName());
+        response.setStatus(savedInvoice.getInvoiceStatus());
         response.setTotalAmount(savedInvoice.getTotalAmount());
         response.setProjectName(project.getName());
-        response.setClientName(savedInvoice.getClientName());
+        response.setLineItemCount(savedInvoice.getLineItems().size());
+        response.setClientName(savedInvoice.getClient().getName());
 
         return response;
     }
+
+
 
     @Override
     public InvoiceDocResponse getInvoiceById(UUID invoiceId) throws ItemNotFoundException {
@@ -204,7 +220,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         InvoiceEvent event = new InvoiceEvent();
         event.setOrganisationId(invoice.getOrganisation().getOrganisationId());
         event.setProjectId(invoice.getProject().getProjectId());
-        event.setCustomerId(invoice.getClientId());
+        event.setCustomerId(invoice.getClient().getClientId());
         event.setTotalAmount(invoice.getTotalAmount());
         event.setTaxAmount(invoice.getTaxAmount());
         event.setDescription("Invoice: " + invoice.getInvoiceNumber());
@@ -227,11 +243,9 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     }
 
     private String generateInvoiceNumber(ProjectEntity project, OrganisationEntity organisation) {
-        String projectCode = project.getName().replaceAll("[^A-Z0-9]", "").substring(0, Math.min(4, project.getName().length()));
-        String orgCode = organisation.getOrganisationName().replaceAll("[^A-Z0-9]", "").substring(0, Math.min(3, organisation.getOrganisationName().length()));
-        String timestamp = String.valueOf(System.currentTimeMillis()).substring(8);
-
-        return String.format("INV-%s-%s-%s", orgCode, projectCode, timestamp);
+     return "INV-" + organisation.getOrganisationId().toString().substring(0, 8) +
+             "-" + project.getProjectId().toString().substring(0, 8) +
+             "-" + System.currentTimeMillis();
     }
 
     private InvoiceDocResponse mapToInvoiceResponse(InvoiceDocEntity invoice) {
@@ -240,8 +254,8 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         response.setInvoiceNumber(invoice.getInvoiceNumber());
         response.setProjectId(invoice.getProject().getProjectId());
         response.setProjectName(invoice.getProject().getName());
-        response.setClientId(invoice.getClientId());
-        response.setClientName(invoice.getClientName());
+        response.setClientId(invoice.getClient().getClientId());
+        response.setClientName(invoice.getClient().getName());
         response.setInvoiceType(invoice.getInvoiceType());
         response.setInvoiceStatus(invoice.getInvoiceStatus());
         response.setDateOfIssue(invoice.getDateOfIssue());
@@ -299,17 +313,39 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         throw new ItemNotFoundException("User not authenticated");
     }
 
-    private void validateUserIsActiveMember(AccountEntity user, OrganisationEntity organisation) throws ItemNotFoundException {
-        Optional<OrganisationMember> memberOptional = organisationMemberRepo
-                .findByAccountAndOrganisation(user, organisation);
+    private ProjectTeamMemberEntity validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
 
-        if (memberOptional.isEmpty()) {
-            throw new ItemNotFoundException("User is not a member of this organisation");
+        // Step 1: Find the organisation member
+        OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
+                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
+
+        // Step 2: Check if an organisation member is active
+        if (organisationMember.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
         }
 
-        OrganisationMember member = memberOptional.get();
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new ItemNotFoundException("User membership is not active in this organisation");
+
+        // Step 3: Get the project team member details
+        ProjectTeamMemberEntity projectTeamMember = projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
+                .orElseThrow(() -> new ItemNotFoundException("Project team member not found"));
+
+        // Step 5: Check if the member has one of the allowed roles
+        if (!allowedRoles.contains(projectTeamMember.getRole())) {
+            throw new AccessDeniedException("Member has insufficient permissions for this operation");
+        }
+
+        return projectTeamMember;
+    }
+
+    private ClientEntity validateClientExists(UUID clientId, OrganisationEntity organisation) throws ItemNotFoundException {
+
+        return clientsRepo.findClientEntitiesByClientIdAndOrganisation(clientId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Client not found in this organisation"));
+    }
+
+    private void validateProject(ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {
+        if (!project.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
+            throw new ItemNotFoundException("Project does not belong to this organisation");
         }
     }
 

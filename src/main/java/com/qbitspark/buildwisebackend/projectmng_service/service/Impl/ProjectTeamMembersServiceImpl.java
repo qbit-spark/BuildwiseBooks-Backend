@@ -99,14 +99,14 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
 
         for (UUID memberId : memberIds) {
             Optional<ProjectTeamMemberEntity> teamMemberOpt = allProjectMembers.stream()
-                    .filter(tm -> tm.getMember().getMemberId().equals(memberId))
+                    .filter(tm -> tm.getOrganisationMember().getMemberId().equals(memberId))
                     .findFirst();
 
             if (teamMemberOpt.isPresent()) {
                 ProjectTeamMemberEntity teamMember = teamMemberOpt.get();
 
                 boolean isOrgOwner = orgOwner != null &&
-                        orgOwner.getMemberId().equals(teamMember.getMember().getMemberId());
+                        orgOwner.getMemberId().equals(teamMember.getOrganisationMember().getMemberId());
 
                 if (isOrgOwner) {
                     protectedOwners.add(memberId);
@@ -168,7 +168,7 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
         ProjectTeamMemberEntity teamMember = project.getTeamMembers().stream()
-                .filter(tm -> tm.getMember().getMemberId().equals(memberId))
+                .filter(tm -> tm.getOrganisationMember().getMemberId().equals(memberId))
                 .findFirst()
                 .orElseThrow(() -> new ItemNotFoundException("Member is not part of this project"));
 
@@ -188,7 +188,7 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
         return project.getTeamMembers().stream()
-                .anyMatch(tm -> tm.getMember().getMemberId().equals(memberId));
+                .anyMatch(tm -> tm.getOrganisationMember().getMemberId().equals(memberId));
     }
 
     private OrganisationMember validateOrganisationMember(UUID memberId, ProjectEntity project) throws ItemNotFoundException {
@@ -243,14 +243,14 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
 
     private ProjectTeamMemberResponse mapToResponse(ProjectTeamMemberEntity teamMember) {
         ProjectTeamMemberResponse response = new ProjectTeamMemberResponse();
-        response.setMemberId(teamMember.getMember().getMemberId());
-        response.setMemberName(teamMember.getMember().getAccount().getUserName());
-        response.setMemberEmail(teamMember.getMember().getAccount().getEmail());
+        response.setMemberId(teamMember.getOrganisationMember().getMemberId());
+        response.setMemberName(teamMember.getOrganisationMember().getAccount().getUserName());
+        response.setMemberEmail(teamMember.getOrganisationMember().getAccount().getEmail());
         response.setRole(teamMember.getRole());
         response.setRoleDisplayName(teamMember.getRole().getDisplayName());
-        response.setOrganisationRole(teamMember.getMember().getRole().name());
-        response.setStatus(teamMember.getMember().getStatus().name());
-        response.setJoinedAt(teamMember.getMember().getJoinedAt());
+        response.setOrganisationRole(teamMember.getOrganisationMember().getRole().name());
+        response.setStatus(teamMember.getOrganisationMember().getStatus().name());
+        response.setJoinedAt(teamMember.getOrganisationMember().getJoinedAt());
         return response;
     }
 
@@ -273,7 +273,7 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
         // Get existing team members
         List<ProjectTeamMemberEntity> existingMembers = projectTeamMemberRepo.findByProjectProjectId(projectId);
         Set<UUID> currentMemberIds = existingMembers.stream()
-                .map(tm -> tm.getMember().getMemberId())
+                .map(tm -> tm.getOrganisationMember().getMemberId())
                 .collect(Collectors.toSet());
 
         List<ProjectTeamMemberEntity> newMembers = new ArrayList<>();
@@ -291,7 +291,7 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
 
                     ProjectTeamMemberEntity teamMember = new ProjectTeamMemberEntity();
                     teamMember.setProject(project);
-                    teamMember.setMember(orgMember);
+                    teamMember.setOrganisationMember(orgMember);
                     teamMember.setRole(request.getRole());
 
                     newMembers.add(teamMember);
@@ -309,7 +309,7 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
         //Send email notifications if required
         if (sendEmail && !savedMembers.isEmpty()) {
             for (ProjectTeamMemberEntity member : savedMembers) {
-                AccountEntity account = member.getMember().getAccount();
+                AccountEntity account = member.getOrganisationMember().getAccount();
                 asyncEmailService.sendProjectTeamMemberAddedEmailAsync(
                         account.getEmail(),
                         account.getUserName(),

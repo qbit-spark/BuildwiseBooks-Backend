@@ -39,7 +39,6 @@ import java.util.UUID;
         @Index(name = "idx_invoice_client_due_date", columnList = "client_id, due_date"),
         @Index(name = "idx_invoice_status_due_date", columnList = "invoice_status, due_date"),
         @Index(name = "idx_invoice_org_status_date", columnList = "organisation_id, invoice_status, date_of_issue")
-
 })
 
 @Getter
@@ -54,7 +53,7 @@ public class InvoiceDocEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(name = "invoice_number", unique = true, nullable = false)
+    @Column(name = "invoice_number", unique = true, nullable = false, columnDefinition = "TEXT")
     private String invoiceNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)

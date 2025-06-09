@@ -13,14 +13,10 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-
 public class CreateInvoiceDocRequest {
 
     @NotNull(message = "Project ID is required")
     private UUID projectId;
-
-    @NotNull(message = "Organisation ID is required")
-    private UUID organisationId;
 
     @NotNull(message = "Client ID is required")
     private UUID clientId;

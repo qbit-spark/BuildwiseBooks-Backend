@@ -41,6 +41,10 @@ public class ProjectEntity {
     @Column(name = "project_id", nullable = false, updatable = false)
     private UUID projectId;
 
+    //This should be changed later to  nullable = false
+    @Column(name = "project_code", columnDefinition = "TEXT")
+    private String projectCode;
+
     @Column(name = "name", nullable = false)
     private String name;
 
@@ -49,6 +53,7 @@ public class ProjectEntity {
 
     @Column(name = "budget", nullable = false, precision = 15, scale = 2)
     private BigDecimal budget;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organisation_id", nullable = false)
@@ -83,10 +88,7 @@ public class ProjectEntity {
     private UUID deletedByMemberId;
 
     public boolean isTeamMember(OrganisationMember member) {
-        return teamMembers.stream().anyMatch(teamMember -> teamMember.getMember().equals(member));
+        return teamMembers.stream().anyMatch(teamMember -> teamMember.getOrganisationMember().equals(member));
     }
 
-    public int getTeamMembersCount() {
-        return this.teamMembers != null ? this.teamMembers.size() : 0;
-    }
 }

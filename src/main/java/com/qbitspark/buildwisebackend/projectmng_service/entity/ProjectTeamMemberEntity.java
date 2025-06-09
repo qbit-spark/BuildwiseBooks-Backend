@@ -33,11 +33,10 @@ public class ProjectTeamMemberEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
-    private OrganisationMember member;
+    private OrganisationMember organisationMember;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private TeamMemberRole role;
-
 
 }
