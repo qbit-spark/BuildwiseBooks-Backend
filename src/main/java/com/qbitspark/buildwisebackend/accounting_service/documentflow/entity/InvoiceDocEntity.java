@@ -33,7 +33,6 @@ public class InvoiceDocEntity {
     @Column(name = "invoice_number", unique = true, nullable = false)
     private String invoiceNumber;
 
-    // Association: Many invoices belong to one project
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private ProjectEntity project;
@@ -116,4 +115,5 @@ public class InvoiceDocEntity {
 
     @Column(name = "updated_by")
     private UUID updatedBy;
+
 }

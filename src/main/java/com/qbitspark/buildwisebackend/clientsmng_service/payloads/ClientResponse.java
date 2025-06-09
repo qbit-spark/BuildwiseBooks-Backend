@@ -1,6 +1,5 @@
 package com.qbitspark.buildwisebackend.clientsmng_service.payloads;
 
-import com.qbitspark.buildwisebackend.projectmngService.payloads.ProjectResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,7 +25,6 @@ public class ClientResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Integer totalProjects;
-    private List<ProjectResponse> projects;
 
 
 }

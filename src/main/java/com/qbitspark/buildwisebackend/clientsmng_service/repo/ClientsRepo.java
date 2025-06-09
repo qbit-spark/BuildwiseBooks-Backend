@@ -1,6 +1,7 @@
 package com.qbitspark.buildwisebackend.clientsmng_service.repo;
 
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,33 +17,10 @@ import java.util.UUID;
 
 @Repository
 public interface ClientsRepo extends JpaRepository<ClientEntity, UUID> {
+    boolean existsByNameIgnoreCaseAndOrganisationAndIsActiveTrue(String name, OrganisationEntity organisation);
+    boolean existsByAddressIgnoreCaseAndOrganisationAndIsActiveTrue(String address, OrganisationEntity organisation);
+    boolean existsByTinIgnoreCaseAndOrganisationAndIsActiveTrue(String tin, OrganisationEntity organisation);
+    boolean existsByEmailIgnoreCaseAndOrganisationAndIsActiveTrue(String email, OrganisationEntity organisation);
 
-    List<ClientEntity> findByIsActiveTrue();
-
-    List<ClientEntity> findByNameContainingIgnoreCase(String name);
-
-    Optional<ClientEntity> findByTin(String tin);
-
-    Optional<ClientEntity> findByEmail(String email);
-
-    boolean existsByTinAndClientIdNot(@Param("tin") String tin, @Param("clientId") UUID clientId);
-
-    boolean existsByEmailAndClientIdNot(@Param("email") String email, @Param("clientId") UUID clientId);
-
-    @Query("SELECT c FROM ClientEntity c LEFT JOIN FETCH c.projects WHERE c.clientId = :clientId")
-    Optional<ClientEntity> findByClientIdWithProjects(@Param("clientId") UUID clientId);
-
-    // Option 1: Using @Query annotation with JPQL
-    @Query("SELECT c FROM ClientEntity c WHERE " +
-            "(:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
-            "(:email IS NULL OR LOWER(c.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
-            "(:isActive IS NULL OR c.isActive = :isActive)")
-    Page<ClientEntity> findBySearchCriteria(@Param("name") String name,
-                                            @Param("email") String email,
-                                            @Param("isActive") Boolean isActive,
-                                            Pageable pageable);
-
-    boolean existsByEmail(@Email(message = "Invalid email format") @NotBlank(message = "Email is required") String email);
-
-    boolean existsByTin(@NotBlank(message = "The TIN is required") @Size(max = 50, message = "The tin must be less than 50 characters") String tin);
+    Optional<ClientEntity> findClientEntitiesByClientIdAndOrganisation(UUID clientId, OrganisationEntity organisation);
 }

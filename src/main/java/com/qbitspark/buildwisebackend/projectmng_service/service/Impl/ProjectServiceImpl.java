@@ -1,5 +1,7 @@
 package com.qbitspark.buildwisebackend.projectmng_service.service.Impl;
 
+import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
+import com.qbitspark.buildwisebackend.clientsmng_service.repo.ClientsRepo;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
@@ -48,6 +50,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final OrganisationMemberRepo organisationMemberRepo;
     private final AccountRepo accountRepo;
     private final ProjectTeamMemberService projectTeamMemberService;
+    private final ClientsRepo clientsRepo;
 
     @Transactional
     @Override
@@ -61,9 +64,14 @@ public class ProjectServiceImpl implements ProjectService {
         OrganisationMember creator = validateMemberPermissions(authenticatedAccount, organisation,
                 Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
 
+        ClientEntity client = clientsRepo.findClientEntitiesByClientIdAndOrganisation(request.getClientId(), organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Client does not exist in this organisation"));
+
+
         if (projectRepo.existsByNameAndOrganisation(request.getName(), organisation)) {
             throw new ItemNotFoundException("Project with name " + request.getName() + " already exists in this organisation");
         }
+
 
         ProjectEntity project = new ProjectEntity();
         project.setName(request.getName());
@@ -72,6 +80,7 @@ public class ProjectServiceImpl implements ProjectService {
         project.setOrganisation(organisation);
         organisation.addProject(project);
         project.setCreatedBy(creator);
+        project.setClient(client);
         project.setContractNumber(request.getContractNumber());
         project.setStatus(ProjectStatus.ACTIVE);
         project.setCreatedAt(LocalDateTime.now());
@@ -245,6 +254,10 @@ public class ProjectServiceImpl implements ProjectService {
 
     private ProjectResponse mapToProjectResponse(ProjectEntity project) {
 
+        return getProjectResponse(project);
+    }
+
+    public static ProjectResponse getProjectResponse(ProjectEntity project) {
         ProjectResponse response = new ProjectResponse();
         response.setProjectId(project.getProjectId());
         response.setName(project.getName());
@@ -255,7 +268,10 @@ public class ProjectServiceImpl implements ProjectService {
         response.setStatus(project.getStatus().name());
         response.setCreatedAt(project.getCreatedAt());
         response.setUpdatedAt(project.getUpdatedAt());
+        response.setClientId(project.getClient().getClientId());
+        response.setClientName(project.getClient().getName());
         response.setContractNumber(project.getContractNumber());
+        response.setCreatedBy(project.getCreatedBy().getAccount().getUserName());
 
         return response;
     }

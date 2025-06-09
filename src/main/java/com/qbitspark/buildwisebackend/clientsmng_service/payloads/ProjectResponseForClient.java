@@ -1,16 +1,15 @@
-package com.qbitspark.buildwisebackend.projectmng_service.payloads;
-import lombok.AllArgsConstructor;
+package com.qbitspark.buildwisebackend.clientsmng_service.payloads;
+
+import com.qbitspark.buildwisebackend.projectmng_service.payloads.TeamMemberResponse;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class ProjectResponse {
+public class ProjectResponseForClient {
     private UUID projectId;
     private String name;
     private String description;
@@ -19,10 +18,6 @@ public class ProjectResponse {
     private UUID organisationId;
     private String status;
     private String contractNumber;
-    private Set<TeamMemberResponse> teamMembers;
-    private String createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private UUID clientId;
-    private String clientName;
 }

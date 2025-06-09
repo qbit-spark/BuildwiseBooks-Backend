@@ -1,4 +1,5 @@
 package com.qbitspark.buildwisebackend.projectmng_service.repo;
+import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.enums.ProjectStatus;
@@ -14,7 +15,7 @@ import java.util.UUID;
 
 @Repository
 public interface ProjectRepo extends JpaRepository<ProjectEntity, UUID> {
-
     boolean existsByNameAndOrganisation(String name, OrganisationEntity organisation);
     Page<ProjectEntity> findAllByOrganisation(OrganisationEntity organisation, Pageable pageable);
+    List<ProjectEntity> findAllByClientAndOrganisation(ClientEntity client, OrganisationEntity organisation);
 }

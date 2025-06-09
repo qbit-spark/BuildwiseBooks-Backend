@@ -1,24 +1,32 @@
 package com.qbitspark.buildwisebackend.clientsmng_service.service.Impl;
+import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.ClientResponse;
-import com.qbitspark.buildwisebackend.clientsmng_service.payloads.ClientWithProjectsResponse;
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.CreateClientRequest;
+import com.qbitspark.buildwisebackend.clientsmng_service.payloads.ProjectResponseForClient;
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.UpdateClientRequest;
 import com.qbitspark.buildwisebackend.clientsmng_service.repo.ClientsRepo;
 import com.qbitspark.buildwisebackend.clientsmng_service.service.ClientService;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.DuplicateResourceException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.ResourceNotFoundException;
-import com.qbitspark.buildwisebackend.projectmngService.entity.ProjectEntity;
-import com.qbitspark.buildwisebackend.projectmngService.payloads.ProjectResponse;
-import com.qbitspark.buildwisebackend.projectmngService.repo.ProjectRepo;
-import jakarta.persistence.EntityNotFoundException;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberRole;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.payloads.ProjectResponse;
+import com.qbitspark.buildwisebackend.projectmng_service.payloads.TeamMemberResponse;
+import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -26,102 +34,115 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class ClientServiceImpl implements ClientService {
 
-    private final ClientsRepo clientRepository;
-    private final ProjectRepo projectRepository;
-
-    // Create client - handle constraints properly
-    @Override
-    public ClientResponse createClient(CreateClientRequest request) {
-        try {
-            // Check for existing client by email or TIN
-            if (request.getEmail() != null && clientRepository.existsByEmail(request.getEmail())) {
-                throw new IllegalArgumentException("Client with email already exists");
-            }
-
-            if (request.getTin() != null && clientRepository.existsByTin(request.getTin())) {
-                throw new IllegalArgumentException("Client with TIN already exists");
-            }
-
-            ClientEntity client = new ClientEntity();
-            client.setName(request.getName());
-            client.setDescription(request.getDescription());
-            client.setAddress(request.getAddress());
-            client.setOfficePhone(request.getOfficePhone());
-            client.setTin(request.getTin());
-            client.setEmail(request.getEmail());
-            client.setIsActive(true);
-
-            ClientEntity savedClient = clientRepository.save(client);
-            return mapToResponse(savedClient);
-
-        } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Data integrity violation: " + e.getMessage());
-        } catch (Exception e) {
-            throw new RuntimeException("Error creating client: " + e.getMessage());
-        }
-    }
-
+    private final ClientsRepo clientsRepo;
+    private final OrganisationRepo organisationRepo;
+    private final OrganisationMemberRepo organisationMemberRepo;
+    private final AccountRepo accountRepo;
+    private final ProjectRepo projectRepo;
 
     @Override
-    @Transactional(readOnly = true)
-    public ClientResponse getClientById(UUID clientId) {
-        try {
-            ClientEntity client = clientRepository.findById(clientId)
-                    .orElseThrow(() -> new EntityNotFoundException("Client not found"));
-            return mapToResponse(client);
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching client: " + e.getMessage());
-        }
-    }
+    public ClientResponse createClientWithinOrganisation(UUID organisationId, CreateClientRequest request) throws ItemNotFoundException {
 
-    // Get all clients - read-only transaction
-    @Override
-    @Transactional(readOnly = true)
-    public List<ClientResponse> getAllClients() {
-        try {
-            List<ClientEntity> clients = clientRepository.findAll();
-            return clients.stream()
-                    .map(this::mapToResponse)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching clients: " + e.getMessage());
+        // Get organisation
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        // Validate user permissions (only OWNER/ADMIN can create clients)
+        AccountEntity currentUser = getAuthenticatedAccount();
+        validateMemberPermissions(currentUser, organisation, List.of(MemberRole.OWNER, MemberRole.ADMIN));
+
+        // Check for duplicates (now with original values using IgnoreCase methods)
+        if (clientsRepo.existsByNameIgnoreCaseAndOrganisationAndIsActiveTrue(request.getName(), organisation)) {
+            throw new ItemNotFoundException("Client with this name already exists in the organisation");
         }
+        if (clientsRepo.existsByAddressIgnoreCaseAndOrganisationAndIsActiveTrue(request.getAddress(), organisation)) {
+            throw new ItemNotFoundException("Client with this address already exists in the organisation");
+        }
+        if (clientsRepo.existsByTinIgnoreCaseAndOrganisationAndIsActiveTrue(request.getTin(), organisation)) {
+            throw new ItemNotFoundException("Client with this TIN already exists in the organisation");
+        }
+        if (clientsRepo.existsByEmailIgnoreCaseAndOrganisationAndIsActiveTrue(request.getEmail(), organisation)) {
+            throw new ItemNotFoundException("Client with this email already exists in the organisation");
+        }
+
+        // Create client with original values
+        ClientEntity client = new ClientEntity();
+        client.setName(request.getName());
+        client.setDescription(request.getDescription());
+        client.setAddress(request.getAddress());
+        client.setOfficePhone(request.getOfficePhone());
+        client.setTin(request.getTin());
+        client.setEmail(request.getEmail());
+        client.setOrganisation(organisation);
+        client.setIsActive(true);
+
+        ClientEntity savedClient = clientsRepo.save(client);
+
+        log.info("Client {} created in organisation {}", savedClient.getName(), organisation.getOrganisationName());
+
+        return mapToResponse(savedClient);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<ClientResponse> getActiveClients() {
-        log.info("Fetching active clients");
+    public ClientResponse getClientByIdWithinOrganisation(UUID clientId) throws ItemNotFoundException {
 
-        List<ClientEntity> activeClients = clientRepository.findByIsActiveTrue();
-        return activeClients.stream()
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        // Get client
+        ClientEntity client = clientsRepo.findById(clientId)
+                .orElseThrow(() -> new ItemNotFoundException("Client not found"));
+
+        // Get organisation
+        OrganisationEntity organisation = client.getOrganisation();
+
+        // Validate user permissions (only OWNER/ADMIN/MEMBER can view clients)
+        validateMemberPermissions(currentUser, organisation, List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+
+
+        return mapToResponse(client);
+    }
+
+    @Override
+    public List<ClientResponse> getAllClientsWithinOrganisation(UUID organisationId) throws ItemNotFoundException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        // Get organisation
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+
+        validateMemberPermissions(currentUser, organisation, List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+
+        // Get all active clients
+        List<ClientEntity> clients = clientsRepo.findAll().stream()
+                .filter(ClientEntity::getIsActive)
+                .toList();
+
+        return clients.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public ClientResponse updateClient(UUID clientId, UpdateClientRequest request) {
-        log.info("Updating client with ID: {}", clientId);
+    public ClientResponse updateClientWithinOrganisation(UUID clientId, UpdateClientRequest request) throws ItemNotFoundException {
 
-        ClientEntity client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
 
-        // Check for duplicate TIN (excluding current client)
-        if (request.getTin() != null && clientRepository.existsByTinAndClientIdNot(request.getTin(), clientId)) {
-            throw new DuplicateResourceException("Client with TIN " + request.getTin() + " already exists");
-        }
+        AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Check for duplicate email (excluding current client)
-        if (request.getEmail() != null && clientRepository.existsByEmailAndClientIdNot(request.getEmail(), clientId)) {
-            throw new DuplicateResourceException("Client with email " + request.getEmail() + " already exists");
-        }
+        // Get client
+        ClientEntity client = clientsRepo.findById(clientId)
+                .orElseThrow(() -> new ItemNotFoundException("Client not found"));
+
+        // Validate user permissions (only OWNER/ADMIN can update clients)
+        validateMemberPermissions(currentUser, client.getOrganisation(), List.of(MemberRole.OWNER, MemberRole.ADMIN));
+
 
         // Update fields if provided
-        if (request.getName() != null) {
-            client.setName(request.getName());
+        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+            client.setName(request.getName().trim());
         }
         if (request.getDescription() != null) {
             client.setDescription(request.getDescription());
@@ -142,120 +163,60 @@ public class ClientServiceImpl implements ClientService {
             client.setIsActive(request.getIsActive());
         }
 
-        ClientEntity updatedClient = clientRepository.save(client);
-        log.info("Successfully updated client with ID: {}", updatedClient.getClientId());
+        ClientEntity updatedClient = clientsRepo.save(client);
+
+        log.info("Client {} updated", updatedClient.getName());
 
         return mapToResponse(updatedClient);
     }
 
     @Override
-    public void deleteClient(UUID clientId) {
-        log.info("Deleting client with ID: {}", clientId);
+    public void deleteClientWithinOrganisation(UUID clientId) throws ItemNotFoundException {
 
-        ClientEntity client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Client not found with ID given "));
+        AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Soft delete - just set isActive to false
+        // Get client
+        ClientEntity client = clientsRepo.findById(clientId)
+                .orElseThrow(() -> new ItemNotFoundException("Client not found"));
+
+        // Validate user permissions (only OWNER/ADMIN can update clients)
+        validateMemberPermissions(currentUser, client.getOrganisation(), List.of(MemberRole.OWNER, MemberRole.ADMIN));
+
+        // Softly delete - set inactive
         client.setIsActive(false);
-        clientRepository.save(client);
+        clientsRepo.save(client);
 
-        log.info("Successfully deleted (deactivated) client with ID: {}", clientId);
+        log.info("Client {} deleted (set inactive)", client.getName());
     }
+
 
     @Override
-    @Transactional(readOnly = true)
-    public Page<ClientResponse> searchClients(String name, String email, Boolean isActive, Pageable pageable) {
-        log.info("Searching clients with criteria - name: {}, email: {}, isActive: {}", name, email, isActive);
+    public List<ProjectResponseForClient> getClientProjectsWithinOrganisation(UUID clientId) throws ItemNotFoundException {
 
-        Page<ClientEntity> clients = clientRepository.findBySearchCriteria(name, email, isActive, pageable);
-        return clients.map(this::mapToResponse);
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        // Get client
+        ClientEntity client = clientsRepo.findById(clientId)
+                .orElseThrow(() -> new ItemNotFoundException("Client not found"));
+
+        // Validate user permissions (only OWNER/ADMIN can update clients)
+        validateMemberPermissions(currentUser, client.getOrganisation(), List.of(MemberRole.OWNER, MemberRole.ADMIN));
+
+        // Get all projects for this client
+        List<ProjectEntity> projects = projectRepo.findAllByClientAndOrganisation(client, client.getOrganisation());
+
+        // Map projects to client response format
+        return projects.stream()
+                .map(this::mapToProjectResponseForClient)
+                .collect(Collectors.toList());
     }
 
-    @Override
-    public ClientResponse toggleClientStatus(UUID clientId) {
-        log.info("Toggling status for client with ID: {}", clientId);
 
-        ClientEntity client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Client not found with ID: " + clientId));
 
-        client.setIsActive(!client.getIsActive());
-        ClientEntity savedClient = clientRepository.save(client);
+    // ====================================================================
+    // HELPER METHODS
+    // ====================================================================
 
-        log.info("Successfully toggled status for client with ID: {} to {}", clientId, savedClient.getIsActive());
-
-        return mapToResponse(savedClient);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByTin(String tin) {
-        return clientRepository.findByTin(tin).isPresent();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByEmail(String email) {
-        return clientRepository.findByEmail(email).isPresent();
-    }
-
-    // NEW METHODS for getting client projects
-    @Override
-    @Transactional(readOnly = true)
-    public List<ProjectResponse> getClientProjects(UUID clientId) {
-        try {
-            // Verify client exists
-            if (!clientRepository.existsById(clientId)) {
-                throw new EntityNotFoundException("Client not found with ID given ");
-            }
-
-            List<ProjectEntity> projects = projectRepository.findByClientClientId(clientId);
-            return projects.stream()
-                    .map(this::mapProjectToResponse)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching client projects: " + e.getMessage());
-        }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<ProjectResponse> getClientProjectsPaginated(UUID clientId, Pageable pageable) {
-        try {
-            // Verify client exists
-            if (!clientRepository.existsById(clientId)) {
-                throw new EntityNotFoundException("Client not found");
-            }
-
-            Page<ProjectEntity> projects = projectRepository.findByClientClientId(clientId, pageable);
-            return projects.map(this::mapProjectToResponse);
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching client projects: " + e.getMessage());
-        }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ClientResponse getClientWithProjects(UUID clientId) {
-        try {
-            ClientEntity client = clientRepository.findById(clientId)
-                    .orElseThrow(() -> new EntityNotFoundException("Client not found"));
-
-            List<ProjectEntity> projects = projectRepository.findByClientClientId(clientId);
-
-            ClientWithProjectsResponse response = new ClientWithProjectsResponse();
-            response.setClient(mapToResponse(client));
-            response.setProjects(projects.stream()
-                    .map(this::mapProjectToResponse)
-                    .collect(Collectors.toList()));
-            response.setTotalProjects(projects.size());
-
-            return response.getClient();
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching client with projects: " + e.getMessage());
-        }
-    }
-
-    // Helper method to map Client entity to ClientResponse DTO
     private ClientResponse mapToResponse(ClientEntity client) {
         ClientResponse response = new ClientResponse();
         response.setClientId(client.getClientId());
@@ -268,43 +229,55 @@ public class ClientServiceImpl implements ClientService {
         response.setIsActive(client.getIsActive());
         response.setCreatedAt(client.getCreatedAt());
         response.setUpdatedAt(client.getUpdatedAt());
-
-        // Safe project counting using repository method
-        try {
-            Long projectCount = projectRepository.countByClientClientId(client.getClientId());
-            response.setTotalProjects(projectCount != null ? projectCount.intValue() : 0);
-        } catch (Exception e) {
-            log.warn("Could not count projects for client {}: {}", client.getClientId(), e.getMessage());
-            response.setTotalProjects(0);
-        }
-
+        response.setTotalProjects(client.getProjects().size()); 
         return response;
     }
 
-    // Helper method to map project to response
-    private ProjectResponse mapProjectToResponse(ProjectEntity project) {
-        ProjectResponse response = new ProjectResponse();
+    private ProjectResponseForClient mapToProjectResponseForClient(ProjectEntity project) {
+        ProjectResponseForClient response = new ProjectResponseForClient();
+
         response.setProjectId(project.getProjectId());
         response.setName(project.getName());
         response.setDescription(project.getDescription());
         response.setBudget(project.getBudget());
+        response.setOrganisationName(project.getOrganisation().getOrganisationName());
+        response.setOrganisationId(project.getOrganisation().getOrganisationId());
+        response.setStatus(project.getStatus().toString()); // Assuming status is an enum
         response.setContractNumber(project.getContractNumber());
-        response.setStatus(String.valueOf(project.getStatus()));
         response.setCreatedAt(project.getCreatedAt());
         response.setUpdatedAt(project.getUpdatedAt());
 
-        // Set client information
-        if (project.getClient() != null) {
-            response.setClientId(project.getClient().getClientId());
-            response.setClientName(project.getClient().getName());
-        }
-
-        // Set organization information
-        if (project.getOrganisation() != null) {
-            response.setOrganisationId(project.getOrganisation().getOrganisationId());
-            response.setOrganisationName(project.getOrganisation().getOrganisationName());
-        }
-
         return response;
+    }
+
+    private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return extractAccount(authentication);
+    }
+
+    private AccountEntity extractAccount(Authentication authentication) throws ItemNotFoundException {
+        if (authentication != null && authentication.isAuthenticated()) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String userName = userDetails.getUsername();
+            return accountRepo.findByUserName(userName)
+                    .orElseThrow(() -> new ItemNotFoundException("User given username does not exist"));
+        }
+        throw new ItemNotFoundException("User is not authenticated");
+    }
+
+    private OrganisationMember validateMemberPermissions(AccountEntity account, OrganisationEntity organisation, List<MemberRole> allowedRoles) throws ItemNotFoundException {
+
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        if (!allowedRoles.contains(member.getRole())) {
+            throw new ItemNotFoundException("Member has insufficient permissions");
+        }
+
+        return member;
     }
 }

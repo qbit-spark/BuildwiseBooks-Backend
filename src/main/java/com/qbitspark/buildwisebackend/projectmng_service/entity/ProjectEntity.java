@@ -1,6 +1,7 @@
 package com.qbitspark.buildwisebackend.projectmng_service.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmng_service.enums.ProjectStatus;
@@ -51,15 +52,17 @@ public class ProjectEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organisation_id", nullable = false)
-    @NotNull(message = "Organisation is required")
     private OrganisationEntity organisation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", nullable = false)
+    private ClientEntity client;
 
     @JsonIgnore
     @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectTeamMemberEntity> teamMembers = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
     private ProjectStatus status = ProjectStatus.ACTIVE;
 
     @CreationTimestamp
@@ -71,7 +74,6 @@ public class ProjectEntity {
     private LocalDateTime updatedAt;
 
     @Column(name = "contract_number", nullable = false, length = 100)
-    @NotNull(message = "Contract number is required")
     private String contractNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)

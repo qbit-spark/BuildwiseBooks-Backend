@@ -31,6 +31,4 @@ public class CreateClientRequest {
     @NotBlank(message = "Email is required")
     private String email;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

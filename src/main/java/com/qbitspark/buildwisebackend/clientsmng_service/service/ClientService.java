@@ -2,40 +2,24 @@ package com.qbitspark.buildwisebackend.clientsmng_service.service;
 
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.ClientResponse;
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.CreateClientRequest;
+import com.qbitspark.buildwisebackend.clientsmng_service.payloads.ProjectResponseForClient;
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.UpdateClientRequest;
-import com.qbitspark.buildwisebackend.projectmngService.payloads.ProjectResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface ClientService {
 
-    ClientResponse createClient(CreateClientRequest request);
+    ClientResponse createClientWithinOrganisation(UUID organisationId, CreateClientRequest request) throws ItemNotFoundException;
 
-    ClientResponse getClientById(UUID clientId);
+    ClientResponse getClientByIdWithinOrganisation(UUID clientId) throws ItemNotFoundException;
 
-    List<ClientResponse> getAllClients();
+    List<ClientResponse> getAllClientsWithinOrganisation(UUID organisationId) throws ItemNotFoundException;
 
-    List<ClientResponse> getActiveClients();
+    ClientResponse updateClientWithinOrganisation(UUID clientId, UpdateClientRequest request) throws ItemNotFoundException;
 
-    ClientResponse updateClient(UUID clientId, UpdateClientRequest request);
+    void deleteClientWithinOrganisation(UUID clientId) throws ItemNotFoundException;
 
-    void deleteClient(UUID clientId);
-
-    Page<ClientResponse> searchClients(String name, String email, Boolean isActive, Pageable pageable);
-
-    ClientResponse toggleClientStatus(UUID clientId);
-
-    boolean existsByTin(String tin);
-
-    boolean existsByEmail(String email);
-
-    // NEW METHODS for getting client projects
-    List<ProjectResponse> getClientProjects(UUID clientId);
-
-    Page<ProjectResponse> getClientProjectsPaginated(UUID clientId, Pageable pageable);
-
-    ClientResponse getClientWithProjects(UUID clientId);
+    List<ProjectResponseForClient> getClientProjectsWithinOrganisation(UUID clientId) throws ItemNotFoundException;
 }
