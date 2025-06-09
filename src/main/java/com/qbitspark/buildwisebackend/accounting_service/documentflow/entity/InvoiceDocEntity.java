@@ -40,7 +40,6 @@ import java.util.UUID;
         @Index(name = "idx_invoice_status_due_date", columnList = "invoice_status, due_date"),
         @Index(name = "idx_invoice_org_status_date", columnList = "organisation_id, invoice_status, date_of_issue")
 
-
 })
 
 @Getter
