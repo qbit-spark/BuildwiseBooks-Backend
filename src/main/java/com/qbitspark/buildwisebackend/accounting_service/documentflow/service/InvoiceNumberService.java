@@ -6,4 +6,5 @@ import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 
 public interface InvoiceNumberService {
      String generateInvoiceNumber(ProjectEntity project, ClientEntity client, OrganisationEntity organisation);
+     String previewNextInvoiceNumber(ProjectEntity project, ClientEntity client, OrganisationEntity organisation);
 }

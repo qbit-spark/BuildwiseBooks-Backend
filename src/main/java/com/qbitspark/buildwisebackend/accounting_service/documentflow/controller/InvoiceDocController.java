@@ -1,8 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.controller;
 
-import com.qbitspark.buildwisebackend.accounting_service.documentflow.paylaod.CreateInvoiceDocRequest;
-import com.qbitspark.buildwisebackend.accounting_service.documentflow.paylaod.CreateInvoiceDocResponse;
-import com.qbitspark.buildwisebackend.accounting_service.documentflow.paylaod.InvoiceDocResponse;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.paylaod.*;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.service.InvoiceDocService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
@@ -34,6 +32,21 @@ public class InvoiceDocController {
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
                         "Invoice created successfully",
+                        response
+                )
+        );
+    }
+
+    @PostMapping("/preview-invoice-number")
+    public ResponseEntity<GlobeSuccessResponseBuilder> previewInvoiceNumber(
+            @PathVariable UUID organisationId,
+            @Valid @RequestBody PreviewInvoiceNumberRequest request) throws ItemNotFoundException, AccessDeniedException {
+
+        PreviewInvoiceNumberResponse response = invoiceDocService.previewInvoiceNumber(organisationId, request);
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Invoice number preview generated successfully",
                         response
                 )
         );

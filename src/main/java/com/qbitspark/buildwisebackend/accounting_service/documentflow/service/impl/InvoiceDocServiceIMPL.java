@@ -147,6 +147,40 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         return response;
     }
 
+    @Override
+    public PreviewInvoiceNumberResponse previewInvoiceNumber(UUID organisationId, PreviewInvoiceNumberRequest request) throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        ProjectEntity project = projectRepo.findById(request.getProjectId())
+                .orElseThrow(() -> new ItemNotFoundException("Project not found"));
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+
+        // Validate project belongs to this organisation
+        validateProject(project, organisation);
+
+
+        // Validate user is an active member of this organisation
+        validateProjectMemberPermissions(currentUser, project, List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+
+
+        //Validate client exists
+        ClientEntity client = validateClientExists(request.getClientId(), project.getOrganisation());
+
+        String previewInvoiceNumber = invoiceNumberService.previewNextInvoiceNumber(project, client, organisation);
+
+        PreviewInvoiceNumberResponse response = new PreviewInvoiceNumberResponse();
+        response.setNextInvoiceNumber(previewInvoiceNumber);
+        response.setOrganisationName(organisation.getOrganisationName());
+        response.setProjectName(project.getName());
+        response.setClientName(client.getName());
+        response.setProjectCode(project.getProjectCode());
+
+        return response;
+    }
 
 
     @Override
@@ -243,9 +277,9 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     }
 
     private String generateInvoiceNumber(ProjectEntity project, OrganisationEntity organisation) {
-     return "INV-" + organisation.getOrganisationId().toString().substring(0, 8) +
-             "-" + project.getProjectId().toString().substring(0, 8) +
-             "-" + System.currentTimeMillis();
+        return "INV-" + organisation.getOrganisationId().toString().substring(0, 8) +
+                "-" + project.getProjectId().toString().substring(0, 8) +
+                "-" + System.currentTimeMillis();
     }
 
     private InvoiceDocResponse mapToInvoiceResponse(InvoiceDocEntity invoice) {

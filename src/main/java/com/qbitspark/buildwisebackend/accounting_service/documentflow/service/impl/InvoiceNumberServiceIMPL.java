@@ -45,6 +45,23 @@ public class InvoiceNumberServiceIMPL implements InvoiceNumberService {
         return invoiceNumber;
     }
 
+
+    @Override
+    public String previewNextInvoiceNumber(ProjectEntity project, ClientEntity client, OrganisationEntity organisation) {
+        // Same logic as generateInvoiceNumber() but WITHOUT incrementing
+        String projectCode = project.getProjectCode();
+        String year = String.valueOf(LocalDate.now().getYear()).substring(2);
+
+        // Preview the next sequence without changing a database
+        int nextSequence = sequenceRepository.findByOrganisationIdAndClientId(organisation.getOrganisationId(), client.getClientId())
+                .map(seq -> seq.getCurrentSequence() + 1)
+                .orElse(1);
+
+        String paddedSequence = String.format("%04d", nextSequence);
+        return String.format("%s-%s-%s", projectCode, year, paddedSequence);
+    }
+
+
     /**
      * Gets the next sequence number for a client within an organisation
      * Creates new sequence record if doesn't exist
@@ -58,10 +75,7 @@ public class InvoiceNumberServiceIMPL implements InvoiceNumberService {
 
         // Increment sequence atomically
         sequenceRepository.incrementSequence(organisationId, clientId);
-
         // Return the next sequence number
-
-
         return sequence.getCurrentSequence() + 1;
     }
 
