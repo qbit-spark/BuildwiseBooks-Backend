@@ -31,4 +31,13 @@ public class AsyncEmailService {
             log.error("Failed to send async email to {}: {}", email, e.getMessage());
         }
     }
+
+    public void sendSubcontractorAssignmentEmailAsync(String email, String companyName, String name, UUID organisationId, UUID projectId) {
+        try {
+            globeMailService.sendSubcontractorAssignmentEmail(email, companyName,name,organisationId,projectId);
+            log.info("Async email sent successfully to: {}", email);
+        } catch (Exception e) {
+            log.error("Failed to send async email to {}: {}", email, e.getMessage());
+        }
+    }
 }

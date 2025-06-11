@@ -5,9 +5,8 @@ import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmng_service.enums.ProjectStatus;
-import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
+import com.qbitspark.buildwisebackend.subcontractor_service.entity.SubcontractorEntity;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -80,6 +79,9 @@ public class ProjectEntity {
     @JoinColumn(name = "created_by_id")
     private OrganisationMember createdBy;
 
+    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
+    private Set<ProjectSubcontractorEntity> projectSubcontractors = new HashSet<>();
+
     private UUID deletedByMemberId;
 
     public boolean isTeamMember(OrganisationMember member) {
@@ -89,4 +91,26 @@ public class ProjectEntity {
     public int getTeamMembersCount() {
         return this.teamMembers != null ? this.teamMembers.size() : 0;
     }
+
+    public int getSubcontractorsCount() {
+        return this.projectSubcontractors != null ? this.projectSubcontractors.size() : 0;
+    }
+
+    public void addSubcontractor(SubcontractorEntity subcontractor) {
+        ProjectSubcontractorEntity projectSubcontractor = new ProjectSubcontractorEntity();
+        projectSubcontractor.setProject(this);
+        projectSubcontractor.setSubcontractor(subcontractor);
+        this.projectSubcontractors.add(projectSubcontractor);
+        subcontractor.getProjectSubcontractors().add(projectSubcontractor);
+    }
+
+    public void removeSubcontractor(SubcontractorEntity subcontractor) {
+        projectSubcontractors.removeIf(ps -> ps.getSubcontractor().equals(subcontractor));
+        subcontractor.getProjectSubcontractors().removeIf(ps -> ps.getProject().equals(this));
+    }
+
+    public boolean isSubcontractorAssigned(SubcontractorEntity subcontractor) {
+        return projectSubcontractors.stream().anyMatch(ps -> ps.getSubcontractor().equals(subcontractor));
+    }
+
 }

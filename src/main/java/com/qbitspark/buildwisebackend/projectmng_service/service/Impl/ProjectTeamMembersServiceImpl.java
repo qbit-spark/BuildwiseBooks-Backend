@@ -2,7 +2,6 @@ package com.qbitspark.buildwisebackend.projectmng_service.service.Impl;
 
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.emails_service.GlobeMailService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberRole;
@@ -21,8 +20,6 @@ import com.qbitspark.buildwisebackend.projectmng_service.service.ProjectTeamMemb
 import com.qbitspark.buildwisebackend.projectmng_service.utils.AsyncEmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -107,5 +108,38 @@ public class GlobeMailIMPL implements GlobeMailService {
             log.error("Failed to send project team member added email to: {} for project: {}", email, projectName, e);
             throw new Exception("Failed to send project team member added email: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void sendSubcontractorAssignmentEmail(String email, String companyName, String name, UUID organisationId, UUID projectId) throws  Exception{
+    try{
+
+        log.info("Sending project team member added email to: {} for project: {}", email,companyName,name);
+
+        Map<String, Object> templateVariables = new HashMap<>();
+        templateVariables.put("email", email);
+        templateVariables.put("company name", companyName);
+        templateVariables.put("name", name);
+
+
+        // Add some additional context for the email
+        templateVariables.put("emailHeader", "Welcome to the Team!");
+        templateVariables.put("welcomeMessage", "You have been added to a new project");
+
+        // Send email using template
+        String subject = name+" , welcome to Project! " + companyName;
+        emailsHelperMethodsIMPL.sendTemplateEmail(
+                email,
+                subject,
+                "project_team_member_added_email",
+                templateVariables
+        );
+
+        log.info("Subcontractor added email sent successfully to: {} for project: {}", email, companyName);
+
+    } catch (Exception e) {
+        log.error("Failed to send project team member added email to: {} for project: {}", email, companyName, e);
+        throw new Exception("Failed to send subcontractor added email: " + e.getMessage(), e);
+    }
     }
 }

@@ -5,7 +5,6 @@ import com.qbitspark.buildwisebackend.clientsmng_service.payloads.CreateClientRe
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.ProjectResponseForClient;
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.UpdateClientRequest;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
-
 import java.util.List;
 import java.util.UUID;
 

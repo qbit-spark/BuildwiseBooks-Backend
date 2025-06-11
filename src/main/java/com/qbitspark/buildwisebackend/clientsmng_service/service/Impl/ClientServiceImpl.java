@@ -9,7 +9,6 @@ import com.qbitspark.buildwisebackend.clientsmng_service.payloads.UpdateClientRe
 import com.qbitspark.buildwisebackend.clientsmng_service.repo.ClientsRepo;
 import com.qbitspark.buildwisebackend.clientsmng_service.service.ClientService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
-
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
@@ -26,7 +25,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;

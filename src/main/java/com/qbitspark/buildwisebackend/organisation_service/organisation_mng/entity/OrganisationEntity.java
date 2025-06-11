@@ -1,6 +1,7 @@
 package com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
+import com.qbitspark.buildwisebackend.subcontractor_service.entity.SubcontractorEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -43,6 +44,9 @@ public class OrganisationEntity {
 
     @OneToMany(mappedBy = "organisation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProjectEntity> projects;
+
+    @OneToMany(mappedBy = "organisation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<SubcontractorEntity> subcontractors;
 
     public void addProject(ProjectEntity project) {
         if (project != null) {

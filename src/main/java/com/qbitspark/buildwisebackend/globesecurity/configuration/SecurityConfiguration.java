@@ -59,6 +59,8 @@ public class SecurityConfiguration {
 
                         .requestMatchers("/api/v1/clients/**").permitAll()
 
+                        .requestMatchers("/api/v1/subcontractor/**").permitAll()
+
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session
