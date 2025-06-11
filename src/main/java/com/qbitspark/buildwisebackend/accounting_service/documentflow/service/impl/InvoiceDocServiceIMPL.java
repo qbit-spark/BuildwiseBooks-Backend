@@ -58,7 +58,8 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
 
     @Override
-    public CreateInvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException {
+    public SummaryInvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request)
+            throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
@@ -68,16 +69,14 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-
         // Validate project belongs to this organisation
         validateProject(project, organisation);
 
-
         // Validate user is an active member of this organisation
-        validateProjectMemberPermissions(currentUser, project, List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+        validateProjectMemberPermissions(currentUser, project,
+                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
 
-
-        //Validate client exists
+        // Validate client exists
         ClientEntity client = validateClientExists(request.getClientId(), project.getOrganisation());
 
         String invoiceNumber = invoiceNumberService.generateInvoiceNumber(project, client, organisation);
@@ -135,16 +134,8 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         log.info("Invoice {} created for project {}", savedInvoice.getInvoiceNumber(), project.getName());
 
-        CreateInvoiceDocResponse response = new CreateInvoiceDocResponse();
-        response.setInvoiceId(savedInvoice.getId());
-        response.setInvoiceNumber(savedInvoice.getInvoiceNumber());
-        response.setStatus(savedInvoice.getInvoiceStatus());
-        response.setTotalAmount(savedInvoice.getTotalAmount());
-        response.setProjectName(project.getName());
-        response.setLineItemCount(savedInvoice.getLineItems().size());
-        response.setClientName(savedInvoice.getClient().getName());
-
-        return response;
+        // Use the shared mapping method instead of inline mapping
+        return mapToCreateInvoiceDocResponse(savedInvoice);
     }
 
     @Override
@@ -184,23 +175,104 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
 
     @Override
-    public InvoiceDocResponse getInvoiceById(UUID invoiceId) throws ItemNotFoundException {
-        InvoiceDocEntity invoice = invoiceDocRepo.findById(invoiceId)
+    public InvoiceDocResponse getInvoiceById(UUID organisationId, UUID invoiceId)throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        //Validate invoice exists
+        InvoiceDocEntity invoice = invoiceDocRepo.findByIdAndOrganisation(invoiceId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Invoice not found"));
+
+        ProjectEntity project = invoice.getProject();
+
+
+        // Validate project belongs to this organisation
+        validateProject(project, organisation);
+
+
+        // Validate user is an active member of this organisation
+        validateProjectMemberPermissions(currentUser, project, List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+
 
         return mapToInvoiceResponse(invoice);
     }
 
     @Override
-    public List<InvoiceDocResponse> getProjectInvoices(UUID projectId) throws ItemNotFoundException {
+    public InvoiceDocResponse getInvoiceByNumber(UUID organisationId, String invoiceNumber)throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        //Validate invoice exists
+        InvoiceDocEntity invoice = invoiceDocRepo.findByInvoiceNumberAndOrganisation(invoiceNumber, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Invoice with given number not found in this organisation"));
+
+        ProjectEntity project = invoice.getProject();
+
+
+        // Validate project belongs to this organisation
+        validateProject(project, organisation);
+
+
+        // Validate user is an active member of this organisation
+        validateProjectMemberPermissions(currentUser, project, List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+
+
+        return mapToInvoiceResponse(invoice);
+    }
+
+
+    @Override
+    public List<SummaryInvoiceDocResponse> getProjectInvoices(UUID organisationId, UUID projectId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
-        return invoiceDocRepo.findAll().stream()
-                .filter(invoice -> invoice.getProject().getProjectId().equals(projectId))
-                .map(this::mapToInvoiceResponse)
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        // Validate project belongs to this organisation
+        validateProject(project, organisation);
+
+        // Validate user is an active member of this organisation
+        validateProjectMemberPermissions(currentUser, project,
+                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+
+        // Get all invoices for the project and map to response DTOs
+        return invoiceDocRepo.findAllByProject(project).stream()
+                .map(this::mapToCreateInvoiceDocResponse)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<SummaryInvoiceDocResponse> getClientInvoices(UUID organisationId, UUID clientId) throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        // Validate user is an active member of this organisation
+        validateOrganisationMemberAccess(currentUser, organisation);
+
+        // Validate client exists
+        ClientEntity client = validateClientExists(clientId, organisation);
+
+        // Get all invoices for the client and map to response DTOs
+        return invoiceDocRepo.findAllByClient(client).stream()
+                .map(this::mapToCreateInvoiceDocResponse)
+                .collect(Collectors.toList());
+
+    }
+
 
     @Override
     public List<InvoiceDocResponse> getOrganisationInvoices(UUID organisationId) throws ItemNotFoundException {
@@ -377,10 +449,34 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                 .orElseThrow(() -> new ItemNotFoundException("Client not found in this organisation"));
     }
 
+
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
+    }
+
     private void validateProject(ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {
         if (!project.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
             throw new ItemNotFoundException("Project does not belong to this organisation");
         }
+    }
+
+    private SummaryInvoiceDocResponse mapToCreateInvoiceDocResponse(InvoiceDocEntity invoice) {
+        SummaryInvoiceDocResponse response = new SummaryInvoiceDocResponse();
+        response.setInvoiceId(invoice.getId());
+        response.setInvoiceNumber(invoice.getInvoiceNumber());
+        response.setStatus(invoice.getInvoiceStatus());
+        response.setTotalAmount(invoice.getTotalAmount());
+        response.setProjectName(invoice.getProject().getName());
+        response.setLineItemCount(invoice.getLineItems().size());
+        response.setClientName(invoice.getClient().getName());
+        return response;
     }
 
 }

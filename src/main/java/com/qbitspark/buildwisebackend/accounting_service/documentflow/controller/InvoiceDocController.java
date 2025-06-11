@@ -27,7 +27,7 @@ public class InvoiceDocController {
             @PathVariable UUID organisationId,
             @Valid @RequestBody CreateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException {
 
-        CreateInvoiceDocResponse response = invoiceDocService.createInvoice(organisationId, request);
+        SummaryInvoiceDocResponse response = invoiceDocService.createInvoice(organisationId, request);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
@@ -52,6 +52,65 @@ public class InvoiceDocController {
         );
     }
 
+    @GetMapping("/{invoiceId}")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getInvoiceById(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID invoiceId) throws ItemNotFoundException, AccessDeniedException {
+
+        InvoiceDocResponse response = invoiceDocService.getInvoiceById(organisationId, invoiceId);
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Invoice retrieved successfully",
+                        response
+                )
+        );
+    }
+
+    @GetMapping("/invoice-number/{invoiceNumber}")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getInvoiceByNumber(
+            @PathVariable UUID organisationId,
+            @PathVariable String invoiceNumber) throws ItemNotFoundException, AccessDeniedException {
+
+        InvoiceDocResponse response = invoiceDocService.getInvoiceByNumber(organisationId, invoiceNumber);
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Invoice retrieved successfully",
+                        response
+                )
+        );
+    }
+
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getProjectInvoices(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID projectId) throws ItemNotFoundException, AccessDeniedException {
+
+        List<SummaryInvoiceDocResponse> responses = invoiceDocService.getProjectInvoices(organisationId, projectId);
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Project invoices retrieved successfully",
+                        responses
+                )
+        );
+    }
+
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getClientInvoices(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID clientId) throws ItemNotFoundException, AccessDeniedException {
+
+        List<SummaryInvoiceDocResponse> responses = invoiceDocService.getClientInvoices(organisationId, clientId);
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Client invoices retrieved successfully",
+                        responses
+                )
+        );
+    }
 
 //    @GetMapping("/{invoiceId}")
 //    public ResponseEntity<GlobeSuccessResponseBuilder> getInvoiceById(

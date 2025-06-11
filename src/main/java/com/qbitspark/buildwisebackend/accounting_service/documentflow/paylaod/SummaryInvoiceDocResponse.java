@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
-public class CreateInvoiceDocResponse {
+public class SummaryInvoiceDocResponse {
     private UUID invoiceId;
     private String invoiceNumber;
     private InvoiceStatus status;
