@@ -3,7 +3,9 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.e
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.PaymentMode;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherType;
+import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -26,12 +28,12 @@ import java.util.UUID;
 @Entity
 @Table(name = "vouchers_tb",
         indexes = {
+
                 @Index(name = "idx_voucher_organisation", columnList = "organisation_id"),
                 @Index(name = "idx_voucher_project", columnList = "project_id"),
-                @Index(name = "idx_voucher_status", columnList = "status"),
                 @Index(name = "idx_voucher_number", columnList = "voucher_number"),
-                @Index(name = "idx_voucher_date", columnList = "voucher_date"),
-                @Index(name = "idx_voucher_created_at", columnList = "created_at")
+                @Index(name = "idx_voucher_org_status", columnList = "organisation_id, status"),
+                @Index(name = "idx_voucher_created_by", columnList = "created_by_id")
         })
 public class VoucherEntity {
 
@@ -66,29 +68,22 @@ public class VoucherEntity {
     @Enumerated(EnumType.STRING)
     private VoucherStatus status;
 
-    @Column(name = "prepared_by", nullable = false, columnDefinition = "TEXT")
-    private String preparedBy;
-
-    @Column(name = "requested_by", columnDefinition = "TEXT")
-    private String requestedBy;
-
-    @Column(name = "department", columnDefinition = "TEXT")
-    private String department;
-
-    @Column(name = "approved_by", columnDefinition = "TEXT")
-    private String approvedBy;
+    // Creator relationship
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id", nullable = false)
+    private OrganisationMember createdBy;
 
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
-    // Link to organisation (same as VendorEntity pattern)
+    // Link to organisation
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organisation_id", nullable = false)
     private OrganisationEntity organisation;
 
-
+    // Link to project (optional)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = true) // nullable = true for non-project vouchers
+    @JoinColumn(name = "project_id", nullable = true)
     private ProjectEntity project;
 
     @CreationTimestamp
@@ -106,27 +101,4 @@ public class VoucherEntity {
     @OneToMany(mappedBy = "voucher", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<VoucherAttachmentEntity> attachments = new ArrayList<>();
 
-    // Helper methods
-    public void addPayee(VoucherPayeeEntity payee) {
-        payees.add(payee);
-        payee.setVoucher(this);
-    }
-
-    public void addAttachment(VoucherAttachmentEntity attachment) {
-        attachments.add(attachment);
-        attachment.setVoucher(this);
-    }
-
-    // Project-related helper methods
-    public boolean isProjectVoucher() {
-        return project != null;
-    }
-
-    public String getProjectName() {
-        return project != null ? project.getName() : null;
-    }
-
-    public String getProjectCode() {
-        return project != null ? project.getProjectCode() : null;
-    }
 }

@@ -19,7 +19,18 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "voucher_payees_tb")
+@Table(name = "voucher_payees_tb",
+        indexes = {
+                @Index(name = "idx_payee_voucher", columnList = "voucher_id"),
+                @Index(name = "idx_payee_vendor", columnList = "vendor_id"),
+                @Index(name = "idx_payee_payment_status", columnList = "payment_status"),
+                @Index(name = "idx_payee_paid_at", columnList = "paid_at"),
+                @Index(name = "idx_payee_payment_reference", columnList = "payment_reference"),
+                @Index(name = "idx_payee_voucher_status", columnList = "voucher_id, payment_status"),
+                @Index(name = "idx_payee_vendor_status", columnList = "vendor_id, payment_status"),
+                @Index(name = "idx_payee_status_paid_at", columnList = "payment_status, paid_at"),
+                @Index(name = "idx_payee_created_at", columnList = "created_at")
+        })
 public class VoucherPayeeEntity {
 
     @Id
@@ -30,10 +41,9 @@ public class VoucherPayeeEntity {
     @JoinColumn(name = "voucher_id", nullable = false)
     private VoucherEntity voucher;
 
-    // Direct relationship to your existing VendorEntity
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendor_id", nullable = false)
-    private VendorEntity vendor; // This gives you all vendor details + type
+    private VendorEntity vendor;
 
     @Column(name = "amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
@@ -55,16 +65,4 @@ public class VoucherPayeeEntity {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    // Helper methods to get payee info from vendor
-    public String getPayeeName() {
-        return vendor != null ? vendor.getName() : null;
-    }
-
-    public VendorType getPayeeType() {
-        return vendor != null ? vendor.getVendorType() : null;
-    }
-
-    public String getPayeeEmail() {
-        return vendor != null ? vendor.getEmail() : null;
-    }
 }

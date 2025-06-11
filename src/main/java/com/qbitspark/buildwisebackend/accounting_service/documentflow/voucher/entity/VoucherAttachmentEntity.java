@@ -14,7 +14,16 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "voucher_attachments_tb")
+@Table(name = "voucher_attachments_tb",
+        indexes = {
+                @Index(name = "idx_attachment_voucher", columnList = "voucher_id"),
+                @Index(name = "idx_attachment_file_hash", columnList = "file_hash"),
+                @Index(name = "idx_attachment_system_directory", columnList = "system_directory"),
+                @Index(name = "idx_attachment_uploaded_at", columnList = "uploaded_at"),
+                @Index(name = "idx_attachment_filename", columnList = "filename"),
+                @Index(name = "idx_attachment_voucher_uploaded", columnList = "voucher_id, uploaded_at"),
+                @Index(name = "idx_attachment_file_extension", columnList = "file_extension")
+        })
 public class VoucherAttachmentEntity {
 
     @Id
@@ -28,17 +37,23 @@ public class VoucherAttachmentEntity {
     @Column(name = "filename", nullable = false, columnDefinition = "TEXT")
     private String filename;
 
+    @Column(name = "file_extension", nullable = false, columnDefinition = "TEXT")
+    private String fileExtension;
+
+    @Column(name = "file_hash", nullable = false, columnDefinition = "TEXT")
+    private String fileHash;
+
+    @Column(name = "system_directory", nullable = false, columnDefinition = "TEXT")
+    private String systemDirectory;
+
     @Column(name = "original_filename", nullable = false, columnDefinition = "TEXT")
     private String originalFilename;
 
     @Column(name = "file_size", nullable = false)
     private Long fileSize;
 
-    @Column(name = "mime_type", columnDefinition = "TEXT")
-    private String mimeType;
-
     @Column(name = "file_path", nullable = false, columnDefinition = "TEXT")
-    private String filePath;
+    private String filePathUrl;
 
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
@@ -47,5 +62,4 @@ public class VoucherAttachmentEntity {
     protected void onCreate() {
         uploadedAt = LocalDateTime.now();
     }
-
 }
