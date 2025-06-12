@@ -53,8 +53,6 @@ public class SecurityConfiguration {
 
                         .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
 
-                        .requestMatchers( "/api/v1/invitation/**").permitAll()
-
                         .requestMatchers("/jobrunr").permitAll()
 
                         .requestMatchers("/api/v1/clients/**").permitAll()

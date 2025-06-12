@@ -1,9 +1,6 @@
 package com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.impl;
 import com.qbitspark.buildwisebackend.emails_service.GlobeMailService;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationAlreadyProcessedException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationExpiredException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
@@ -115,14 +112,16 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
     @Transactional
     @Override
-    public boolean acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException {
+    public boolean acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
 
         // Step 1: Find an invitation by token
         OrganisationInvitation invitation = organisationInvitationRepo.findByToken(token)
                 .orElseThrow(() -> new ItemNotFoundException("Invalid invitation token"));
 
         // Step 2: Validate invitation (throws exceptions if invalid)
-        validateInvitation(invitation);
+        validateInvitation(currentUser, invitation);
 
         // Step 3: Check if the user already exists and handle verification
         Optional<AccountEntity> existingUser = accountRepo.findByEmail(invitation.getEmail());
@@ -176,14 +175,16 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
     @Transactional
     @Override
-    public boolean declineInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException {
+    public boolean declineInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException {
 
-        // Step 1: Find invitation by token
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        // Step 1: Find an invitation by token
         OrganisationInvitation invitation = organisationInvitationRepo.findByToken(token)
                 .orElseThrow(() -> new ItemNotFoundException("Invalid invitation token"));
 
         // Step 2: Validate invitation (throws exceptions if invalid)
-        validateInvitation(invitation);
+        validateInvitation(currentUser, invitation);
 
         // Step 3: Mark as declined
         invitation.setStatus(InvitationStatus.DECLINED);
@@ -315,7 +316,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
     @Override
     public UserOrganisationsOverviewResponse getMyOrganisations() throws ItemNotFoundException {
 
-        // Step 1: Get authenticated user
+        // Step 1: Get an authenticated user
         AccountEntity currentUser = getAuthenticatedAccount();
 
         // Step 2: Get all memberships for this user
@@ -433,7 +434,12 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         return false; // Not a member, can't manage
     }
 
-    private void validateInvitation(OrganisationInvitation invitation) throws InvitationExpiredException, InvitationAlreadyProcessedException {
+    private void validateInvitation(AccountEntity accountEntity, OrganisationInvitation invitation) throws InvitationExpiredException, InvitationAlreadyProcessedException, RandomExceptions, AccessDeniedException {
+
+        //Before check if the invitation link is clicked with the right user?
+        if (!invitation.getEmail().equals(accountEntity.getEmail())) {
+            throw new AccessDeniedException("This invitation does not belong to you");
+        }
 
         // First check if invitation is expired (regardless of status)
         if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
@@ -564,4 +570,6 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
         return response;
     }
+
+
 }

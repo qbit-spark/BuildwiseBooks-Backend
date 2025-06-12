@@ -1,8 +1,6 @@
 package com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.controller;
 
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationAlreadyProcessedException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationExpiredException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.payloads.InvitationInfoResponse;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.OrganisationMemberService;
@@ -35,7 +33,7 @@ class OrganisationInvitationController {
     @PostMapping("/accept")
     public ResponseEntity<GlobeSuccessResponseBuilder> acceptInvitation(
             @RequestParam String token
-    ) throws ItemNotFoundException, InvitationExpiredException, InvitationAlreadyProcessedException {
+    ) throws ItemNotFoundException, InvitationExpiredException, InvitationAlreadyProcessedException, AccessDeniedException, RandomExceptions {
 
         boolean accepted = organisationMemberService.acceptInvitation(token);
 
@@ -49,7 +47,7 @@ class OrganisationInvitationController {
     @PostMapping("/decline")
     public ResponseEntity<GlobeSuccessResponseBuilder> declineInvitation(
             @RequestParam String token
-    ) throws ItemNotFoundException, InvitationExpiredException, InvitationAlreadyProcessedException {
+    ) throws ItemNotFoundException, InvitationExpiredException, InvitationAlreadyProcessedException, AccessDeniedException, RandomExceptions {
 
         boolean declined = organisationMemberService.declineInvitation(token);
 

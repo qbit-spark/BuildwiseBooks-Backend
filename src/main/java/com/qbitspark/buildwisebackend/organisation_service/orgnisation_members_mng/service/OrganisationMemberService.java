@@ -1,9 +1,6 @@
 package com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service;
 
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationAlreadyProcessedException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationExpiredException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.payloads.*;
@@ -15,9 +12,9 @@ public interface OrganisationMemberService {
 
     boolean inviteMember(UUID organisationId, String email, String role) throws ItemNotFoundException, AccessDeniedException;
 
-    boolean acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException;
+    boolean acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException;
 
-    boolean declineInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException;
+    boolean declineInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException;
 
     InvitationInfoResponse getInvitationInfo(String token) throws ItemNotFoundException;
     //This method is used
