@@ -12,7 +12,7 @@ public interface OrganisationMemberService {
 
     boolean inviteMember(UUID organisationId, String email, String role) throws ItemNotFoundException, AccessDeniedException;
 
-    boolean acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException;
+    AcceptInvitationResponse acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException;
 
     boolean declineInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException;
 

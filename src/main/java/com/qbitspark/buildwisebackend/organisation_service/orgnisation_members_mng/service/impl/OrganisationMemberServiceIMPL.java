@@ -112,7 +112,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
     @Transactional
     @Override
-    public boolean acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException {
+    public AcceptInvitationResponse acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
@@ -169,7 +169,11 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         invitation.setRespondedAt(LocalDateTime.now());
         organisationInvitationRepo.save(invitation);
 
-        return true;
+        AcceptInvitationResponse response = new AcceptInvitationResponse();
+        response.setOrganisationId(member.getOrganisation().getOrganisationId());
+        response.setOrganisationName(member.getOrganisation().getOrganisationName());
+
+        return response;
     }
 
 
@@ -471,8 +475,8 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
     private boolean sendInvitationEmail(OrganisationInvitation invitation) {
         try {
-            String acceptLink = frontendBaseUrl + "/invitation/accept?token=" + invitation.getToken();
-            String declineLink = frontendBaseUrl + "/invitation/decline?token=" + invitation.getToken();
+            String acceptLink = frontendBaseUrl + "/invitation?token=" + invitation.getToken() + "&action=accept";
+            String declineLink = frontendBaseUrl + "/invitation?token=" + invitation.getToken() + "&action=decline";
 
             return globeMailService.sendOrganisationInvitationEmail(
                     invitation.getEmail(),

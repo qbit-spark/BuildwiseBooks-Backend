@@ -2,6 +2,7 @@ package com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_
 
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.payloads.AcceptInvitationResponse;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.payloads.InvitationInfoResponse;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.OrganisationMemberService;
 import lombok.RequiredArgsConstructor;
@@ -35,11 +36,11 @@ class OrganisationInvitationController {
             @RequestParam String token
     ) throws ItemNotFoundException, InvitationExpiredException, InvitationAlreadyProcessedException, AccessDeniedException, RandomExceptions {
 
-        boolean accepted = organisationMemberService.acceptInvitation(token);
+        AcceptInvitationResponse acceptResponse = organisationMemberService.acceptInvitation(token);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
-                        "Invitation accepted successfully! Welcome to the organisation."
+                        "Invitation accepted successfully! Welcome to the organisation.",acceptResponse
                 )
         );
     }
