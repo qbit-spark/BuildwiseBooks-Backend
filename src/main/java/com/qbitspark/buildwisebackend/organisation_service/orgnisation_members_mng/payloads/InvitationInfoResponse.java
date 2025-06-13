@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class InvitationInfoResponse {
+    private String token;
     private String organisationName;
     private String organisationDescription;
     private String inviterName;

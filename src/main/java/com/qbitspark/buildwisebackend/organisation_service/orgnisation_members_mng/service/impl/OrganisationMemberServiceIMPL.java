@@ -60,10 +60,10 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
             return false; // Already a member
         }
 
-        // Step 4: Check if email already has valid pending invitation
-        if (hasValidPendingInvitation(email, organisation)) {
-            return false; // Already has a valid invitation
-        }
+        // Step 4: Check if email already has a valid pending invitation
+//        if (hasValidPendingInvitation(email, organisation)) {
+//            return false; // Already has a valid invitation
+//        }
 
         // Step 5: Create invitation
         // TODO: Generate token, set fields, save invitation
@@ -88,7 +88,6 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         }
 
     }
-
 
     @Override
     public void addOwnerAsMember(OrganisationEntity organisation, AccountEntity owner) {
@@ -199,21 +198,51 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
     }
 
     @Override
-    public InvitationInfoResponse getInvitationInfo(String token) throws ItemNotFoundException {
+    public void revokeInvitation(UUID organisationId, UUID invitationId) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException {
 
-        // Step 1: Find invitation by token
+        // Step 0: Check authenticated user permissions FIRST
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationInvitation invitation = organisationInvitationRepo.findByOrganisation_OrganisationIdAndInvitationId(organisationId, invitationId).orElseThrow(
+                () -> new ItemNotFoundException("Invitation not exist in this organisation")
+        );
+
+        // Step 2: Check if the current user can manage members in this org
+        if (!canManageMembers(currentUser, invitation.getOrganisation())) {
+            throw new AccessDeniedException("You do not have permission to manage members in this organisation");
+        }
+        //We can revoke only pending invitations
+        if(invitation.getStatus() != InvitationStatus.PENDING){
+            throw new AccessDeniedException("You can only revoke pending invitations");
+        }
+        organisationInvitationRepo.delete(invitation);
+
+    }
+
+    @Override
+    public InvitationInfoResponse getInvitationInfo(String token) throws ItemNotFoundException, AccessDeniedException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        // Step 1: Find an invitation by token
         OrganisationInvitation invitation = organisationInvitationRepo.findByToken(token)
                 .orElseThrow(() -> new ItemNotFoundException("Invalid invitation token"));
 
-        // Step 2: Check if invitation is expired (but don't update status here)
+        // Step 2: Validate invitation (throws exceptions if invalid)
+        if (!currentUser.getEmail().equals(invitation.getEmail())) {
+            throw new AccessDeniedException("This invitation does not belong to you");
+        }
+
+        // Step 3: Check if the invitation is expired (but don't update the status here)
         boolean isExpired = invitation.getExpiresAt().isBefore(LocalDateTime.now());
 
-        // Step 3: Build safe response
+        // Step 4: Build a safe response
         InvitationInfoResponse response = new InvitationInfoResponse();
         response.setOrganisationName(invitation.getOrganisation().getOrganisationName());
         response.setOrganisationDescription(invitation.getOrganisation().getOrganisationDescription());
         response.setInviterName(invitation.getInviter().getUserName()); // Only username, no sensitive info
         response.setRole(invitation.getRole().toString());
+        response.setToken(invitation.getToken());
         response.setInvitedEmail(invitation.getEmail());
         response.setInvitedAt(invitation.getCreatedAt());
         response.setExpiresAt(invitation.getExpiresAt());
@@ -475,16 +504,14 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
     private boolean sendInvitationEmail(OrganisationInvitation invitation) {
         try {
-            String acceptLink = frontendBaseUrl + "/invitation?token=" + invitation.getToken() + "&action=accept";
-            String declineLink = frontendBaseUrl + "/invitation?token=" + invitation.getToken() + "&action=decline";
+            String invitationLink = frontendBaseUrl + "/invitation?token=" + invitation.getToken();
 
             return globeMailService.sendOrganisationInvitationEmail(
                     invitation.getEmail(),
                     invitation.getOrganisation().getOrganisationName(),
                     invitation.getInviter().getUserName(),
                     invitation.getRole().toString(),
-                    acceptLink,
-                    declineLink
+                    invitationLink
             );
         } catch (Exception e) {
             return false;

@@ -16,7 +16,9 @@ public interface OrganisationMemberService {
 
     boolean declineInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException;
 
-    InvitationInfoResponse getInvitationInfo(String token) throws ItemNotFoundException;
+    void revokeInvitation(UUID organisationId, UUID invitationId) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException;
+
+    InvitationInfoResponse getInvitationInfo(String token) throws ItemNotFoundException, AccessDeniedException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions;
     //This method is used
     // to add the owner of the organization as a member automatically when the organization is created.
     void addOwnerAsMember(OrganisationEntity organisation, AccountEntity owner);

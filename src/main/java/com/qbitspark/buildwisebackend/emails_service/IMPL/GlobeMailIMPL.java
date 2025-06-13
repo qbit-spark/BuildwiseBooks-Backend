@@ -48,7 +48,7 @@ public class GlobeMailIMPL implements GlobeMailService {
 
     @Override
     public boolean sendOrganisationInvitationEmail(String email, String organisationName, String inviterName,
-                                                   String role, String acceptLink, String declineLink) throws Exception {
+                                                   String role, String invitationLink) throws Exception {
         try {
             log.info("Sending organisation invitation email to: {} for organisation: {}", email, organisationName);
 
@@ -56,8 +56,8 @@ public class GlobeMailIMPL implements GlobeMailService {
             templateVariables.put("organisationName", organisationName);
             templateVariables.put("inviterName", inviterName);
             templateVariables.put("role", role);
-            templateVariables.put("acceptLink", acceptLink);
-            templateVariables.put("declineLink", declineLink);
+            templateVariables.put("invitationLink", invitationLink);
+
 
             // Send email using template
             String subject = "You're invited to join " + organisationName;
@@ -108,4 +108,5 @@ public class GlobeMailIMPL implements GlobeMailService {
             throw new Exception("Failed to send project team member added email: " + e.getMessage(), e);
         }
     }
+
 }

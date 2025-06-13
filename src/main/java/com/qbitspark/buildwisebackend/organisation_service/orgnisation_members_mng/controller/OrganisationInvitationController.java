@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/invitation")
 @RequiredArgsConstructor
@@ -19,7 +21,7 @@ class OrganisationInvitationController {
     @GetMapping("/info")
     public ResponseEntity<GlobeSuccessResponseBuilder> getInvitationInfo(
             @RequestParam String token
-    ) throws ItemNotFoundException {
+    ) throws ItemNotFoundException, AccessDeniedException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions {
 
         InvitationInfoResponse invitationInfo = organisationMemberService.getInvitationInfo(token);
 
@@ -55,6 +57,21 @@ class OrganisationInvitationController {
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
                         "Invitation declined successfully."
+                )
+        );
+    }
+
+    @DeleteMapping("/revoke")
+    public ResponseEntity<GlobeSuccessResponseBuilder> revokeInvitation(
+            @RequestParam UUID invitationId,
+            @RequestParam UUID organisationId
+    ) throws ItemNotFoundException, InvitationExpiredException, InvitationAlreadyProcessedException, AccessDeniedException, RandomExceptions {
+
+        organisationMemberService.revokeInvitation(organisationId,invitationId);
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Invitation revoked successfully."
                 )
         );
     }
