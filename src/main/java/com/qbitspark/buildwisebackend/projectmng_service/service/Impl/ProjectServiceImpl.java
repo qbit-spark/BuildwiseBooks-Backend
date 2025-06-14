@@ -209,6 +209,24 @@ public class ProjectServiceImpl implements ProjectService {
         return true;
     }
 
+    @Override
+    public Page<ProjectResponse> getAllProjectsAmBelongingToOrganisation(UUID organisationId, int page, int size) throws ItemNotFoundException {
+
+        AccountEntity authenticatedAccount = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // Get all projects where the member is a team member (excluding deleted projects)
+        Page<ProjectEntity> projectPage = projectRepo.findByTeamMembersOrganisationMemberAndStatusNot(
+                member, ProjectStatus.DELETED, pageable);
+
+        return projectPage.map(this::mapToProjectResponse);
+    }
+
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

@@ -14,4 +14,5 @@ public interface ProjectService {
     ProjectResponse getProjectById(UUID projectId) throws ItemNotFoundException, AccessDeniedException;
     ProjectResponse updateProject(UUID projectId, ProjectUpdateRequest request) throws ItemNotFoundException, AccessDeniedException;
     Boolean deleteProject(UUID projectId) throws ItemNotFoundException, AccessDeniedException;
+    Page<ProjectResponse> getAllProjectsAmBelongingToOrganisation(UUID organisationId, int page, int size) throws ItemNotFoundException;
 }

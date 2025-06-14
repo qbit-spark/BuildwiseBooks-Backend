@@ -74,4 +74,14 @@ public class ProjectController {
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Organisation projects retrieved successfully", response));
     }
 
+    @GetMapping("/organisation/{organisationId}/my-projects")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getMyProjectsInOrganisation(
+            @PathVariable UUID organisationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) throws ItemNotFoundException {
+
+        Page<ProjectResponse> response = projectService.getAllProjectsAmBelongingToOrganisation(organisationId, page, size);
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("My projects retrieved successfully", response));
+    }
+
 }
