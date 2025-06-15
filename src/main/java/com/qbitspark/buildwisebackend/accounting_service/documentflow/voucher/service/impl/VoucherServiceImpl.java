@@ -1,5 +1,7 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.impl;
 
+import com.qbitspark.buildwisebackend.accounting_service.coa.entity.JournalEntry;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.adapter.VoucherToAccountingAdapter;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherAttachmentEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherPayeeEntity;
@@ -55,83 +57,8 @@ public class VoucherServiceImpl implements VoucherService {
     private final OrganisationMemberRepo organisationMemberRepo;
     private final VoucherNumberService voucherNumberService;
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
+    private final VoucherToAccountingAdapter voucherToAccountingAdapter;
 
-//    @Override
-//    public VoucherResponse createVoucher(UUID organisationId, CreateVoucherRequest request)
-//            throws ItemNotFoundException, AccessDeniedException {
-//
-//        AccountEntity currentUser = getAuthenticatedAccount();
-//
-//        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-//                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-//
-//        ProjectEntity project = projectRepo.findById(request.getProjectId())
-//                .orElseThrow(() -> new ItemNotFoundException("Project not found"));
-//
-//        // Validate user permissions
-//        OrganisationMember organisationMember = validateOrganisationAccess(currentUser, organisation,
-//                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
-//
-//        // Validate project belongs to this organisation
-//        validateProject(project, organisation);
-//
-//        // Validate user is an active member of this project and have roles to do this?
-//        validateProjectMemberPermissions(currentUser, project,
-//                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
-//
-//
-//        // Generate voucher number
-//        String voucherNumber = generateVoucherNumber(project, organisation);
-//
-//
-//        // Create voucher
-//        VoucherEntity voucher = new VoucherEntity();
-//        voucher.setVoucherNumber(voucherNumber);
-//        voucher.setVoucherDate(request.getVoucherDate().atStartOfDay());
-//        voucher.setVoucherType(request.getVoucherType());
-//        voucher.setPaymentMode(request.getPaymentMode());
-//        voucher.setOverallDescription(request.getOverallDescription());
-//        voucher.setCreatedBy(organisationMember);
-//        voucher.setOrganisation(organisation);
-//        voucher.setProject(project);
-//        voucher.setStatus(VoucherStatus.DRAFT);
-//        voucher.setCurrency("TSh");
-//        voucher.setCreatedAt(LocalDateTime.now());
-//        voucher.setUpdatedAt(LocalDateTime.now());
-//
-//        // Create payees
-//        List<VoucherPayeeEntity> payeeEntities = new ArrayList<>();
-//        BigDecimal totalAmount = BigDecimal.ZERO;
-//
-//        for (VoucherPayeeRequest payeeRequest : request.getPayees()) {
-//            VendorEntity vendor = vendorsRepo.findById(payeeRequest.getVendorId())
-//                    .orElseThrow(() -> new ItemNotFoundException("Vendor not found: " + payeeRequest.getVendorId()));
-//
-//            // Validate vendor belongs to organisation
-//            if (!vendor.getOrganisation().getOrganisationId().equals(organisationId)) {
-//                throw new ItemNotFoundException("One of vendors does not belong to this organisation");
-//            }
-//
-//            VoucherPayeeEntity payeeEntity = new VoucherPayeeEntity();
-//            payeeEntity.setVoucher(voucher);
-//            payeeEntity.setVendor(vendor);
-//            payeeEntity.setAmount(payeeRequest.getAmount());
-//            payeeEntity.setDescription(payeeRequest.getDescription());
-//            payeeEntity.setPaymentStatus(PaymentStatus.PENDING);
-//
-//            payeeEntities.add(payeeEntity);
-//            totalAmount = totalAmount.add(payeeRequest.getAmount());
-//        }
-//
-//        voucher.setPayees(payeeEntities);
-//        voucher.setTotalAmount(totalAmount);
-//
-//        VoucherEntity savedVoucher = voucherRepo.save(voucher);
-//
-//        log.info("Voucher {} created for organisation {}", savedVoucher.getVoucherNumber(), organisation.getOrganisationName());
-//
-//        return mapToVoucherResponse(savedVoucher);
-//    }
 
     @Override
     public VoucherResponse createVoucher(UUID organisationId, CreateVoucherRequest request)
@@ -298,9 +225,10 @@ public class VoucherServiceImpl implements VoucherService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     @Override
-    public VoucherResponse approveVoucher(UUID organisationId, UUID voucherId, ApproveVoucherRequest request)
-            throws ItemNotFoundException, AccessDeniedException {
+    public VoucherResponse approveVoucher(UUID organisationId, UUID voucherId)
+            throws Exception {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
@@ -323,7 +251,10 @@ public class VoucherServiceImpl implements VoucherService {
 
         VoucherEntity savedVoucher = voucherRepo.save(voucher);
 
-        log.info("Voucher {} approved by {}", savedVoucher.getVoucherNumber(), request.getApprovedBy());
+        // NEW: Create accounting entry automatically
+        JournalEntry journalEntry = voucherToAccountingAdapter.createAccountingEntry(savedVoucher);
+        log.info("Voucher {} approved and journal entry {} created", savedVoucher.getVoucherNumber(), journalEntry.getId());
+
 
         return mapToVoucherResponse(savedVoucher);
     }

@@ -24,8 +24,8 @@ public interface VoucherService {
     List<VoucherSummaryResponse> getOrganisationVouchers(UUID organisationId)
             throws ItemNotFoundException, AccessDeniedException;
 
-    VoucherResponse approveVoucher(UUID organisationId, UUID voucherId, ApproveVoucherRequest request)
-            throws ItemNotFoundException, AccessDeniedException;
+    VoucherResponse approveVoucher(UUID organisationId, UUID voucherId)
+            throws Exception;
 
     PreviewVoucherNumberResponse previewVoucherNumber(UUID organisationId, PreviewVoucherNumberRequest request)
             throws ItemNotFoundException, AccessDeniedException;

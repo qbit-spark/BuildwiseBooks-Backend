@@ -9,14 +9,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/org-accounting/{organisationId}/vouchers")
+@RequestMapping("/api/v1/doc-transactions/{organisationId}/vouchers")
 @RequiredArgsConstructor
 @Slf4j
 public class VoucherController {
@@ -100,10 +99,9 @@ public class VoucherController {
     @PostMapping("/{voucherId}/approve")
     public ResponseEntity<GlobeSuccessResponseBuilder> approveVoucher(
             @PathVariable UUID organisationId,
-            @PathVariable UUID voucherId,
-            @RequestBody ApproveVoucherRequest request) throws ItemNotFoundException, AccessDeniedException {
+            @PathVariable UUID voucherId) throws Exception {
 
-        VoucherResponse response = voucherService.approveVoucher(organisationId, voucherId, request);
+        VoucherResponse response = voucherService.approveVoucher(organisationId, voucherId);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
@@ -143,4 +141,5 @@ public class VoucherController {
             );
 
     }
+
 }
