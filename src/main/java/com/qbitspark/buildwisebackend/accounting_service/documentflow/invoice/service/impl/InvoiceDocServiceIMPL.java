@@ -28,6 +28,8 @@ import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -226,9 +228,8 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         return mapToInvoiceResponse(invoice);
     }
 
-
     @Override
-    public List<SummaryInvoiceDocResponse> getProjectInvoices(UUID organisationId, UUID projectId)
+    public Page<SummaryInvoiceDocResponse> getProjectInvoices(UUID organisationId, UUID projectId, Pageable pageable)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
@@ -239,17 +240,15 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        // Validate project belongs to this organisation
         validateProject(project, organisation);
 
-        // Validate user is an active member of this organisation
+
         validateProjectMemberPermissions(currentUser, project,
                 List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
 
-        // Get all invoices for the project and map to response DTOs
-        return invoiceDocRepo.findAllByProject(project).stream()
-                .map(this::mapToCreateInvoiceDocResponse)
-                .collect(Collectors.toList());
+        Page<InvoiceDocEntity> invoicePage = invoiceDocRepo.findAllByProject(project, pageable);
+
+        return invoicePage.map(this::mapToCreateInvoiceDocResponse);
     }
 
     @Override

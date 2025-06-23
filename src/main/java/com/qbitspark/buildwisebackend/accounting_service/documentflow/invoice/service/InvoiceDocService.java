@@ -3,6 +3,8 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.s
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.paylaod.*;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -12,7 +14,7 @@ public interface InvoiceDocService {
     PreviewInvoiceNumberResponse previewInvoiceNumber(UUID organisationId, PreviewInvoiceNumberRequest request) throws ItemNotFoundException, AccessDeniedException;
     InvoiceDocResponse getInvoiceById(UUID organisationId, UUID invoiceId) throws ItemNotFoundException, AccessDeniedException;
     InvoiceDocResponse getInvoiceByNumber(UUID organisationId, String invoiceNumber) throws ItemNotFoundException, AccessDeniedException;
-    List<SummaryInvoiceDocResponse> getProjectInvoices(UUID organisationId, UUID projectId) throws ItemNotFoundException, AccessDeniedException;
+    Page<SummaryInvoiceDocResponse> getProjectInvoices(UUID organisationId, UUID projectId, Pageable pageable) throws ItemNotFoundException, AccessDeniedException;
     List<SummaryInvoiceDocResponse> getClientInvoices(UUID organisationId, UUID clientId) throws ItemNotFoundException, AccessDeniedException;
 
 

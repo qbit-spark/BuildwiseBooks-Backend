@@ -8,6 +8,10 @@ import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuil
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -85,14 +89,24 @@ public class InvoiceDocController {
     @GetMapping("/project/{projectId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectInvoices(
             @PathVariable UUID organisationId,
-            @PathVariable UUID projectId) throws ItemNotFoundException, AccessDeniedException {
+            @PathVariable UUID projectId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) throws ItemNotFoundException, AccessDeniedException {
 
-        List<SummaryInvoiceDocResponse> responses = invoiceDocService.getProjectInvoices(organisationId, projectId);
+        // Create Pageable object
+        Sort sort = sortDir.equalsIgnoreCase("desc") ?
+                Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // Get paginated results
+        Page<SummaryInvoiceDocResponse> invoicePage = invoiceDocService.getProjectInvoices(organisationId, projectId, pageable);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
                         "Project invoices retrieved successfully",
-                        responses
+                        invoicePage
                 )
         );
     }
