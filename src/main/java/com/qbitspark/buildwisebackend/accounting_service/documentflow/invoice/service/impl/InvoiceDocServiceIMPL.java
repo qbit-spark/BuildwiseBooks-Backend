@@ -92,7 +92,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         invoice.setReference(request.getReference());
         invoice.setOrganisation(organisation);
         invoice.setDiscountAmount(request.getDiscountAmount());
-        invoice.setTaxAmount(request.getTaxAmount());
+       // invoice.setTaxAmount(request.getTaxAmount());
         invoice.setCreatedBy(currentUser.getId());
         invoice.setUpdatedBy(currentUser.getId());
         invoice.setInvoiceNumber(invoiceNumber);
