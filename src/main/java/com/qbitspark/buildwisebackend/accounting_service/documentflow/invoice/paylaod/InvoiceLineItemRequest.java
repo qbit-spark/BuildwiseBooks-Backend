@@ -22,8 +22,6 @@ public class InvoiceLineItemRequest {
     @DecimalMin(value = "0.0", message = "Quantity must be positive")
     private BigDecimal quantity;
 
-    private TaxType taxType = TaxType.NO_TAX;
-    private BigDecimal taxRate = BigDecimal.ZERO;
     private String unitOfMeasure;
     private Integer lineOrder = 0;
 

@@ -79,14 +79,13 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                 List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
 
         // Validate client exists
-        ClientEntity client = validateClientExists(request.getClientId(), project.getOrganisation());
+        ClientEntity client = validateClientExists(project.getClient().getClientId(), project.getOrganisation());
 
         String invoiceNumber = invoiceNumberService.generateInvoiceNumber(project, client, organisation);
 
         InvoiceDocEntity invoice = new InvoiceDocEntity();
         invoice.setProject(project);
         invoice.setClient(client);
-        invoice.setInvoiceType(request.getInvoiceType());
         invoice.setInvoiceStatus(InvoiceStatus.DRAFT);
         invoice.setDateOfIssue(request.getDateOfIssue());
         invoice.setDueDate(request.getDueDate());
@@ -94,7 +93,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         invoice.setOrganisation(organisation);
         invoice.setDiscountAmount(request.getDiscountAmount());
         invoice.setTaxAmount(request.getTaxAmount());
-        invoice.setCurrency(request.getCurrency());
         invoice.setCreatedBy(currentUser.getId());
         invoice.setUpdatedBy(currentUser.getId());
         invoice.setInvoiceNumber(invoiceNumber);
@@ -112,11 +110,11 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
             BigDecimal lineTotal = lineRequest.getRate().multiply(lineRequest.getQuantity());
             lineItem.setLineTotal(lineTotal);
 
-            lineItem.setTaxType(lineRequest.getTaxType());
-            lineItem.setTaxRate(lineRequest.getTaxRate());
+           // lineItem.setTaxType(lineRequest.getTaxType());
+            //lineItem.setTaxRate(lineRequest.getTaxRate());
 
-            BigDecimal taxAmount = lineTotal.multiply(lineRequest.getTaxRate().divide(BigDecimal.valueOf(100)));
-            lineItem.setTaxAmount(taxAmount);
+          //  BigDecimal taxAmount = lineTotal.multiply(lineRequest.getTaxRate().divide(BigDecimal.valueOf(100)));
+           /// lineItem.setTaxAmount(taxAmount);
 
             lineItem.setUnitOfMeasure(lineRequest.getUnitOfMeasure());
             lineItem.setLineOrder(lineRequest.getLineOrder());

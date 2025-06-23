@@ -95,9 +95,9 @@ public class InvoiceDocEntity {
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    @Column(name = "tax_amount", precision = 19, scale = 2)
+    @Column(name = "amount_before_tax", precision = 5, scale = 2)
     @Builder.Default
-    private BigDecimal taxAmount = BigDecimal.ZERO;
+    private BigDecimal amountBeforeTax = BigDecimal.ZERO;
 
     @Column(name = "total_amount", precision = 19, scale = 2)
     @Builder.Default
@@ -115,9 +115,6 @@ public class InvoiceDocEntity {
     @Builder.Default
     private BigDecimal amountDue = BigDecimal.ZERO;
 
-    @Column(name = "currency")
-    @Builder.Default
-    private String currency = "TZS";
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default

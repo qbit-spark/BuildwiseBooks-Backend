@@ -51,19 +51,6 @@ public class InvoiceLineItemEntity {
     @Builder.Default
     private BigDecimal lineTotal = BigDecimal.ZERO;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "tax_type")
-    @Builder.Default
-    private TaxType taxType = TaxType.NO_TAX;
-
-    @Column(name = "tax_rate", precision = 5, scale = 2)
-    @Builder.Default
-    private BigDecimal taxRate = BigDecimal.ZERO;
-
-    @Column(name = "tax_amount", precision = 19, scale = 2)
-    @Builder.Default
-    private BigDecimal taxAmount = BigDecimal.ZERO;
-
     @Column(name = "unit_of_measure")
     private String unitOfMeasure;
 
