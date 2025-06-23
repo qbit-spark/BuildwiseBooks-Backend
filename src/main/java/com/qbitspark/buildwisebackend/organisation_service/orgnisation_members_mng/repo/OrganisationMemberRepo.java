@@ -29,4 +29,6 @@ public interface OrganisationMemberRepo extends JpaRepository<OrganisationMember
 
     Optional<OrganisationMember> findByMemberIdAndOrganisation(UUID memberId, OrganisationEntity organisation);
 
+    List<OrganisationMember> findByOrganisationAndStatus(OrganisationEntity organisation, MemberStatus status);
+
 }

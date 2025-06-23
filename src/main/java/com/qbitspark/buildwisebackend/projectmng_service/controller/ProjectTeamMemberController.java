@@ -2,14 +2,15 @@ package com.qbitspark.buildwisebackend.projectmng_service.controller;
 
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.BulkAddTeamMemberRequest;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.ProjectTeamMemberResponse;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.ProjectTeamRemovalResponse;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.UpdateTeamMemberRoleRequest;
+import com.qbitspark.buildwisebackend.projectmng_service.payloads.*;
 import com.qbitspark.buildwisebackend.projectmng_service.service.ProjectTeamMemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,7 +50,7 @@ public class ProjectTeamMemberController {
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
-                        "Successfully removed %d team members",
+                        "Successfully removed team member(s)",
                         responses
                 )
         );
@@ -57,14 +58,24 @@ public class ProjectTeamMemberController {
 
     @GetMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectTeamMembers(
-            @PathVariable UUID projectId) throws ItemNotFoundException {
+            @PathVariable UUID projectId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sort) throws ItemNotFoundException {
 
-        List<ProjectTeamMemberResponse> responses = projectTeamMemberService.getProjectTeamMembers(projectId);
+
+        Pageable pageable = sort != null ?
+                PageRequest.of(page, size, Sort.by(sort)) :
+                PageRequest.of(page, size);
+
+        Page<ProjectTeamMemberResponse> responsePage = projectTeamMemberService.getProjectTeamMembers(projectId, pageable);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
-                        String.format("Retrieved %d team members", responses.size()),
-                        responses
+                        String.format("Retrieved %d of %d team members",
+                                responsePage.getNumberOfElements(),
+                                responsePage.getTotalElements()),
+                        responsePage
                 )
         );
     }
@@ -100,6 +111,23 @@ public class ProjectTeamMemberController {
                         result
                 )
         );
+    }
+
+    @GetMapping("/available-members")
+    public ResponseEntity<GlobeSuccessResponseBuilder>getAvailableTeamMembers(
+            @PathVariable("projectId") UUID projectId) throws ItemNotFoundException {
+
+
+            List<AvailableTeamMemberResponse> availableMembers =
+                    projectTeamMemberService.getAvailableTeamMembers(projectId);
+
+
+            return ResponseEntity.ok(
+                    GlobeSuccessResponseBuilder.success(
+                            "Available project member retried successfully", availableMembers
+                    )
+            );
+
     }
 
     // Simple response class for membership check

@@ -615,5 +615,4 @@ public class VoucherServiceImpl implements VoucherService {
         response.setUploadedAt(attachment.getUploadedAt());
         return response;
     }
-
 }

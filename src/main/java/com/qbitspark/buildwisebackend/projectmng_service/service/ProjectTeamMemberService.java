@@ -3,10 +3,9 @@ package com.qbitspark.buildwisebackend.projectmng_service.service;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.BulkAddTeamMemberRequest;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.ProjectTeamMemberResponse;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.ProjectTeamRemovalResponse;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.UpdateTeamMemberRoleRequest;
+import com.qbitspark.buildwisebackend.projectmng_service.payloads.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Set;
@@ -29,7 +28,7 @@ public interface ProjectTeamMemberService {
     /**
      * Get all team members for a project
      */
-    List<ProjectTeamMemberResponse> getProjectTeamMembers(UUID projectId) throws ItemNotFoundException;
+    Page<ProjectTeamMemberResponse> getProjectTeamMembers(UUID projectId, Pageable pageable) throws ItemNotFoundException;
 
     /**
      * Update a single team member's role
@@ -40,5 +39,11 @@ public interface ProjectTeamMemberService {
      * Check if a member is part of a project team
      */
     boolean isTeamMember(UUID projectId, UUID memberId) throws ItemNotFoundException;
+
+    /**
+     * Get available team members who can be added to the project
+     * Returns organisation members who are not yet part of the project team
+     */
+    List<AvailableTeamMemberResponse> getAvailableTeamMembers(UUID projectId) throws ItemNotFoundException;
 
 }

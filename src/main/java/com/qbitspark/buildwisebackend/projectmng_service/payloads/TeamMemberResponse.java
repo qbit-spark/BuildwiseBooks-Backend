@@ -17,14 +17,7 @@ public class TeamMemberResponse {
     private String memberName;
     private String email;
     private TeamMemberRole role;
-    private String roleDisplayName;
     private String status;
     private LocalDateTime joinedAt;
     private LocalDateTime updatedAt;
-
-
-    public void setRole(TeamMemberRole role) {
-        this.role = role;
-        this.roleDisplayName = role != null ? role.getDisplayName() : null;
-    }
 }

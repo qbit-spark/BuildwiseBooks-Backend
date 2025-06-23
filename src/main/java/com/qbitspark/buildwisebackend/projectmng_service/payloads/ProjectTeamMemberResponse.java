@@ -13,7 +13,6 @@ public class ProjectTeamMemberResponse {
     private String memberName;
     private String memberEmail;
     private TeamMemberRole role;
-    private String roleDisplayName;
     private String organisationRole; // OWNER, ADMIN, MEMBER
     private String status; // ACTIVE, SUSPENDED, etc.
     private LocalDateTime joinedAt;

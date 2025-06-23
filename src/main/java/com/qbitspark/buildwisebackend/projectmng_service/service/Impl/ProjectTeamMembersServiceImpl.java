@@ -11,10 +11,7 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.BulkAddTeamMemberRequest;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.ProjectTeamMemberResponse;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.ProjectTeamRemovalResponse;
-import com.qbitspark.buildwisebackend.projectmng_service.payloads.UpdateTeamMemberRoleRequest;
+import com.qbitspark.buildwisebackend.projectmng_service.payloads.*;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.service.ProjectTeamMemberService;
@@ -22,6 +19,10 @@ import com.qbitspark.buildwisebackend.projectmng_service.utils.AsyncEmailService
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +45,6 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
     private final AccountRepo accountRepo;
     private final AsyncEmailService asyncEmailService;
-
 
     @Transactional
     @Override
@@ -146,17 +147,19 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
         return response;
     }
 
-    @Override
-    public List<ProjectTeamMemberResponse> getProjectTeamMembers(UUID projectId) throws ItemNotFoundException {
 
+    @Override
+    public Page<ProjectTeamMemberResponse> getProjectTeamMembers(UUID projectId, Pageable pageable) throws ItemNotFoundException {
         validateRequesterAccess(projectId);
 
-        ProjectEntity project = projectRepo.findById(projectId)
-                .orElseThrow(() -> new ItemNotFoundException("Project not found"));
+        if (!projectRepo.existsById(projectId)) {
+            throw new ItemNotFoundException("Project not found");
+        }
 
-        return project.getTeamMembers().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        Page<ProjectTeamMemberEntity> teamMembersPage =
+                projectTeamMemberRepo.findByProjectProjectId(projectId, pageable);
+
+        return teamMembersPage.map(this::mapToResponse);
     }
 
     @Override
@@ -172,6 +175,12 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
                 .findFirst()
                 .orElseThrow(() -> new ItemNotFoundException("Member is not part of this project"));
 
+        // Check if the member being updated is an organisation owner
+        OrganisationMember orgMember = teamMember.getOrganisationMember();
+        if (orgMember.getRole() == MemberRole.OWNER) {
+            throw new ItemNotFoundException("Organisation owners' project roles cannot be modified");
+        }
+
         teamMember.setRole(request.getNewRole());
         ProjectTeamMemberEntity savedMember = projectTeamMemberRepo.save(teamMember);
 
@@ -179,6 +188,39 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
                 memberId, request.getNewRole(), project.getName());
 
         return mapToResponse(savedMember);
+    }
+
+
+
+    @Override
+    public List<AvailableTeamMemberResponse> getAvailableTeamMembers(UUID projectId) throws ItemNotFoundException {
+        validateRequesterAccess(projectId);
+
+        // Get the project and validate it exists
+        ProjectEntity project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new ItemNotFoundException("Project not found"));
+
+        // Get all active organisation members for the project's organisation
+        List<OrganisationMember> allOrgMembers = organisationMemberRepo
+                .findByOrganisationAndStatus(project.getOrganisation(), MemberStatus.ACTIVE);
+
+        // Get current project team member IDs
+        Set<UUID> currentProjectMemberIds = projectTeamMemberRepo
+                .findByProjectProjectId(projectId)
+                .stream()
+                .map(tm -> tm.getOrganisationMember().getMemberId())
+                .collect(Collectors.toSet());
+
+        // Filter out members who are already in the project
+        List<OrganisationMember> availableMembers = allOrgMembers.stream()
+                .filter(member -> !currentProjectMemberIds.contains(member.getMemberId()))
+                .toList();
+
+
+        // Map to response DTOs
+        return availableMembers.stream()
+                .map(this::mapToAvailableResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -247,7 +289,7 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
         response.setMemberName(teamMember.getOrganisationMember().getAccount().getUserName());
         response.setMemberEmail(teamMember.getOrganisationMember().getAccount().getEmail());
         response.setRole(teamMember.getRole());
-        response.setRoleDisplayName(teamMember.getRole().getDisplayName());
+        response.setRole(teamMember.getRole());
         response.setOrganisationRole(teamMember.getOrganisationMember().getRole().name());
         response.setStatus(teamMember.getOrganisationMember().getStatus().name());
         response.setJoinedAt(teamMember.getOrganisationMember().getJoinedAt());
@@ -314,7 +356,7 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
                         account.getEmail(),
                         account.getUserName(),
                         project.getName(),
-                        member.getRole().getDisplayName(),
+                        String.valueOf(member.getRole()),
                         project.getOrganisation().getOrganisationId(),
                         project.getProjectId()
                 );
@@ -324,6 +366,15 @@ public class ProjectTeamMembersServiceImpl implements ProjectTeamMemberService {
         return savedMembers.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    private AvailableTeamMemberResponse mapToAvailableResponse(OrganisationMember orgMember) {
+        AvailableTeamMemberResponse response = new AvailableTeamMemberResponse();
+        response.setMemberId(orgMember.getMemberId());
+        response.setUserName(orgMember.getAccount().getUserName());
+        response.setEmail(orgMember.getAccount().getEmail());
+        response.setJoinedAt(orgMember.getJoinedAt());
+        return response;
     }
 
 }
