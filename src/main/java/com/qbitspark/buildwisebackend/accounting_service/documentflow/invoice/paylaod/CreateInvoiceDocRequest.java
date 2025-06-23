@@ -17,17 +17,13 @@ public class CreateInvoiceDocRequest {
     @NotNull(message = "Project ID is required")
     private UUID projectId;
 
-//    @NotNull(message = "Client ID is required")
-//    private UUID clientId;
-
-//    @NotNull(message = "Invoice type is required")
-//    private InvoiceType invoiceType;
-
     @NotNull(message = "Date of issue is required")
     private LocalDate dateOfIssue;
 
     @NotNull(message = "Due date is required")
     private LocalDate dueDate;
+
+    private BigDecimal creditApplied;
 
     private String reference;
 
@@ -35,8 +31,5 @@ public class CreateInvoiceDocRequest {
     @Valid
     private List<InvoiceLineItemRequest> lineItems;
 
-    private BigDecimal discountAmount = BigDecimal.ZERO;
-    private BigDecimal taxAmount = BigDecimal.ZERO;
-//    private String currency = "TZS";
-
+    private List<UUID> taxesToApply;
 }

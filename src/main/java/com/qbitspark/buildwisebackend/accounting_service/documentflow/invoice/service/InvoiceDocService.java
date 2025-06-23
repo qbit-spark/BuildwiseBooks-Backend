@@ -5,21 +5,11 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedExcepti
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface InvoiceDocService {
-    SummaryInvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException;
-    PreviewInvoiceNumberResponse previewInvoiceNumber(UUID organisationId, PreviewInvoiceNumberRequest request) throws ItemNotFoundException, AccessDeniedException;
-    InvoiceDocResponse getInvoiceById(UUID organisationId, UUID invoiceId) throws ItemNotFoundException, AccessDeniedException;
-    InvoiceDocResponse getInvoiceByNumber(UUID organisationId, String invoiceNumber) throws ItemNotFoundException, AccessDeniedException;
-    Page<SummaryInvoiceDocResponse> getProjectInvoices(UUID organisationId, UUID projectId, Pageable pageable) throws ItemNotFoundException, AccessDeniedException;
-    List<SummaryInvoiceDocResponse> getClientInvoices(UUID organisationId, UUID clientId) throws ItemNotFoundException, AccessDeniedException;
-
-
-
-    List<InvoiceDocResponse> getOrganisationInvoices(UUID organisationId) throws ItemNotFoundException;
-    void sendInvoice(UUID invoiceId) throws Exception;
-    void approveInvoice(UUID invoiceId) throws Exception;
+    InvoiceDocResponse createInvoiceWithAttachments(UUID organisationId, CreateInvoiceDocRequest request, List<MultipartFile> attachments) throws ItemNotFoundException, AccessDeniedException;
 }

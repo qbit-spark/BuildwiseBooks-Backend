@@ -1,7 +1,8 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity;
 
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceLineItemEntity;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.embedings.InvoiceTaxDetail;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.InvoiceStatus;
-import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.InvoiceType;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
@@ -9,7 +10,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.javamoney.moneta.Money;
 
+import javax.money.MonetaryAmount;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,42 +21,19 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "invoice_business_docs", indexes = {
-        @Index(name = "idx_invoice_number", columnList = "invoice_number", unique = true),
-        @Index(name = "idx_invoice_project_id", columnList = "project_id"),
-        @Index(name = "idx_invoice_client_id", columnList = "client_id"),
-        @Index(name = "idx_invoice_organisation_id", columnList = "organisation_id"),
-        @Index(name = "idx_invoice_status", columnList = "invoice_status"),
-        @Index(name = "idx_invoice_type", columnList = "invoice_type"),
-        @Index(name = "idx_invoice_date_of_issue", columnList = "date_of_issue"),
-        @Index(name = "idx_invoice_due_date", columnList = "due_date"),
-        @Index(name = "idx_invoice_created_at", columnList = "created_at"),
-        @Index(name = "idx_invoice_created_by", columnList = "created_by"),
-        // Composite indexes for common query patterns
-        @Index(name = "idx_invoice_org_status", columnList = "organisation_id, invoice_status"),
-        @Index(name = "idx_invoice_client_status", columnList = "client_id, invoice_status"),
-        @Index(name = "idx_invoice_project_status", columnList = "project_id, invoice_status"),
-        @Index(name = "idx_invoice_status_date", columnList = "invoice_status, date_of_issue"),
-        @Index(name = "idx_invoice_org_date", columnList = "organisation_id, date_of_issue"),
-        @Index(name = "idx_invoice_client_date", columnList = "client_id, date_of_issue"),
-        @Index(name = "idx_invoice_client_due_date", columnList = "client_id, due_date"),
-        @Index(name = "idx_invoice_status_due_date", columnList = "invoice_status, due_date"),
-        @Index(name = "idx_invoice_org_status_date", columnList = "organisation_id, invoice_status, date_of_issue")
-})
-
+@Table(name = "invoice_business_docs")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"lineItems"})
-@EqualsAndHashCode(of = {"id", "invoiceNumber"})
 public class InvoiceDocEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(name = "invoice_number", unique = true, nullable = false, columnDefinition = "TEXT")
+    @Column(name = "invoice_number", unique = true, nullable = false)
     private String invoiceNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -64,9 +44,9 @@ public class InvoiceDocEntity {
     @JoinColumn(name = "client_id")
     private ClientEntity client;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "invoice_type")
-    private InvoiceType invoiceType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organisation_id")
+    private OrganisationEntity organisation;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "invoice_status")
@@ -82,46 +62,29 @@ public class InvoiceDocEntity {
     @Column(name = "reference")
     private String reference;
 
-    // Association: Many invoices belong to one organisation
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organisation_id")
-    private OrganisationEntity organisation;
-
-    @Column(name = "subtotal", precision = 19, scale = 2)
+    @Column(name = "subtotal", precision = 19, scale = 4)
     @Builder.Default
     private BigDecimal subtotal = BigDecimal.ZERO;
 
-    @Column(name = "discount_amount", precision = 19, scale = 2)
+    @Column(name = "total_tax_amount", precision = 19, scale = 4)
     @Builder.Default
-    private BigDecimal discountAmount = BigDecimal.ZERO;
+    private BigDecimal totalTaxAmount = BigDecimal.ZERO;
 
-    @Column(name = "tax_amount", precision = 19, scale = 2)
-    @Builder.Default
-    private BigDecimal taxAmount = BigDecimal.ZERO;
-
-    @Column(name = "amount_before_tax", precision = 5, scale = 2)
-    @Builder.Default
-    private BigDecimal amountBefore = BigDecimal.ZERO;
-
-    @Column(name = "total_amount", precision = 19, scale = 2)
+    @Column(name = "total_amount", precision = 19, scale = 4)
     @Builder.Default
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
-    @Column(name = "amount_paid", precision = 19, scale = 2)
+    @Column(name = "amount_paid", precision = 19, scale = 4)
     @Builder.Default
     private BigDecimal amountPaid = BigDecimal.ZERO;
 
-    @Column(name = "credit_applied", precision = 19, scale = 2)
-    @Builder.Default
-    private BigDecimal creditApplied = BigDecimal.ZERO;
-
-    @Column(name = "amount_due", precision = 19, scale = 2)
+    @Column(name = "amount_due", precision = 19, scale = 4)
     @Builder.Default
     private BigDecimal amountDue = BigDecimal.ZERO;
 
-    @Column(name = "currency")
+    @Column(name = "tax_details", columnDefinition = "jsonb")
     @Builder.Default
-    private String currency = "TZS";
+    private List<InvoiceTaxDetail> taxDetails = new ArrayList<>();
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
@@ -141,4 +104,28 @@ public class InvoiceDocEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
+    // JAVA MONEY METHODS (TZS)
+    public MonetaryAmount getSubtotalMoney() {
+        return Money.of(subtotal, "TZS");
+    }
+
+    public MonetaryAmount getTotalAmountMoney() {
+        return Money.of(totalAmount, "TZS");
+    }
+
+    public MonetaryAmount getAmountDueMoney() {
+        return Money.of(amountDue, "TZS");
+    }
+
+    public void setSubtotalMoney(MonetaryAmount amount) {
+        this.subtotal = amount.getNumber().numberValue(BigDecimal.class);
+    }
+
+    public void setTotalAmountMoney(MonetaryAmount amount) {
+        this.totalAmount = amount.getNumber().numberValue(BigDecimal.class);
+    }
+
+    public void setAmountDueMoney(MonetaryAmount amount) {
+        this.amountDue = amount.getNumber().numberValue(BigDecimal.class);
+    }
 }
