@@ -21,7 +21,6 @@ public class TaxController {
 
     private final TaxService taxService;
 
-
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createTax(
             @PathVariable UUID organisationId,
@@ -35,30 +34,36 @@ public class TaxController {
 
 
     @GetMapping
-    public ResponseEntity<List<TaxResponse>> getAllTaxes(
+    public ResponseEntity<GlobeSuccessResponseBuilder> getAllTaxes(
             @PathVariable UUID organisationId) throws ItemNotFoundException {
 
-        List<TaxResponse> taxes = taxService.getAllTaxesByOrganisation(organisationId);
-        return ResponseEntity.ok(taxes);
+        List<TaxResponse> response = taxService.getAllTaxesByOrganisation(organisationId);
+
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Tax retrieved successfully", response));
     }
 
 
     @GetMapping("/active")
-    public ResponseEntity<List<TaxResponse>> getActiveTaxes(
+    public ResponseEntity<GlobeSuccessResponseBuilder> getActiveTaxes(
             @PathVariable UUID organisationId) throws ItemNotFoundException {
 
-        List<TaxResponse> activeTaxes = taxService.getActiveTaxesByOrganisation(organisationId);
-        return ResponseEntity.ok(activeTaxes);
+        List<TaxResponse> response = taxService.getActiveTaxesByOrganisation(organisationId);
+
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Active taxes retrieved successfully", response));
     }
 
 
     @GetMapping("/{taxId}")
-    public ResponseEntity<TaxResponse> getTaxById(
+    public ResponseEntity<GlobeSuccessResponseBuilder> getTaxById(
             @PathVariable UUID organisationId,
             @PathVariable UUID taxId) throws ItemNotFoundException {
 
-        TaxResponse tax = taxService.getTaxById(organisationId, taxId);
-        return ResponseEntity.ok(tax);
+        TaxResponse response = taxService.getTaxById(organisationId, taxId);
+
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Tax details retrieved successfully", response));
     }
 
 

@@ -9,7 +9,9 @@ import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 import org.javamoney.moneta.Money;
 
 import javax.money.MonetaryAmount;
@@ -82,7 +84,11 @@ public class InvoiceDocEntity {
     @Builder.Default
     private BigDecimal amountDue = BigDecimal.ZERO;
 
+    // Fixed: Added @ElementCollection and @JdbcTypeCode for JSONB
+    @ElementCollection
+    @CollectionTable(name = "invoice_tax_details", joinColumns = @JoinColumn(name = "invoice_id"))
     @Column(name = "tax_details", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Builder.Default
     private List<InvoiceTaxDetail> taxDetails = new ArrayList<>();
 
