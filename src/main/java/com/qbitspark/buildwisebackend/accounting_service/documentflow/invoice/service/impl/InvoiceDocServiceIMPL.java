@@ -28,6 +28,7 @@ import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberR
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.javamoney.moneta.Money;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -50,6 +51,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
     private final InvoiceDocRepo invoiceDocRepo;
@@ -171,6 +173,74 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         return mapToInvoiceResponse(invoice, currentUser, null);
     }
 
+    // Add this method to your InvoiceDocServiceIMPL class
+
+    @Override
+    @Transactional
+    public InvoiceDocResponse updateInvoiceWithAttachments(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request, List<MultipartFile> attachments) throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        InvoiceDocEntity invoice = invoiceDocRepo.findByIdAndOrganisation(invoiceId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Invoice not found"));
+
+        // Validate user has access to the project
+        validateProjectMemberPermissions(currentUser, invoice.getProject(),
+                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+
+        // Update basic fields (keep existing if null)
+        if (request.getDateOfIssue() != null) {
+            invoice.setDateOfIssue(request.getDateOfIssue());
+        }
+
+        if (request.getDueDate() != null) {
+            invoice.setDueDate(request.getDueDate());
+        }
+
+        if (request.getReference() != null) {
+            invoice.setReference(request.getReference());
+        }
+
+        // Update line items if provided
+        if (request.getLineItems() != null && !request.getLineItems().isEmpty()) {
+            // Clear existing line items
+            invoice.getLineItems().clear();
+
+            // Add new line items
+            List<InvoiceLineItemEntity> newLineItems = createLineItems(request.getLineItems(), invoice);
+            invoice.setLineItems(newLineItems);
+        }
+
+        // Recalculate totals (always recalculate to ensure accuracy)
+        List<UUID> taxesToApply = request.getTaxesToApply() != null ?
+                request.getTaxesToApply() :
+                invoice.getTaxDetails().stream()
+                        .map(InvoiceTaxDetail::getOriginalTaxId)
+                        .collect(Collectors.toList());
+
+        BigDecimal creditApplied = request.getCreditApplied() != null ?
+                request.getCreditApplied() :
+                BigDecimal.ZERO;
+
+        calculateInvoiceTotals(invoice, taxesToApply, creditApplied);
+
+        // Update audit fields
+        invoice.setUpdatedBy(currentUser.getId());
+        invoice.setUpdatedAt(LocalDateTime.now());
+
+        // Handle attachments if provided
+        if (attachments != null && !attachments.isEmpty()) {
+            // TODO: Update attachments - replace existing ones
+            log.info("Updating {} attachments for invoice: {}", attachments.size(), invoice.getInvoiceNumber());
+        }
+
+        // Save an updated invoice
+        InvoiceDocEntity savedInvoice = invoiceDocRepo.save(invoice);
+
+        return mapToInvoiceResponse(savedInvoice, currentUser, creditApplied);
+    }
 
     private List<InvoiceLineItemEntity> createLineItems(List<InvoiceLineItemRequest> lineItemRequests, InvoiceDocEntity invoice) {
         return lineItemRequests.stream()

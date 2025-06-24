@@ -20,6 +20,8 @@ public interface InvoiceDocService {
     public Page<SummaryInvoiceDocResponse> getAllInvoicesForProject(UUID organisationId, UUID projectId, int page, int size) throws ItemNotFoundException, AccessDeniedException;
 
     public InvoiceDocResponse getInvoiceById(UUID organisationId, UUID invoiceId) throws ItemNotFoundException, AccessDeniedException;
+
+    InvoiceDocResponse updateInvoiceWithAttachments(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request, List<MultipartFile> attachments) throws ItemNotFoundException, AccessDeniedException;
 }
 
 

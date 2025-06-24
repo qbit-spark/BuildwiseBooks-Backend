@@ -69,7 +69,6 @@ public class InvoiceDocController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) throws ItemNotFoundException, AccessDeniedException {
 
-
         Page<SummaryInvoiceDocResponse> response = invoiceDocService.getAllInvoicesForProject(
                 organisationId, projectId, page, size);
 
@@ -84,5 +83,25 @@ public class InvoiceDocController {
         InvoiceDocResponse response = invoiceDocService.getInvoiceById(organisationId, invoiceId);
 
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Invoice retrieved successfully", response));
+    }
+
+    @PutMapping(value = "/{invoiceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<GlobeSuccessResponseBuilder> updateInvoice(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID invoiceId,
+            @RequestPart("invoice") String invoiceJson,
+            @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments)
+            throws ItemNotFoundException, AccessDeniedException, JsonProcessingException {
+
+        // Parse JSON manually
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
+        UpdateInvoiceDocRequest request = objectMapper.readValue(invoiceJson, UpdateInvoiceDocRequest.class);
+
+        InvoiceDocResponse response = invoiceDocService.updateInvoiceWithAttachments(
+                organisationId, invoiceId, request, attachments);
+
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Invoice updated successfully", response));
     }
 }
