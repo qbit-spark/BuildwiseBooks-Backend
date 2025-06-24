@@ -21,8 +21,7 @@ public class InvoiceLineItemRequest {
     @NotNull(message = "Quantity is required")
     @DecimalMin(value = "0.0", message = "Quantity must be positive")
     private BigDecimal quantity;
-
     private String unitOfMeasure;
-    private Integer lineOrder = 0;
+
 
 }

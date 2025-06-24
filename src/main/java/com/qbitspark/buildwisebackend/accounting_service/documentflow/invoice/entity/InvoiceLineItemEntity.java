@@ -41,9 +41,6 @@ public class InvoiceLineItemEntity {
     @Column(name = "unit_of_measure")
     private String unitOfMeasure;
 
-    @Column(name = "line_order")
-    private Integer lineOrder;
-
     @Column(name = "taxable")
     @Builder.Default
     private Boolean taxable = true;

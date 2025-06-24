@@ -17,6 +17,7 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundExcepti
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberRole;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
@@ -28,6 +29,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.javamoney.moneta.Money;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,15 +43,15 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.money.MonetaryAmount;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class InvoiceDocServiceIMPL implements InvoiceDocService {
+
     private final InvoiceDocRepo invoiceDocRepo;
     private final ProjectRepo projectRepo;
     private final OrganisationRepo organisationRepo;
@@ -57,6 +62,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     private final TaxRepo taxRepo;
 
     @Override
+    @Transactional
     public InvoiceDocResponse createInvoiceWithAttachments(UUID organisationId, CreateInvoiceDocRequest request, List<MultipartFile> attachments) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
@@ -85,6 +91,8 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                 .dateOfIssue(request.getDateOfIssue())
                 .dueDate(request.getDueDate())
                 .reference(request.getReference())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .createdBy(currentUser.getId())
                 .updatedBy(currentUser.getId())
                 .build();
@@ -104,41 +112,65 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         // Convert to response
         return mapToInvoiceResponse(savedInvoice, currentUser, request.getCreditApplied());
     }
-    private ProjectTeamMemberEntity validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
 
-        OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
-                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
 
-        if (organisationMember.getStatus() != MemberStatus.ACTIVE) {
-            throw new ItemNotFoundException("Member is not active");
-        }
+    @Override
+    @Transactional(readOnly = true)
+    public Page<SummaryInvoiceDocResponse> getAllInvoicesForOrganisation(UUID organisationId, int page, int size) throws ItemNotFoundException, AccessDeniedException {
 
-        ProjectTeamMemberEntity projectTeamMember = projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
-                .orElseThrow(() -> new ItemNotFoundException("Project team member not found"));
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        if (!allowedRoles.contains(projectTeamMember.getRole())) {
-            throw new AccessDeniedException("Member has insufficient permissions for this operation");
-        }
+        validateOrganisationMemberAccess(currentUser, organisation);
 
-        return projectTeamMember;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<InvoiceDocEntity> invoicePage = invoiceDocRepo.findAllByOrganisation(organisation, pageable);
+
+        return invoicePage.map(this::mapToSummaryResponse);
     }
 
-    private void validateProject(ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {
-        if (!project.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
-            throw new ItemNotFoundException("Project does not belong to this organisation");
-        }
+    @Override
+    @Transactional(readOnly = true)
+    public Page<SummaryInvoiceDocResponse> getAllInvoicesForProject(UUID organisationId, UUID projectId, int page, int size) throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        ProjectEntity project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new ItemNotFoundException("Project not found"));
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        validateProject(project, organisation);
+
+        validateProjectMemberPermissions(currentUser, project,
+                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<InvoiceDocEntity> invoicePage = invoiceDocRepo.findAllByProject(project, pageable);
+
+        return invoicePage.map(this::mapToSummaryResponse);
     }
 
-    private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()) {
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            String userName = userDetails.getUsername();
-            return accountRepo.findByUserName(userName)
-                    .orElseThrow(() -> new ItemNotFoundException("User not found"));
-        }
-        throw new ItemNotFoundException("User not authenticated");
+    @Override
+    @Transactional(readOnly = true)
+    public InvoiceDocResponse getInvoiceById(UUID organisationId, UUID invoiceId) throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        InvoiceDocEntity invoice = invoiceDocRepo.findByIdAndOrganisation(invoiceId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Invoice not found"));
+
+        // Validate user has access to the project that this invoice belongs to
+        validateProjectMemberPermissions(currentUser, invoice.getProject(),
+                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER, TeamMemberRole.MEMBER));
+
+        return mapToInvoiceResponse(invoice, currentUser, null);
     }
+
 
     private List<InvoiceLineItemEntity> createLineItems(List<InvoiceLineItemRequest> lineItemRequests, InvoiceDocEntity invoice) {
         return lineItemRequests.stream()
@@ -149,18 +181,17 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                             .unitPrice(request.getRate())
                             .quantity(request.getQuantity())
                             .unitOfMeasure(request.getUnitOfMeasure())
-                            .lineOrder(request.getLineOrder())
                             .taxable(true)
                             .build();
 
-                    // Use your precise money calculation method
+                    // Use precise money calculation method
                     lineItem.calculateLineTotalWithMoney();
                     return lineItem;
                 })
                 .collect(Collectors.toList());
     }
 
-    private void calculateInvoiceTotals(InvoiceDocEntity invoice, List<UUID> taxIds, BigDecimal creditApplied) {
+    private void calculateInvoiceTotals(InvoiceDocEntity invoice, List<UUID> taxIds, BigDecimal creditApplied) throws ItemNotFoundException {
         // Calculate subtotal using BigDecimal then convert to Money for precision
         BigDecimal subtotalBD = invoice.getLineItems().stream()
                 .filter(InvoiceLineItemEntity::getTaxable)
@@ -168,15 +199,14 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         MonetaryAmount subtotalMoney = Money.of(subtotalBD, "TZS");
-
         invoice.setSubtotalMoney(subtotalMoney);
 
-        // Calculate taxes if any are specified
+        // Calculate taxes if any are specified - now with organization validation
         MonetaryAmount totalTaxMoney = Money.of(BigDecimal.ZERO, "TZS");
         List<InvoiceTaxDetail> taxDetails = new ArrayList<>();
 
         if (taxIds != null && !taxIds.isEmpty()) {
-            TaxCalculationResult taxResult = calculateTaxesWithMoney(taxIds, subtotalMoney);
+            TaxCalculationResult taxResult = calculateTaxesWithMoney(taxIds, subtotalMoney, invoice.getOrganisation());
             taxDetails = taxResult.getTaxDetails();
             totalTaxMoney = taxResult.getTotalTaxMoney();
         }
@@ -184,7 +214,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         invoice.setTaxDetails(taxDetails);
         invoice.setTotalTaxAmount(totalTaxMoney.getNumber().numberValue(BigDecimal.class));
 
-        // Calculate the total amount using Money API
+        // Calculate total amount using Money API
         MonetaryAmount totalMoney = subtotalMoney.add(totalTaxMoney);
         invoice.setTotalAmountMoney(totalMoney);
 
@@ -194,13 +224,25 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         invoice.setAmountDueMoney(amountDueMoney);
     }
 
-    private TaxCalculationResult calculateTaxesWithMoney(List<UUID> taxIds, MonetaryAmount subtotalMoney) {
-        List<TaxEntity> taxes = taxRepo.findAllById(taxIds);
+    private TaxCalculationResult calculateTaxesWithMoney(List<UUID> taxIds, MonetaryAmount subtotalMoney, OrganisationEntity organisation) throws ItemNotFoundException {
+        // Silently remove duplicates by converting to Set and back to List
+        List<UUID> uniqueTaxIds = taxIds != null ?
+                taxIds.stream().distinct().collect(Collectors.toList()) :
+                new ArrayList<>();
+
+        // Validate that all requested taxes exist and belong to the organization
+        List<TaxEntity> taxes = validateAndGetTaxes(uniqueTaxIds, organisation);
+
         List<InvoiceTaxDetail> taxDetails = new ArrayList<>();
         MonetaryAmount totalTaxMoney = Money.of(BigDecimal.ZERO, "TZS");
 
         for (TaxEntity tax : taxes) {
-            // For simple cases, entire subtotal is taxable
+            // Validate tax is active
+            if (!tax.getIsActive()) {
+                throw new IllegalArgumentException("Tax '" + tax.getTaxName() + "' is not active and cannot be applied");
+            }
+
+            // For simple cases, the entire subtotal is taxable
             MonetaryAmount taxableAmountMoney = subtotalMoney;
             MonetaryAmount taxAmountMoney = calculateTaxAmountWithMoney(taxableAmountMoney, tax.getTaxPercent());
 
@@ -220,10 +262,76 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         return new TaxCalculationResult(taxDetails, totalTaxMoney);
     }
 
+    private List<TaxEntity> validateAndGetTaxes(List<UUID> taxIds, OrganisationEntity organisation) throws ItemNotFoundException {
+        if (taxIds == null || taxIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Get taxes by IDs and organization
+        List<TaxEntity> taxes = taxRepo.findByTaxIdInAndOrganisation(taxIds, organisation);
+
+        // Check if all requested taxes were found
+        if (taxes.size() != taxIds.size()) {
+            Set<UUID> foundTaxIds = taxes.stream()
+                    .map(TaxEntity::getTaxId)
+                    .collect(Collectors.toSet());
+
+            List<UUID> missingTaxIds = taxIds.stream()
+                    .filter(id -> !foundTaxIds.contains(id))
+                    .toList();
+
+            throw new ItemNotFoundException("Tax(es) not found or do not belong to organization: " + missingTaxIds);
+        }
+
+        // Check for duplicate tax IDs in the request
+        Set<UUID> uniqueTaxIds = new HashSet<>(taxIds);
+        if (uniqueTaxIds.size() != taxIds.size()) {
+            throw new IllegalArgumentException("Duplicate tax IDs found in request");
+        }
+
+        return taxes;
+    }
+
     private MonetaryAmount calculateTaxAmountWithMoney(MonetaryAmount taxableAmount, BigDecimal taxPercent) {
-        // Convert percentage to decimal and multiply
+        // Convert percentage to decimal with proper precision
         BigDecimal taxRate = taxPercent.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
         return taxableAmount.multiply(taxRate);
+    }
+
+    private void validateProject(ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {
+        if (!project.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
+            throw new ItemNotFoundException("Project does not belong to this organisation");
+        }
+    }
+
+    private ProjectTeamMemberEntity validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
+
+        OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
+                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
+
+        if (organisationMember.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        ProjectTeamMemberEntity projectTeamMember = projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
+                .orElseThrow(() -> new ItemNotFoundException("Project team member not found"));
+
+        if (!allowedRoles.contains(projectTeamMember.getRole())) {
+            throw new AccessDeniedException("Member has insufficient permissions for this operation");
+        }
+
+        return projectTeamMember;
+    }
+
+    private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String userName = userDetails.getUsername();
+            return accountRepo.findByUserName(userName)
+                    .orElseThrow(() -> new ItemNotFoundException("User not found"));
+        }
+        throw new ItemNotFoundException("User not authenticated");
     }
 
     private InvoiceDocResponse mapToInvoiceResponse(InvoiceDocEntity invoice, AccountEntity currentUser, BigDecimal creditApplied) {
@@ -246,13 +354,12 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         response.setAmountPaid(invoice.getAmountPaid());
         response.setCreditApplied(creditApplied != null ? creditApplied : BigDecimal.ZERO);
         response.setAmountDue(invoice.getAmountDue());
-        response.setCreatedAt(invoice.getCreatedAt()    );
+        response.setCreatedAt(invoice.getCreatedAt());
         response.setUpdatedAt(invoice.getUpdatedAt());
-        response.setCreatedByUserName(currentUser.getUserName()); // Assuming you have this method
+        response.setCreatedByUserName(currentUser.getUserName());
 
-        // Map line items
+        // Map line items sorted by order
         List<InvoiceLineItemResponse> lineItemResponses = invoice.getLineItems().stream()
-                .sorted((a, b) -> Integer.compare(a.getLineOrder(), b.getLineOrder())) // Sort by line order
                 .map(this::mapToLineItemResponse)
                 .collect(Collectors.toList());
         response.setLineItems(lineItemResponses);
@@ -270,11 +377,10 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         InvoiceLineItemResponse response = new InvoiceLineItemResponse();
         response.setId(lineItem.getId());
         response.setDescription(lineItem.getDescription());
-        response.setRate(lineItem.getUnitPrice()); // Map unitPrice to rate in response
+        response.setRate(lineItem.getUnitPrice());
         response.setQuantity(lineItem.getQuantity());
         response.setLineTotal(lineItem.getLineTotal());
         response.setUnitOfMeasure(lineItem.getUnitOfMeasure());
-        response.setLineOrder(lineItem.getLineOrder());
         return response;
     }
 
@@ -289,15 +395,42 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         return response;
     }
 
-    // Enhanced helper class for tax calculation results with Money API
+    // Helper class for tax calculation results with Money API
     @Data
     @AllArgsConstructor
     private static class TaxCalculationResult {
         private List<InvoiceTaxDetail> taxDetails;
-        private MonetaryAmount totalTaxMoney; // Using MonetaryAmount for precision
+        private MonetaryAmount totalTaxMoney;
 
         public BigDecimal getTotalTaxAmount() {
             return totalTaxMoney.getNumber().numberValue(BigDecimal.class);
         }
+    }
+
+    private SummaryInvoiceDocResponse mapToSummaryResponse(InvoiceDocEntity invoice) {
+        SummaryInvoiceDocResponse response = new SummaryInvoiceDocResponse();
+        response.setInvoiceId(invoice.getId());
+        response.setInvoiceNumber(invoice.getInvoiceNumber());
+        response.setStatus(invoice.getInvoiceStatus());
+        response.setTotalAmount(invoice.getTotalAmount());
+        response.setProjectName(invoice.getProject().getName());
+        response.setClientName(invoice.getClient().getName());
+        response.setLineItemCount(invoice.getLineItems().size());
+        return response;
+    }
+
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException, AccessDeniedException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member not found in organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new AccessDeniedException("Member is not active");
+        }
+
+        if (member.getRole() != MemberRole.OWNER && member.getRole() != MemberRole.ADMIN) {
+            throw new AccessDeniedException("Insufficient permissions for this operation");
+        }
+
+        return member;
     }
 }

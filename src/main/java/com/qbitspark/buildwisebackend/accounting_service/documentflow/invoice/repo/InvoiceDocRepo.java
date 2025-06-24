@@ -18,4 +18,5 @@ public interface InvoiceDocRepo extends JpaRepository<InvoiceDocEntity, UUID> {
  Optional<InvoiceDocEntity> findByInvoiceNumberAndOrganisation(String invoiceNumber, OrganisationEntity organisation);
  Page<InvoiceDocEntity> findAllByProject(ProjectEntity project, Pageable pageable);
  List<InvoiceDocEntity> findAllByClient(ClientEntity client);
+ Page<InvoiceDocEntity> findAllByOrganisation(OrganisationEntity organisation, Pageable pageable);
 }

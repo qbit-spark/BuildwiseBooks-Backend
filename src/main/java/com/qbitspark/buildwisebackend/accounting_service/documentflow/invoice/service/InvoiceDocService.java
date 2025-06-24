@@ -12,4 +12,14 @@ import java.util.UUID;
 
 public interface InvoiceDocService {
     InvoiceDocResponse createInvoiceWithAttachments(UUID organisationId, CreateInvoiceDocRequest request, List<MultipartFile> attachments) throws ItemNotFoundException, AccessDeniedException;
+
+    Page<SummaryInvoiceDocResponse> getAllInvoicesForOrganisation(UUID organisationId, int page, int size) throws ItemNotFoundException, AccessDeniedException;
+
+   // List<SummaryInvoiceDocResponse> getAllInvoicesForOrganisationUnpaginated(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
+
+    public Page<SummaryInvoiceDocResponse> getAllInvoicesForProject(UUID organisationId, UUID projectId, int page, int size) throws ItemNotFoundException, AccessDeniedException;
+
+    public InvoiceDocResponse getInvoiceById(UUID organisationId, UUID invoiceId) throws ItemNotFoundException, AccessDeniedException;
 }
+
+

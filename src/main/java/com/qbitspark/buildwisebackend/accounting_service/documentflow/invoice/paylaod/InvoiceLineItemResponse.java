@@ -14,5 +14,4 @@ public class InvoiceLineItemResponse {
     private BigDecimal quantity;
     private BigDecimal lineTotal;
     private String unitOfMeasure;
-    private Integer lineOrder;
 }
