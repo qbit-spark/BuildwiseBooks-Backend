@@ -49,7 +49,6 @@ public class InvoiceDocController {
                 .body(GlobeSuccessResponseBuilder.success("Invoice created successfully", response));
     }
 
-
     @GetMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllInvoicesForOrganisation(
             @PathVariable UUID organisationId,

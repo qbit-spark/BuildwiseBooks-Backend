@@ -173,7 +173,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         return mapToInvoiceResponse(invoice, currentUser, null);
     }
 
-    // Add this method to your InvoiceDocServiceIMPL class
 
     @Override
     @Transactional
@@ -205,12 +204,15 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         // Update line items if provided
         if (request.getLineItems() != null && !request.getLineItems().isEmpty()) {
-            // Clear existing line items
+            // Remove orphaned line items properly
+            invoice.getLineItems().forEach(lineItem -> lineItem.setInvoice(null));
             invoice.getLineItems().clear();
 
-            // Add new line items
+            // Create new line items
             List<InvoiceLineItemEntity> newLineItems = createLineItems(request.getLineItems(), invoice);
-            invoice.setLineItems(newLineItems);
+
+            // Add new line items to invoice
+            newLineItems.forEach(lineItem -> invoice.getLineItems().add(lineItem));
         }
 
         // Recalculate totals (always recalculate to ensure accuracy)
@@ -228,11 +230,10 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         // Update audit fields
         invoice.setUpdatedBy(currentUser.getId());
-        invoice.setUpdatedAt(LocalDateTime.now());
 
         // Handle attachments if provided
         if (attachments != null && !attachments.isEmpty()) {
-            // TODO: Update attachments - replace existing ones
+            // TODO: Update attachments
             log.info("Updating {} attachments for invoice: {}", attachments.size(), invoice.getInvoiceNumber());
         }
 
