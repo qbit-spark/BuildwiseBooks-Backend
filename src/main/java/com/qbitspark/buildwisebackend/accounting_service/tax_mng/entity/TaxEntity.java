@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -21,7 +22,7 @@ public class TaxEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID taxId;
     private String taxName;
-    private double taxPercent;
+    private BigDecimal taxPercent;
     @Column(name = "tax_description", columnDefinition = "TEXT")
     private String taxDescription;
 

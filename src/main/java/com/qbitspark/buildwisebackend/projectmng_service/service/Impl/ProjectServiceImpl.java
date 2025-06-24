@@ -227,6 +227,25 @@ public class ProjectServiceImpl implements ProjectService {
         return projectPage.map(this::mapToProjectResponse);
     }
 
+    @Override
+    public List<ProjectResponseSummary> getAllProjectsAmBelongingToOrganisationUnpaginated(UUID organisationId) throws ItemNotFoundException {
+
+        AccountEntity authenticatedAccount = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        // Get all projects where the member is a team member (excluding deleted projects)
+        List<ProjectEntity> projects = projectRepo.findByTeamMembersOrganisationMemberAndStatusNot(
+                member, ProjectStatus.DELETED);
+
+        return projects.stream()
+                .map(this::getProjectResponseSummary)
+                .collect(Collectors.toList());
+    }
+
+
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -296,6 +315,14 @@ public class ProjectServiceImpl implements ProjectService {
         response.setContractNumber(project.getContractNumber());
         response.setCreatedBy(project.getCreatedBy().getAccount().getUserName());
 
+        return response;
+    }
+
+    public ProjectResponseSummary getProjectResponseSummary(ProjectEntity project) {
+        ProjectResponseSummary response = new ProjectResponseSummary();
+        response.setProjectId(project.getProjectId());
+        response.setName(project.getName());
+        response.setClientName(project.getClient().getName());
         return response;
     }
 }

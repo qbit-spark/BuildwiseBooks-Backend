@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -15,7 +16,7 @@ import java.util.UUID;
 public class TaxResponse {
     private UUID taxId;
     private String taxName;
-    private Double taxPercent;
+    private BigDecimal taxPercent;
     private String taxDescription;
     private Boolean isActive;
     private LocalDateTime createdDate;

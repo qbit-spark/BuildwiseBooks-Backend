@@ -18,7 +18,6 @@ public class InvoiceDocResponse {
     private String projectName;
     private UUID clientId;
     private String clientName;
-    private InvoiceType invoiceType;
     private InvoiceStatus invoiceStatus;
     private LocalDate dateOfIssue;
     private LocalDate dueDate;
@@ -26,14 +25,13 @@ public class InvoiceDocResponse {
     private UUID organisationId;
     private String organisationName;
     private BigDecimal subtotal;
-    private BigDecimal discountAmount;
     private BigDecimal taxAmount;
     private BigDecimal totalAmount;
     private BigDecimal amountPaid;
     private BigDecimal creditApplied;
     private BigDecimal amountDue;
-    private String currency;
     private List<InvoiceLineItemResponse> lineItems;
+    private List<InvoiceTaxDetailResponse> taxDetails;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String createdByUserName;

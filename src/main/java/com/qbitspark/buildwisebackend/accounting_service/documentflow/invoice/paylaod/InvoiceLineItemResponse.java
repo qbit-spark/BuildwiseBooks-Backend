@@ -13,9 +13,6 @@ public class InvoiceLineItemResponse {
     private BigDecimal rate;
     private BigDecimal quantity;
     private BigDecimal lineTotal;
-    private TaxType taxType;
-    private BigDecimal taxRate;
-    private BigDecimal taxAmount;
     private String unitOfMeasure;
     private Integer lineOrder;
 }

@@ -23,5 +23,6 @@ public interface ProjectRepo extends JpaRepository<ProjectEntity, UUID> {
      * Find projects by team member and exclude deleted ones
      */
     Page<ProjectEntity> findByTeamMembersOrganisationMemberAndStatusNot(OrganisationMember member, ProjectStatus status, Pageable pageable);
+    List<ProjectEntity> findByTeamMembersOrganisationMemberAndStatusNot(OrganisationMember member, ProjectStatus status);
 
 }

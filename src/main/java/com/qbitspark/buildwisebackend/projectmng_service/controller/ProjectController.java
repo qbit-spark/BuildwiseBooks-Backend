@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -82,6 +83,14 @@ public class ProjectController {
 
         Page<ProjectResponse> response = projectService.getAllProjectsAmBelongingToOrganisation(organisationId, page, size);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("My projects retrieved successfully", response));
+    }
+
+    @GetMapping("/organisation/{organisationId}/my-projects/unpaginated")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getAllMyProjectsInOrganisation(
+            @PathVariable UUID organisationId) throws ItemNotFoundException {
+
+        List<ProjectResponseSummary> response = projectService.getAllProjectsAmBelongingToOrganisationUnpaginated(organisationId);
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("All my projects retrieved successfully", response));
     }
 
 }

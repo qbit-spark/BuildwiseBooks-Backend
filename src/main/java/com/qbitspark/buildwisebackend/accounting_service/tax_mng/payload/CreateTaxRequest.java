@@ -11,6 +11,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 
+import java.beans.BeanInfo;
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,7 +25,7 @@ public class CreateTaxRequest {
     @NotNull(message = "Tax percentage is required")
     @DecimalMin(value = "0.0", message = "Tax percentage cannot be negative")
     @DecimalMax(value = "100.0", message = "Tax percentage cannot exceed 100%")
-    private Double taxPercent;
+    private BigDecimal taxPercent;
 
     private String taxDescription;
 

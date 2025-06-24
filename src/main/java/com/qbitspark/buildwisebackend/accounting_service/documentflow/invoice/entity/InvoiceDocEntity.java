@@ -84,7 +84,6 @@ public class InvoiceDocEntity {
     @Builder.Default
     private BigDecimal amountDue = BigDecimal.ZERO;
 
-    // Fixed: Added @ElementCollection and @JdbcTypeCode for JSONB
     @ElementCollection
     @CollectionTable(name = "invoice_tax_details", joinColumns = @JoinColumn(name = "invoice_id"))
     @Column(name = "tax_details", columnDefinition = "jsonb")
