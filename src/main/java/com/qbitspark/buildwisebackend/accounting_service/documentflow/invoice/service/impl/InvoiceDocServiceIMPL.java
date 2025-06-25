@@ -504,4 +504,5 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         return member;
     }
+
 }
