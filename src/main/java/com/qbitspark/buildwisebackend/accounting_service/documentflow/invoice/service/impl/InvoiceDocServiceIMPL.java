@@ -67,7 +67,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     @Transactional
     public InvoiceDocResponse createInvoiceWithAttachments(UUID organisationId, CreateInvoiceDocRequest request, List<MultipartFile> attachments) throws ItemNotFoundException, AccessDeniedException {
 
-        //Btro....
         AccountEntity currentUser = getAuthenticatedAccount();
 
         ProjectEntity project = projectRepo.findById(request.getProjectId())
@@ -115,7 +114,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         // Convert to response
         return mapToInvoiceResponse(savedInvoice, currentUser, request.getCreditApplied());
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -173,7 +171,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         return mapToInvoiceResponse(invoice, currentUser, null);
     }
-
 
     @Override
     @Transactional

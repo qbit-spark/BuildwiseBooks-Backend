@@ -3,10 +3,12 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.c
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.paylaod.*;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceDocService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.RandomExceptions;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +31,20 @@ public class InvoiceDocController {
 
     private final InvoiceDocService invoiceDocService;
 
+
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<GlobeSuccessResponseBuilder> createInvoice(
             @PathVariable UUID organisationId,
             @RequestPart("invoice") String invoiceJson,
-            @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments)
-            throws ItemNotFoundException, AccessDeniedException, JsonProcessingException {
+            @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments,
+            @RequestParam(value = "action") ActionType action)
+            throws ItemNotFoundException, AccessDeniedException, JsonProcessingException, RandomExceptions {
+
+        // Input validation
+        if (action == null) {
+            throw new IllegalArgumentException("Action parameter is required and cannot be null");
+        }
 
         // Parse JSON manually
         ObjectMapper objectMapper = new ObjectMapper();
@@ -42,11 +52,29 @@ public class InvoiceDocController {
 
         CreateInvoiceDocRequest request = objectMapper.readValue(invoiceJson, CreateInvoiceDocRequest.class);
 
-        InvoiceDocResponse response = invoiceDocService.createInvoiceWithAttachments(
-                organisationId, request, attachments);
+        InvoiceDocResponse response;
+        String successMessage = "";
 
+        switch (action) {
+            case SAVE:
+                response = invoiceDocService.createInvoiceWithAttachments(
+                        organisationId, request, attachments);
+                successMessage = "Invoice saved successfully";
+                break;
+
+            case SAVE_AND_APPROVAL:
+                //Save and approval will be here
+                response = invoiceDocService.createInvoiceWithAttachments(
+                        organisationId, request, attachments);
+                successMessage = "Invoice saved and ready for approval successfully";
+
+                break;
+
+            default:
+                throw new RandomExceptions("Unsupported action type: " + action);
+        }
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(GlobeSuccessResponseBuilder.success("Invoice created successfully", response));
+                .body(GlobeSuccessResponseBuilder.success(successMessage, response));
     }
 
     @GetMapping
