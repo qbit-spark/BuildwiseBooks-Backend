@@ -2,7 +2,7 @@ package com.qbitspark.buildwisebackend.authentication_service.Service.IMPL;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import com.qbitspark.buildwisebackend.globe_api_client.BasicAuthApiClient;
+import com.qbitspark.buildwisebackend.globe_api_client.sms_client.BasicAuthApiClient;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.RandomExceptions;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.VerificationException;
@@ -31,7 +31,6 @@ public class SMSOTPIMPL implements SMSOTPService {
 
     private final UserOTPRepository userOTPRepository;
     private final AccountRepo userManagerRepository;
-
     private final JWTProvider tokenProvider;
     private final BasicAuthApiClient basicAuthApiClient;
 
@@ -46,16 +45,12 @@ public class SMSOTPIMPL implements SMSOTPService {
     @Value("${api.sms-sender}")
     private  String SENDER_ADDRESS;
 
-
-
     @Override
     public String generateAndSendSMSOTP(String phoneNumber) throws RandomExceptions, JsonProcessingException, ItemNotFoundException {
 
         AccountEntity user = userManagerRepository.findAccountEntitiesByPhoneNumber(phoneNumber).orElseThrow(()-> new ItemNotFoundException("No such user with given phone number"));
 
-
         UserOTP existingOTP = userOTPRepository.findUserOTPByUser(user);
-
 
         String newOtpCode = generateOtpCode();
 

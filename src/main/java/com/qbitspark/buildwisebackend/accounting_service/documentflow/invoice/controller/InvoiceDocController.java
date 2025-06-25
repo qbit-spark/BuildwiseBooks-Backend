@@ -32,7 +32,6 @@ public class InvoiceDocController {
     private final InvoiceDocService invoiceDocService;
 
 
-
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<GlobeSuccessResponseBuilder> createInvoice(
             @PathVariable UUID organisationId,
@@ -67,7 +66,6 @@ public class InvoiceDocController {
                 response = invoiceDocService.createInvoiceWithAttachments(
                         organisationId, request, attachments);
                 successMessage = "Invoice saved and ready for approval successfully";
-
                 break;
 
             default:

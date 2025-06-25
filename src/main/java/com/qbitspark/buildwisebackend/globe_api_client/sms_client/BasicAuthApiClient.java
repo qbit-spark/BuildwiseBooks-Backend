@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.globe_api_client;
+package com.qbitspark.buildwisebackend.globe_api_client.sms_client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -93,12 +93,7 @@ public class BasicAuthApiClient {
 
         // Getters, setters, and any other methods if needed
     }
-
-
-
-
-
-
+    
     // Create basic authentication headers
     private HttpHeaders createBasicAuthHeaders(String username, String password) {
         String auth = username + ":" + password;

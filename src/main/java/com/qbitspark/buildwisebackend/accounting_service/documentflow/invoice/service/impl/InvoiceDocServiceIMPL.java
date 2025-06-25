@@ -485,6 +485,8 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         response.setProjectName(invoice.getProject().getName());
         response.setClientName(invoice.getClient().getName());
         response.setLineItemCount(invoice.getLineItems().size());
+        response.setDateOfIssue(invoice.getDateOfIssue());
+        response.setDueDate(invoice.getDueDate());
         return response;
     }
 

@@ -4,6 +4,7 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.en
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -12,6 +13,8 @@ public class SummaryInvoiceDocResponse {
     private String invoiceNumber;
     private InvoiceStatus status;
     private BigDecimal totalAmount;
+    private LocalDate dateOfIssue;
+    private LocalDate dueDate;
     private String projectName;
     private String clientName;
     private Integer lineItemCount;
