@@ -51,13 +51,14 @@ public class OrgBudgetEntity {
 
     private String description;
 
-    @Column(nullable = false)
     private UUID createdBy;
 
     @Column(nullable = false)
     private LocalDateTime createdDate;
 
+    //This can be null, because a sometime budget is initialized by project creation
     private UUID modifiedBy;
+
     private LocalDateTime modifiedDate;
 
     @Column(nullable = false)

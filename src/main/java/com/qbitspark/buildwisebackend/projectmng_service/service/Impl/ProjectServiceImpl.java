@@ -35,6 +35,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -65,6 +66,9 @@ public class ProjectServiceImpl implements ProjectService {
 
         OrganisationMember creator = validateMemberPermissions(authenticatedAccount, organisation,
                 Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
+
+        //If this organisation does not have an active project, then user can perform this action
+        validateOrgBudget(organisation);
 
         ClientEntity client = clientsRepo.findClientEntitiesByClientIdAndOrganisation(request.getClientId(), organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Client does not exist in this organisation"));
@@ -323,5 +327,28 @@ public class ProjectServiceImpl implements ProjectService {
         response.setName(project.getName());
         response.setClientName(project.getClient().getName());
         return response;
+    }
+
+    private void validateOrgBudget(OrganisationEntity organisation) throws ItemNotFoundException {
+
+        Optional<OrgBudgetEntity> activeBudgetOpt = orgBudgetRepo.findByOrganisationAndStatus(
+                organisation,
+                OrgBudgetStatus.ACTIVE
+        );
+
+        if (activeBudgetOpt.isEmpty()) {
+            throw new ItemNotFoundException(
+                    "Organization does not have an active budget. Please create and activate a budget before creating projects."
+            );
+        }
+
+        OrgBudgetEntity activeBudget = activeBudgetOpt.get();
+
+        if (activeBudget.getTotalBudgetAmount() == null ||
+                activeBudget.getTotalBudgetAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ItemNotFoundException(
+                    "Organization budget amount is zero or negative. Please update the budget with a valid amount before creating projects."
+            );
+        }
     }
 }
