@@ -4,7 +4,6 @@ import lombok.Getter;
 
 @Getter
 public enum InvoiceStatus {
-
     DRAFT,
     PENDING_APPROVAL,
     APPROVED,
@@ -13,9 +12,7 @@ public enum InvoiceStatus {
     PAID,
     PARTIALLY_PAID,
     OVERDUE,
-    CANCELLED,
-    REFUNDED;
-
+    ARCHIVE;
     public boolean canBeSent() {
         return this == APPROVED || this == DRAFT;
     }

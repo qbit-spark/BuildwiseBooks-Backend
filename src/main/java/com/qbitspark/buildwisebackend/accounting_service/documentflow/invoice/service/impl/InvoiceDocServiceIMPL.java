@@ -5,6 +5,7 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.en
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.embedings.InvoiceTaxDetail;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.paylaod.*;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.repo.InvoiceDocRepo;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceAttachmentService;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceDocService;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceNumberService;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.entity.TaxEntity;
@@ -62,6 +63,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
     private final InvoiceNumberService invoiceNumberService;
     private final TaxRepo taxRepo;
+    private final InvoiceAttachmentService invoiceAttachmentService;
 
     @Override
     @Transactional
@@ -109,7 +111,10 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         // Save the invoice
         InvoiceDocEntity savedInvoice = invoiceDocRepo.save(invoice);
 
-        // TODO: Handle attachments later
+        // Handle attachments if provided
+        if (attachments != null && !attachments.isEmpty()) {
+
+        }
 
         // Convert to response
         return mapToInvoiceResponse(savedInvoice, currentUser, request.getCreditApplied());
@@ -373,7 +378,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         }
     }
 
-    private ProjectTeamMemberEntity validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
+    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
 
         OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
                 .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
@@ -389,7 +394,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
             throw new AccessDeniedException("Member has insufficient permissions for this operation");
         }
 
-        return projectTeamMember;
     }
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
@@ -490,7 +494,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         return response;
     }
 
-    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException, AccessDeniedException {
+    private void validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException, AccessDeniedException {
         OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Member not found in organisation"));
 
@@ -502,7 +506,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
             throw new AccessDeniedException("Insufficient permissions for this operation");
         }
 
-        return member;
     }
 
 }

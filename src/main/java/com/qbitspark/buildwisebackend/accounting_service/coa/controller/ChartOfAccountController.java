@@ -14,16 +14,16 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/accounting/chart-of-accounts")
+@RequestMapping("/api/v1/accounting/{organisationId}/coa")
 @RequiredArgsConstructor
 public class ChartOfAccountController {
 
     private final ChartOfAccountService chartOfAccountService;
 
     /**
-     * Get a chart of accounts for organization
+     * Get a chart of accounts for the organization
      */
-    @GetMapping("/organisation/{organisationId}")
+    @GetMapping
     public ResponseEntity<GroupedChartOfAccountsResponse> getGroupedHierarchicalChartOfAccounts(
             @PathVariable UUID organisationId) throws ItemNotFoundException {
 
@@ -35,7 +35,7 @@ public class ChartOfAccountController {
     /**
      * Initialize default chart of accounts for organization (one-time setup)
      */
-    @PostMapping("/initialize/{organisationId}")
+    @PostMapping("/initialize")
     public ResponseEntity<GlobeSuccessResponseBuilder> initializeDefaultChartOfAccounts(
             @PathVariable UUID organisationId) throws ItemNotFoundException {
 
@@ -47,7 +47,7 @@ public class ChartOfAccountController {
     }
 
     /**
-     * Add a new account to existing chart of accounts
+     * Add a new account to the existing chart of accounts
      */
     @PostMapping("/add")
     public ResponseEntity<GlobeSuccessResponseBuilder> addNewAccount(
@@ -72,4 +72,5 @@ public class ChartOfAccountController {
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
                 "Account updated successfully", response));
     }
+
 }
