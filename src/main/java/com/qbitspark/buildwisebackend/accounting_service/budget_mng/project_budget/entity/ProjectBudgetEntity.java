@@ -2,7 +2,6 @@ package com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_bud
 
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.enums.ProjectBudgetStatus;
-import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,6 +11,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -26,31 +27,24 @@ public class ProjectBudgetEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID projectBudgetId;
 
+
     @ManyToOne
     @JoinColumn(name = "org_budget_id", nullable = false)
     private OrgBudgetEntity orgBudget;
 
-
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "project_id", nullable = false)
     private ProjectEntity project;
 
-
-    @ManyToOne
-    @JoinColumn(name = "chart_of_account_id", nullable = false)
-    private ChartOfAccounts chartOfAccount;
+    @Column(precision = 18, scale = 2, nullable = false)
+    private BigDecimal totalBudgetAmount = BigDecimal.ZERO;
 
 
     @Column(precision = 18, scale = 2, nullable = false)
-    private BigDecimal budgetAmount;
-
-
-    @Column(precision = 18, scale = 2, nullable = false)
-    private BigDecimal spentAmount = BigDecimal.ZERO;
-
+    private BigDecimal totalSpentAmount = BigDecimal.ZERO;
 
     @Column(precision = 18, scale = 2, nullable = false)
-    private BigDecimal committedAmount = BigDecimal.ZERO;
+    private BigDecimal totalCommittedAmount = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -67,17 +61,37 @@ public class ProjectBudgetEntity {
     private UUID modifiedBy;
     private LocalDateTime modifiedDate;
 
+    private UUID approvedBy;
+    private LocalDateTime approvedDate;
+
     private boolean isActive = true;
     private boolean isDeleted = false;
 
 
-    public BigDecimal getRemainingAmount() {
-        return budgetAmount.subtract(spentAmount).subtract(committedAmount);
+    @OneToMany(mappedBy = "projectBudget", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ProjectBudgetLineItemEntity> lineItems = new ArrayList<>();
+
+
+    public BigDecimal getTotalRemainingAmount() {
+        return totalBudgetAmount.subtract(totalSpentAmount).subtract(totalCommittedAmount);
     }
 
 
     public boolean canSpend(BigDecimal amount) {
-        return getRemainingAmount().compareTo(amount) >= 0;
+        return getTotalRemainingAmount().compareTo(amount) >= 0;
+    }
+
+
+    public void addLineItem(ProjectBudgetLineItemEntity lineItem) {
+        lineItems.add(lineItem);
+        lineItem.setProjectBudget(this);
+        recalculateTotalBudgetAmount();
+    }
+
+    public void recalculateTotalBudgetAmount() {
+        this.totalBudgetAmount = lineItems.stream()
+                .map(ProjectBudgetLineItemEntity::getBudgetAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
 }

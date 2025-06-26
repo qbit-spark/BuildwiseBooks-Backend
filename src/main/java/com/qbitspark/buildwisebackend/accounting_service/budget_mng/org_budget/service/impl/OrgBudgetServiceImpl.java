@@ -1,14 +1,13 @@
 package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.impl;
 
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.BudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.CreateBudgetRequest;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.UpdateBudgetRequest;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.OrgBudgetService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.clientsmng_service.repo.ClientsRepo;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
@@ -64,7 +63,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         budget.setDescription(request.getDescription());
         budget.setCreatedBy(authenticatedAccount.getAccountId());
         budget.setCreatedDate(LocalDateTime.now());
-        budget.setStatus(BudgetStatus.DRAFT);
+        budget.setStatus(OrgBudgetStatus.DRAFT);
         budget.setModifiedBy(authenticatedAccount.getAccountId());
         budget.setModifiedDate(LocalDateTime.now());
         budget.setBudgetVersion(1);
@@ -95,24 +94,24 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         }
 
         // Validate budget status (only APPROVED budgets can be activated)
-        if (budgetToActivate.getStatus() != BudgetStatus.APPROVED) {
+        if (budgetToActivate.getStatus() != OrgBudgetStatus.APPROVED) {
             throw new ItemNotFoundException("Only approved budgets can be activated");
         }
 
         // CRITICAL: Deactivate any existing active budget
         Optional<OrgBudgetEntity> currentActiveBudget = orgBudgetRepo
-                .findByOrganisationAndStatus(organisation, BudgetStatus.ACTIVE);
+                .findByOrganisationAndStatus(organisation, OrgBudgetStatus.ACTIVE);
 
         if (currentActiveBudget.isPresent()) {
             OrgBudgetEntity activeBudget = currentActiveBudget.get();
-            activeBudget.setStatus(BudgetStatus.CLOSED);
+            activeBudget.setStatus(OrgBudgetStatus.CLOSED);
             activeBudget.setModifiedBy(authenticatedAccount.getAccountId());
             activeBudget.setModifiedDate(LocalDateTime.now());
             orgBudgetRepo.save(activeBudget);
         }
 
         // Activate the new budget
-        budgetToActivate.setStatus(BudgetStatus.ACTIVE);
+        budgetToActivate.setStatus(OrgBudgetStatus.ACTIVE);
         budgetToActivate.setModifiedBy(authenticatedAccount.getAccountId());
         budgetToActivate.setModifiedDate(LocalDateTime.now());
         orgBudgetRepo.save(budgetToActivate);
@@ -155,7 +154,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         }
 
         // CRITICAL: Only allow updates to DRAFT budgets
-        if (budgetToUpdate.getStatus() != BudgetStatus.DRAFT) {
+        if (budgetToUpdate.getStatus() != OrgBudgetStatus.DRAFT) {
             throw new ItemNotFoundException("Only draft budgets can be updated");
         }
 

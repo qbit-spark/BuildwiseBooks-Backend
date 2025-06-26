@@ -1,22 +1,25 @@
 package com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.service.impl;
 
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.BudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetEntity;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.enums.ProjectBudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetLineItemEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.DistributeBudgetRequest;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.enums.ProjectBudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.repo.ProjectBudgetLineItemRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.repo.ProjectBudgetRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.service.ProjectBudgetService;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
+import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
-import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberRole;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
@@ -29,103 +32,161 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ProjectBudgetServiceImpl implements ProjectBudgetService {
 
+    private final ProjectBudgetRepo projectBudgetRepo;
+    private final ProjectBudgetLineItemRepo projectBudgetLineItemRepo;
+    private final ChartOfAccountsRepo chartOfAccountRepo;
     private final OrgBudgetRepo orgBudgetRepo;
     private final ProjectRepo projectRepo;
-    private final ChartOfAccountsRepo chartOfAccountRepo;
-    private final ProjectBudgetRepo projectBudgetRepo;
     private final AccountRepo accountRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
+    private final OrganisationRepo organisationRepo;
 
     @Override
-    public List<ProjectBudgetEntity> distributeBudgetToProject(DistributeBudgetRequest request, UUID orgBudgetId, UUID projectId) throws ItemNotFoundException, AccessDeniedException {
+    public void initialiseProjectBudget(OrgBudgetEntity orgBudget, ProjectEntity project)
+            throws ItemNotFoundException {
+
+        validateProject(project, orgBudget.getOrganisation());
+
+        if (orgBudget.getStatus() != OrgBudgetStatus.ACTIVE) {
+            throw new ItemNotFoundException("There is no active financial year budget in this organisation");
+        }
+
+        if (projectBudgetRepo.existsByProject(project)) {
+            throw new ItemNotFoundException("This project already has a budget");
+        }
+
+        // Get all EXPENSE accounts that are postable and active
+        List<ChartOfAccounts> expenseAccounts = chartOfAccountRepo.findByOrganisationAndAccountTypeAndIsActiveAndIsPostable(
+                orgBudget.getOrganisation(), AccountType.EXPENSE, true, true);
+
+        if (expenseAccounts.isEmpty()) {
+            throw new ItemNotFoundException("No expense accounts found in this organisation, please configure chats of account to perform this action");
+        }
+
+
+        ProjectBudgetEntity projectBudget = new ProjectBudgetEntity();
+        projectBudget.setOrgBudget(orgBudget);
+        projectBudget.setProject(project);
+        projectBudget.setTotalBudgetAmount(BigDecimal.ZERO);
+        projectBudget.setTotalSpentAmount(BigDecimal.ZERO);
+        projectBudget.setTotalCommittedAmount(BigDecimal.ZERO);
+        projectBudget.setStatus(ProjectBudgetStatus.DRAFT);
+        projectBudget.setBudgetNotes("Initialized - awaiting budget distribution");
+        projectBudget.setCreatedBy(null);
+        projectBudget.setCreatedDate(LocalDateTime.now());
+
+        // Create line items for each expense account with $0
+        for (ChartOfAccounts account : expenseAccounts) {
+            ProjectBudgetLineItemEntity lineItem = new ProjectBudgetLineItemEntity();
+            lineItem.setChartOfAccount(account);
+            lineItem.setBudgetAmount(BigDecimal.ZERO);
+            lineItem.setSpentAmount(BigDecimal.ZERO);
+            lineItem.setCommittedAmount(BigDecimal.ZERO);
+            lineItem.setLineItemNotes("Initialized");
+            lineItem.setCreatedDate(LocalDateTime.now());
+
+
+            projectBudget.addLineItem(lineItem);
+        }
+
+        projectBudgetRepo.save(projectBudget);
+    }
+
+    @Override
+    public ProjectBudgetEntity distributeBudgetToProject(DistributeBudgetRequest request, UUID projectBudgetId, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
 
-        OrgBudgetEntity orgBudget = orgBudgetRepo.findById(orgBudgetId)
-                .orElseThrow(() -> new ItemNotFoundException("Organization budget not found"));
+        ProjectBudgetEntity projectBudget = projectBudgetRepo.findById(projectBudgetId)
+                .orElseThrow(() -> new ItemNotFoundException("This project does not have a budget. Please initialise budget first."));
 
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
+
+        validateProject(projectBudget.getProject(), organisation);
+
+        validateProjectMemberPermissions(authenticatedAccount, projectBudget.getProject(),
+                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+
+
+        if (projectBudget.getStatus() != ProjectBudgetStatus.DRAFT) {
+            throw new ItemNotFoundException("Only draft project budgets can be updated");
+        }
+
+
+        if (projectBudget.getOrgBudget().getStatus() != OrgBudgetStatus.ACTIVE) {
+            throw new ItemNotFoundException("Associated organisation budget is not active!");
+        }
+
+
+        BigDecimal totalDistributionAmount = request.getAccountDistributions().stream()
+                .map(DistributeBudgetRequest.AccountDistribution::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
+        if (projectBudget.getOrgBudget().getAvailableAmount().compareTo(totalDistributionAmount) < 0) {
+            throw new ItemNotFoundException("Insufficient budget available. Available: " +
+                    projectBudget.getOrgBudget().getAvailableAmount() + ", Requested: " + totalDistributionAmount);
+        }
+
+        for (DistributeBudgetRequest.AccountDistribution distribution : request.getAccountDistributions()) {
+            ChartOfAccounts account = chartOfAccountRepo.findById(distribution.getAccountId())
+                    .orElseThrow(() -> new ItemNotFoundException("Chart of account not found: " + distribution.getAccountId()));
+
+            ProjectBudgetLineItemEntity lineItem = projectBudgetLineItemRepo.findByProjectBudgetAndChartOfAccount(projectBudget, account)
+                    .orElseThrow(() -> new ItemNotFoundException("Line item not found for account: " + account.getName()));
+
+            lineItem.setBudgetAmount(distribution.getAmount());
+            lineItem.setLineItemNotes(distribution.getDescription());
+            lineItem.setModifiedDate(LocalDateTime.now());
+
+            projectBudgetLineItemRepo.save(lineItem);
+        }
+
+
+        projectBudget.recalculateTotalBudgetAmount();
+        projectBudget.setModifiedBy(authenticatedAccount.getAccountId());
+        projectBudget.setModifiedDate(LocalDateTime.now());
+
+        // Update organization budget allocated amount
+        OrgBudgetEntity orgBudget = projectBudget.getOrgBudget();
+        orgBudget.setAllocatedAmount(orgBudget.getAllocatedAmount().add(totalDistributionAmount));
+        orgBudgetRepo.save(orgBudget);
+
+        return projectBudgetRepo.save(projectBudget);
+    }
+
+    @Override
+    public ProjectBudgetEntity getProjectBudget(UUID projectId, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity authenticatedAccount = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
-
-        validateProject(project, orgBudget.getOrganisation());
+        validateProject(project, organisation);
 
         validateProjectMemberPermissions(authenticatedAccount, project,
-                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER, TeamMemberRole.MEMBER));
 
-
-        if (orgBudget.getStatus() != BudgetStatus.ACTIVE) {
-            throw new ItemNotFoundException("Only active organization budgets can distribute money");
-        }
-
-
-        BigDecimal totalAmount = request.getAccountDistributions().stream()
-                .map(DistributeBudgetRequest.AccountDistribution::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // Step 7: Check if org budget has enough money
-        if (orgBudget.getAvailableAmount().compareTo(totalAmount) < 0) {
-            throw new ItemNotFoundException("Insufficient budget available. Available: " +
-                    orgBudget.getAvailableAmount() + ", Requested: " + totalAmount);
-        }
-
-        List<ProjectBudgetEntity> createdBudgets = new ArrayList<>();
-
-        for (DistributeBudgetRequest.AccountDistribution distribution : request.getAccountDistributions()) {
-
-            ChartOfAccounts account = chartOfAccountRepo.findById(distribution.getAccountId())
-                    .orElseThrow(() -> new ItemNotFoundException("Chart of account not found: " + distribution.getAccountId()));
-
-            ProjectBudgetEntity projectBudget = new ProjectBudgetEntity();
-            projectBudget.setOrgBudget(orgBudget);
-            projectBudget.setProject(project);
-            projectBudget.setChartOfAccount(account);
-            projectBudget.setBudgetAmount(distribution.getAmount());
-            projectBudget.setSpentAmount(BigDecimal.ZERO);
-            projectBudget.setCommittedAmount(BigDecimal.ZERO);
-            projectBudget.setStatus(ProjectBudgetStatus.DRAFT);
-            projectBudget.setBudgetNotes(distribution.getDescription());
-            projectBudget.setCreatedBy(authenticatedAccount.getAccountId());
-            projectBudget.setCreatedDate(LocalDateTime.now());
-
-            ProjectBudgetEntity saved = projectBudgetRepo.save(projectBudget);
-            createdBudgets.add(saved);
-        }
-
-
-        orgBudget.setAllocatedAmount(orgBudget.getAllocatedAmount().add(totalAmount));
-        orgBudgetRepo.save(orgBudget);
-
-        return createdBudgets;
-    }
-
-    private void validateMemberPermissions(AccountEntity account, OrganisationEntity organisation, List<MemberRole> allowedRoles) throws ItemNotFoundException {
-
-        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
-
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new ItemNotFoundException("Member is not active");
-        }
-
-        if (!allowedRoles.contains(member.getRole())) {
-            throw new ItemNotFoundException("Member has insufficient permissions");
-        }
-
+        return projectBudgetRepo.findByProject(project)
+                .orElseThrow(() -> new ItemNotFoundException("Project budget not found. Initialize budget first."));
     }
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
@@ -143,10 +204,11 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
         throw new ItemNotFoundException("User is not authenticated");
     }
 
-    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
+    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles)
+            throws ItemNotFoundException, AccessDeniedException {
 
         OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
-                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
+                .orElseThrow(() -> new ItemNotFoundException("Authenticated user is not part of this organisation"));
 
         if (organisationMember.getStatus() != MemberStatus.ACTIVE) {
             throw new ItemNotFoundException("Member is not active");
@@ -158,7 +220,6 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
         if (!allowedRoles.contains(projectTeamMember.getRole())) {
             throw new AccessDeniedException("Member has insufficient permissions for this operation");
         }
-
     }
 
     private void validateProject(ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {
@@ -166,5 +227,4 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
             throw new ItemNotFoundException("Project does not belong to this organisation");
         }
     }
-
 }

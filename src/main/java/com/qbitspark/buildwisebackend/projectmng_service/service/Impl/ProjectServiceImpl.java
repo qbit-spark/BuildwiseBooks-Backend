@@ -1,5 +1,9 @@
 package com.qbitspark.buildwisebackend.projectmng_service.service.Impl;
 
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.service.ProjectBudgetService;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.repo.ClientsRepo;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
@@ -13,16 +17,12 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
-import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.enums.ProjectStatus;
-import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
 import com.qbitspark.buildwisebackend.projectmng_service.payloads.*;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
-import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.service.ProjectCodeSequenceService;
 import com.qbitspark.buildwisebackend.projectmng_service.service.ProjectService;
 import com.qbitspark.buildwisebackend.projectmng_service.service.ProjectTeamMemberService;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,8 +35,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,6 +51,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectTeamMemberService projectTeamMemberService;
     private final ClientsRepo clientsRepo;
     private final ProjectCodeSequenceService projectCodeSequenceService;
+    private final ProjectBudgetService projectBudgetService;
+    private final OrgBudgetRepo orgBudgetRepo;
 
     @Transactional
     @Override
@@ -92,6 +92,9 @@ public class ProjectServiceImpl implements ProjectService {
 
         ProjectEntity savedProject = projectRepo.save(project);
 
+        //Initialize project budget
+        OrgBudgetEntity orgBudget = orgBudgetRepo.findByOrganisationAndStatus(organisation, OrgBudgetStatus.ACTIVE).orElseThrow(() -> new ItemNotFoundException("Organisation has no active budget"));
+        projectBudgetService.initialiseProjectBudget(orgBudget, savedProject);
 
         // Create a default team member for the creator AND Get the actual organization owner
         OrganisationMember organisationOwner = organisationMemberRepo

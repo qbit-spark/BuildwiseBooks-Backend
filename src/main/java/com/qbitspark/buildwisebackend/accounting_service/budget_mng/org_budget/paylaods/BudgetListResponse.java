@@ -1,6 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods;
 
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.BudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,7 +24,7 @@ public class BudgetListResponse {
     private BigDecimal totalBudgetAmount;
     private BigDecimal allocatedAmount;
     private BigDecimal availableAmount;
-    private BudgetStatus status;
+    private OrgBudgetStatus status;
     private LocalDateTime createdDate;
 
 }

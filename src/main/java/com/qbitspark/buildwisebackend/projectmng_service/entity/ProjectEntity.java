@@ -51,9 +51,6 @@ public class ProjectEntity {
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "budget", nullable = false, precision = 15, scale = 2)
-    private BigDecimal budget;
-
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organisation_id", nullable = false)

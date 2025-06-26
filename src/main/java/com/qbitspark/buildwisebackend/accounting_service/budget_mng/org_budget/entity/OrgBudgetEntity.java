@@ -1,12 +1,11 @@
 package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity;
 
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.BudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import jakarta.persistence.*;
 
 import java.util.UUID;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +13,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "org_budget")
@@ -49,7 +47,7 @@ public class OrgBudgetEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private BudgetStatus status = BudgetStatus.DRAFT;
+    private OrgBudgetStatus status = OrgBudgetStatus.DRAFT;
 
     private String description;
 
