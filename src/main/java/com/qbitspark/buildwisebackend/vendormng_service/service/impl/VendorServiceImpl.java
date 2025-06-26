@@ -247,7 +247,6 @@ public class VendorServiceImpl implements VendorService {
         response.setProjectId(project.getProjectId());
         response.setName(project.getName());
         response.setDescription(project.getDescription());
-        response.setBudget(project.getBudget());
         response.setOrganisationName(project.getOrganisation().getOrganisationName());
         response.setOrganisationId(project.getOrganisation().getOrganisationId());
         response.setStatus(project.getStatus().toString());

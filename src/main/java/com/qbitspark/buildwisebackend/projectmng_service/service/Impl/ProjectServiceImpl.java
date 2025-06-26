@@ -79,7 +79,6 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectEntity project = new ProjectEntity();
         project.setName(request.getName());
         project.setDescription(request.getDescription());
-        project.setBudget(request.getBudget());
         project.setOrganisation(organisation);
         organisation.addProject(project);
         project.setCreatedBy(creator);
@@ -172,9 +171,7 @@ public class ProjectServiceImpl implements ProjectService {
         if (request.getDescription() != null && !request.getDescription().trim().isEmpty()) {
             project.setDescription(request.getDescription().trim());
         }
-        if (request.getBudget() != null) {
-            project.setBudget(request.getBudget());
-        }
+
         if (request.getContractNumber() != null) {
             project.setContractNumber(request.getContractNumber());
         }
@@ -306,7 +303,6 @@ public class ProjectServiceImpl implements ProjectService {
         response.setProjectId(project.getProjectId());
         response.setName(project.getName());
         response.setDescription(project.getDescription());
-        response.setBudget(project.getBudget());
         response.setOrganisationName(project.getOrganisation().getOrganisationName());
         response.setOrganisationId(project.getOrganisation().getOrganisationId());
         response.setStatus(project.getStatus().name());

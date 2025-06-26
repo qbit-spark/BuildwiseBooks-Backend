@@ -15,7 +15,6 @@ public class ProjectResponse {
     private String projectCode;
     private String name;
     private String description;
-    private BigDecimal budget;
     private String organisationName;
     private UUID organisationId;
     private String status;

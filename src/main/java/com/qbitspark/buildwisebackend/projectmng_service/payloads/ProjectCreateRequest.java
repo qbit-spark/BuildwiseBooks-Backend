@@ -25,10 +25,6 @@ public class ProjectCreateRequest {
     @NotBlank(message = "The contract number is required")
     private String contractNumber;
 
-    @DecimalMax(value = "9999999999999.99", message = "Budget cannot exceed 9,999,999,999,999.99")
-    @DecimalMin(value = "0.00", message = "Budget cannot be negative")
-    private BigDecimal budget;
-
     @NotNull(message = "Client ID is required")
     private UUID clientId;
 
