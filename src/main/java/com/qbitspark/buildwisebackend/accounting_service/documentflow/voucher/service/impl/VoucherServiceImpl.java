@@ -202,35 +202,34 @@ public class VoucherServiceImpl implements VoucherService {
         OrganisationMember organisationMember = validateOrganisationAccess(currentUser, organisation,
                 List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
 
-        // Get existing voucher
         VoucherEntity existingVoucher = validateVoucherExists(voucherId, organisation);
 
-        // Validate voucher can be updated
+
         validateVoucherCanBeUpdated(existingVoucher);
 
-        // Validate project permissions
+
         validateProjectMemberPermissions(currentUser, existingVoucher.getProject(),
                 List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
 
-        // Update voucher fields
+
         updateVoucherBasicFields(existingVoucher, request);
 
-        // Update budget line item if provided
-        if (request.getProjectBudgetLineItemId() != null) {
-            updateVoucherBudgetLineItem(existingVoucher, request.getProjectBudgetLineItemId());
+
+        if (request.getProjectBudgetAccountId() != null) {
+            updateVoucherBudgetLineItem(existingVoucher, request.getProjectBudgetAccountId());
         }
 
-        // Update beneficiaries if provided
+
         if (request.getBeneficiaries() != null && !request.getBeneficiaries().isEmpty()) {
             updateVoucherBeneficiaries(existingVoucher, request.getBeneficiaries(), organisationId);
         }
 
-        // Update attachments if provided
+
         if (request.getAttachmentIds() != null) {
             existingVoucher.setAttachments(request.getAttachmentIds());
         }
 
-        // Save and return
+
         VoucherEntity updatedVoucher = voucherRepo.save(existingVoucher);
 
         log.info("Voucher {} updated by user {}",

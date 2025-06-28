@@ -108,6 +108,7 @@ public class VoucherController {
         response.setCurrency(voucher.getCurrency());
         response.setCreatedAt(voucher.getCreatedAt());
         response.setUpdatedAt(voucher.getUpdatedAt());
+        response.setBudgetAccountName(voucher.getProjectBudgetLineItem().getChartOfAccount().getName());
 
         // Organisation info
         response.setOrganisationId(voucher.getOrganisation().getOrganisationId());
@@ -137,7 +138,7 @@ public class VoucherController {
                 .collect(Collectors.toList());
         response.setBeneficiaries(beneficiaryResponses);
 
-        // Placeholder for attachments
+
         response.setAttachmentIds(List.of());
 
         return response;
@@ -193,6 +194,5 @@ public class VoucherController {
 
         return response;
     }
-
 
 }

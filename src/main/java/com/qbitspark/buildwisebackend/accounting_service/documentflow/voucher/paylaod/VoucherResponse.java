@@ -21,6 +21,8 @@ public class VoucherResponse {
     private BigDecimal netAmount;
     private String currency;
 
+    private String budgetAccountName;
+
     // Organisation info
     private UUID organisationId;
     private String organisationName;

@@ -12,7 +12,7 @@ public class UpdateVoucherRequest {
     private String generalDescription;
 
 
-    private UUID projectBudgetLineItemId;
+    private UUID projectBudgetAccountId;
 
     @Valid
     private List<VoucherBeneficiaryRequest> beneficiaries;

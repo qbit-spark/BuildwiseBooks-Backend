@@ -198,7 +198,7 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
     public List<ProjectBudgetSummaryResponse> getProjectBudgetSummary(UUID projectId, UUID organisationId)
             throws ItemNotFoundException, AccessDeniedException {
 
-        // Reuse existing validation logic
+
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
@@ -214,12 +214,12 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
         ProjectBudgetEntity projectBudget = projectBudgetRepo.findByProject(project)
                 .orElseThrow(() -> new ItemNotFoundException("Project budget not found"));
 
-        // Get all expense accounts with hierarchy
+
         List<ChartOfAccounts> allExpenseAccounts = chartOfAccountRepo
                 .findByOrganisationAndAccountTypeAndIsActive(
                         organisation, AccountType.EXPENSE, true);
 
-        // Create lookup maps for hierarchy
+
         Map<UUID, ChartOfAccounts> accountMap = allExpenseAccounts.stream()
                 .collect(Collectors.toMap(ChartOfAccounts::getId, account -> account));
 
@@ -228,7 +228,7 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
                         lineItem -> lineItem.getChartOfAccount().getId(),
                         lineItem -> lineItem));
 
-        // Process only detail accounts (postable = true, isHeader = false)
+
         return allExpenseAccounts.stream()
                 .filter(account -> !account.getIsHeader() && account.getIsPostable())
                 .filter(account -> lineItemMap.containsKey(account.getId()))
@@ -285,21 +285,20 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
 
         ProjectBudgetSummaryResponse response = new ProjectBudgetSummaryResponse();
 
-        response.setAccountId(account.getId());               // NEW: Account ID
+        response.setAccountId(lineItem.getLineItemId());
         response.setAccountCode(account.getAccountCode());
         response.setAccountName(account.getName());
         response.setBudgetRemaining(lineItem.getRemainingAmount());
-        response.setAvailableBalance(BigDecimal.ZERO); // Placeholder as requested
+        response.setAvailableBalance(BigDecimal.ZERO);
         response.setNotes(lineItem.getLineItemNotes());
 
-        // Get immediate parent name only
+
         String parentName = getImmediateParentName(account, accountMap);
         response.setHeadingParent(parentName);
 
         return response;
     }
 
-    // 5. SIMPLIFIED: Helper method to get immediate parent only
     private String getImmediateParentName(ChartOfAccounts account, Map<UUID, ChartOfAccounts> accountMap) {
         if (account.getParentAccountId() != null) {
             ChartOfAccounts parent = accountMap.get(account.getParentAccountId());
