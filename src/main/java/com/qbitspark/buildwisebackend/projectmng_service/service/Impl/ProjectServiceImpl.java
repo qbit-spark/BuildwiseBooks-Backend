@@ -279,6 +279,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ItemNotFoundException("Member has insufficient permissions");
         }
 
+
         return member;
     }
 

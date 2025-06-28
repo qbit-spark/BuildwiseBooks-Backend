@@ -1,25 +1,36 @@
 package com.qbitspark.buildwisebackend.vendormng_service.service;
 
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
+import com.qbitspark.buildwisebackend.vendormng_service.entity.VendorEntity;
+import com.qbitspark.buildwisebackend.vendormng_service.enums.VendorStatus;
+import com.qbitspark.buildwisebackend.vendormng_service.enums.VendorType;
 import com.qbitspark.buildwisebackend.vendormng_service.payloads.ProjectResponseForVendor;
 import com.qbitspark.buildwisebackend.vendormng_service.payloads.VendorResponse;
 import com.qbitspark.buildwisebackend.vendormng_service.payloads.CreateVendorRequest;
 import com.qbitspark.buildwisebackend.vendormng_service.payloads.UpdateVendorRequest;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface VendorService {
 
-    VendorResponse createVendorWithinOrganisation(UUID organisationId, CreateVendorRequest request) throws ItemNotFoundException;
+    VendorEntity createVendor(UUID organisationId, CreateVendorRequest request) throws ItemNotFoundException, AccessDeniedException;
 
-    VendorResponse getVendorByIdWithinOrganisation(UUID vendorId) throws ItemNotFoundException;
+    List<VendorEntity> getVendorSummaries(UUID organisationId, VendorType vendorType)
+            throws ItemNotFoundException, AccessDeniedException;
 
-    List<VendorResponse> getAllVendorsWithinOrganisation(UUID organisationId) throws ItemNotFoundException;
+    VendorEntity getVendorById(UUID organisationId, UUID vendorId)
+            throws ItemNotFoundException, AccessDeniedException;
 
-    VendorResponse updateVendorWithinOrganisation(UUID vendorId, UpdateVendorRequest request) throws ItemNotFoundException;
+    Page<VendorEntity> getAllVendors(UUID organisationId, VendorStatus status, Pageable pageable)
+            throws ItemNotFoundException, AccessDeniedException;
 
-    void deleteVendorWithinOrganisation(UUID vendorId) throws ItemNotFoundException;
+    VendorEntity updateVendor(UUID organisationId, UUID vendorId, UpdateVendorRequest request)
+            throws ItemNotFoundException, AccessDeniedException;
 
-   // List<ProjectResponseForVendor> getVendorProjectsWithinOrganisation(UUID vendorId) throws ItemNotFoundException;
+    void deleteVendor(UUID organisationId, UUID vendorId)
+            throws ItemNotFoundException, AccessDeniedException;
 }

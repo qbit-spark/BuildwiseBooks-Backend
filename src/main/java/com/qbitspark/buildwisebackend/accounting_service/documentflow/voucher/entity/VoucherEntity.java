@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity;
 
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetLineItemEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.PaymentMode;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherType;
@@ -47,16 +48,16 @@ public class VoucherEntity {
     @Column(name = "voucher_date", nullable = false)
     private LocalDateTime voucherDate;
 
-    @Column(name = "voucher_type", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private VoucherType voucherType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_budget_line_item_id", nullable = false)
+    private ProjectBudgetLineItemEntity projectBudgetLineItem;
 
     @Column(name = "overall_description", columnDefinition = "TEXT")
     private String overallDescription;
 
     @Column(name = "payment_mode", nullable = false)
     @Enumerated(EnumType.STRING)
-    private PaymentMode paymentMode;
+    private PaymentMode paymentMode = PaymentMode.BANK_TRANSFER;
 
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;
@@ -94,11 +95,9 @@ public class VoucherEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Relationships
     @OneToMany(mappedBy = "voucher", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<VoucherPayeeEntity> payees = new ArrayList<>();
+    private List<VoucherBeneficiaryEntity> beneficiaries = new ArrayList<>();
 
-    @OneToMany(mappedBy = "voucher", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<VoucherAttachmentEntity> attachments = new ArrayList<>();
+    private List<UUID> attachments = new ArrayList<>();
 
 }

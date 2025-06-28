@@ -1,5 +1,8 @@
 package com.qbitspark.buildwisebackend.vendormng_service.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum VendorType {
 
     SUPPLIER("Supplier", "Provides materials, equipment, or goods"),
@@ -23,14 +26,6 @@ public enum VendorType {
     VendorType(String displayName, String description) {
         this.displayName = displayName;
         this.description = description;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     @Override

@@ -3,10 +3,12 @@ package com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_bud
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.DistributeBudgetRequest;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.ProjectBudgetSummaryResponse;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface ProjectBudgetService {
@@ -19,6 +21,9 @@ public interface ProjectBudgetService {
             throws ItemNotFoundException, AccessDeniedException;
 
     ProjectBudgetEntity getProjectBudget(UUID projectId, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException;
+
+    List<ProjectBudgetSummaryResponse> getProjectBudgetSummary(UUID projectId, UUID organisationId)
             throws ItemNotFoundException, AccessDeniedException;
 
 }

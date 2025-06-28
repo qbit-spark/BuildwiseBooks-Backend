@@ -36,21 +36,4 @@ public class BankDetails {
     @Column(name = "bank_code", length = 20)
     private TanzaniaBank bankCode;
 
-
-    // Utility method to check if bank details are complete
-    public boolean isComplete() {
-        return bankName != null && !bankName.trim().isEmpty() &&
-                accountNumber != null && !accountNumber.trim().isEmpty() &&
-                accountName != null && !accountName.trim().isEmpty();
-    }
-
-    // Utility method to check if bank details are empty
-    public boolean isEmpty() {
-        return (bankName == null || bankName.trim().isEmpty()) &&
-                (bankBranch == null || bankBranch.trim().isEmpty()) &&
-                (accountNumber == null || accountNumber.trim().isEmpty()) &&
-                (accountName == null || accountName.trim().isEmpty()) &&
-                (branchCode == null || branchCode.trim().isEmpty()) &&
-                (bankCode == null);
-    }
 }

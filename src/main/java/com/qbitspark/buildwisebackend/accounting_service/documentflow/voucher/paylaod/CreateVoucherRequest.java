@@ -14,24 +14,19 @@ import java.util.UUID;
 @Data
 public class CreateVoucherRequest {
 
-    @NotNull(message = "Voucher date is required")
-    private LocalDate voucherDate;
+    private String generalDescription;
 
-    @NotNull(message = "Voucher type is required")
-    private VoucherType voucherType;
+    @NotNull(message = "Project ID is required")
+    private UUID projectId;
 
-    private UUID projectId; // Optional
+    @NotNull(message = "Project Budget Line Item ID is required")
+    private UUID projectBudgetAccountId;
 
-    @NotNull(message = "Payment mode is required")
-    private PaymentMode paymentMode;
-
-    private String overallDescription;
-
-    @NotEmpty(message = "At least one payee is required")
+    @NotEmpty(message = "At least one beneficiary is required")
     @Valid
-    private List<VoucherPayeeRequest> payees;
+    private List<VoucherBeneficiaryRequest> beneficiaries;
 
     @Valid
-    private List<VoucherAttachmentRequest> attachments;
+    private List<UUID> attachments;
 
 }

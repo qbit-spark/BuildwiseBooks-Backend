@@ -8,6 +8,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 @Data
 public class CreateVendorRequest {
 
@@ -15,7 +19,7 @@ public class CreateVendorRequest {
     @Size(max = 100, message = "Name must be less than 100 characters")
     private String name;
 
-    @NotBlank(message = "The description is required")
+    @NotBlank(message = "Description is required")
     private String description;
 
     @NotBlank(message = "Address is required")
@@ -24,8 +28,8 @@ public class CreateVendorRequest {
     @NotBlank(message = "Office phone is required")
     private String officePhone;
 
-    @NotBlank(message = "The TIN is required")
-    @Size(max = 50, message = "The tin must be less than 50 characters")
+    @NotBlank(message = "TIN is required")
+    @Size(max = 50, message = "TIN must be less than 50 characters")
     private String tin;
 
     @Email(message = "Invalid email format")
@@ -37,4 +41,6 @@ public class CreateVendorRequest {
 
     @Valid
     private BankDetails bankDetails;
+
+    private List<UUID> attachmentIds = new ArrayList<>();
 }

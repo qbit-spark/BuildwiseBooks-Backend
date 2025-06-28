@@ -4,6 +4,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budg
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetLineItemEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.DistributeBudgetRequest;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.ProjectBudgetResponse;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.ProjectBudgetSummaryResponse;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.service.ProjectBudgetService;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
@@ -73,6 +74,23 @@ public class ProjectBudgetController {
         );
 
         return new ResponseEntity<>(successResponse, HttpStatus.OK);
+    }
+
+
+    @GetMapping("/project/{projectId}/summary-list")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getProjectBudgetSummary(
+            @PathVariable UUID projectId,
+            @PathVariable UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        List<ProjectBudgetSummaryResponse> summaries = projectBudgetService.getProjectBudgetSummary(projectId, organisationId);
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Project budget summary retrieved successfully",
+                        summaries
+                )
+        );
     }
 
     /**
@@ -327,7 +345,6 @@ public class ProjectBudgetController {
             stats.setHasOverspendingRisk(false);
             stats.setProjectedBudgetShortfall(BigDecimal.ZERO);
         }
-
         return stats;
     }
 }

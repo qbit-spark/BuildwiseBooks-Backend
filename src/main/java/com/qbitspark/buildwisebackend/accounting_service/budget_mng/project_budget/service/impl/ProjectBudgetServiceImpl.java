@@ -7,6 +7,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budg
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetLineItemEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.DistributeBudgetRequest;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.enums.ProjectBudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.ProjectBudgetSummaryResponse;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.repo.ProjectBudgetLineItemRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.repo.ProjectBudgetRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.service.ProjectBudgetService;
@@ -37,7 +38,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -189,6 +192,53 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
                 .orElseThrow(() -> new ItemNotFoundException("Project budget not found. Initialize budget first."));
     }
 
+
+
+    @Override
+    public List<ProjectBudgetSummaryResponse> getProjectBudgetSummary(UUID projectId, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        // Reuse existing validation logic
+        AccountEntity authenticatedAccount = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+        ProjectEntity project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new ItemNotFoundException("Project not found"));
+
+        validateProject(project, organisation);
+        validateProjectMemberPermissions(authenticatedAccount, project,
+                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER,
+                        TeamMemberRole.PROJECT_MANAGER, TeamMemberRole.MEMBER));
+
+
+        ProjectBudgetEntity projectBudget = projectBudgetRepo.findByProject(project)
+                .orElseThrow(() -> new ItemNotFoundException("Project budget not found"));
+
+        // Get all expense accounts with hierarchy
+        List<ChartOfAccounts> allExpenseAccounts = chartOfAccountRepo
+                .findByOrganisationAndAccountTypeAndIsActive(
+                        organisation, AccountType.EXPENSE, true);
+
+        // Create lookup maps for hierarchy
+        Map<UUID, ChartOfAccounts> accountMap = allExpenseAccounts.stream()
+                .collect(Collectors.toMap(ChartOfAccounts::getId, account -> account));
+
+        Map<UUID, ProjectBudgetLineItemEntity> lineItemMap = projectBudget.getLineItems().stream()
+                .collect(Collectors.toMap(
+                        lineItem -> lineItem.getChartOfAccount().getId(),
+                        lineItem -> lineItem));
+
+        // Process only detail accounts (postable = true, isHeader = false)
+        return allExpenseAccounts.stream()
+                .filter(account -> !account.getIsHeader() && account.getIsPostable())
+                .filter(account -> lineItemMap.containsKey(account.getId()))
+                .map(account -> createBudgetSummaryResponse(account, lineItemMap.get(account.getId()), accountMap))
+                .collect(Collectors.toList());
+    }
+
+
+
+
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return extractAccount(authentication);
@@ -226,5 +276,37 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
         if (!project.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
             throw new ItemNotFoundException("Project does not belong to this organisation");
         }
+    }
+
+    private ProjectBudgetSummaryResponse createBudgetSummaryResponse(
+            ChartOfAccounts account,
+            ProjectBudgetLineItemEntity lineItem,
+            Map<UUID, ChartOfAccounts> accountMap) {
+
+        ProjectBudgetSummaryResponse response = new ProjectBudgetSummaryResponse();
+
+        response.setAccountId(account.getId());               // NEW: Account ID
+        response.setAccountCode(account.getAccountCode());
+        response.setAccountName(account.getName());
+        response.setBudgetRemaining(lineItem.getRemainingAmount());
+        response.setAvailableBalance(BigDecimal.ZERO); // Placeholder as requested
+        response.setNotes(lineItem.getLineItemNotes());
+
+        // Get immediate parent name only
+        String parentName = getImmediateParentName(account, accountMap);
+        response.setHeadingParent(parentName);
+
+        return response;
+    }
+
+    // 5. SIMPLIFIED: Helper method to get immediate parent only
+    private String getImmediateParentName(ChartOfAccounts account, Map<UUID, ChartOfAccounts> accountMap) {
+        if (account.getParentAccountId() != null) {
+            ChartOfAccounts parent = accountMap.get(account.getParentAccountId());
+            if (parent != null) {
+                return parent.getName();
+            }
+        }
+        return "Uncategorized";
     }
 }

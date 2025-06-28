@@ -14,21 +14,31 @@ import java.util.UUID;
 public class VoucherResponse {
     private UUID id;
     private String voucherNumber;
-    private LocalDateTime voucherDate;
-    private VoucherType voucherType;
+    private String generalDescription;
     private VoucherStatus status;
-    private UUID projectId;
-    private String projectName;
-    private PaymentMode paymentMode;
     private BigDecimal totalAmount;
+    private BigDecimal totalDeductions;
+    private BigDecimal netAmount;
     private String currency;
-    private String overallDescription;
-    private UUID createdById;
-    private String createdByName;
+
+    // Organisation info
     private UUID organisationId;
     private String organisationName;
-    private List<VoucherPayeeResponse> payees;
-    private List<VoucherAttachmentResponse> attachments; // Add this line
+
+    // Project info (always present)
+    private UUID projectId;
+    private String projectName;
+    private String projectCode;
+
+    // Creator info
+    private UUID createdById;
+    private String createdByName;
+
+    // Beneficiaries and attachments
+    private List<VoucherBeneficiaryResponse> beneficiaries;
+    private List<UUID> attachmentIds;
+
+    // Timestamps
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

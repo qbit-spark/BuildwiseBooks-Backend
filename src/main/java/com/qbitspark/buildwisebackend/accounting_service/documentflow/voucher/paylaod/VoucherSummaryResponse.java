@@ -4,17 +4,14 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.en
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
 public class VoucherSummaryResponse {
-    private UUID voucherId;
+    private UUID id;
     private String voucherNumber;
+    private String generalDescription;
     private VoucherStatus status;
-    private BigDecimal totalAmount;
-    private String projectName;
-    private Integer payeeCount;
-    private LocalDateTime voucherDate;
-    private String preparedBy;
+    private BigDecimal netAmount;
+    private int numberOfBeneficiaries;
 }
