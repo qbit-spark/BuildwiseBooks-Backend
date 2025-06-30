@@ -437,6 +437,7 @@ public class VoucherServiceImpl implements VoucherService {
                 deductionEntity.setBeneficiary(beneficiaryEntity);
                 deductionEntity.setPercentage(deductEntity.getDeductPercent());
                 deductionEntity.setDeductId(deductEntity.getDeductId());
+                deductionEntity.setDeductName(deductEntity.getDeductName());
 
                 // Calculate deduction amount
                 BigDecimal deductionAmount = beneficiaryRequest.getAmount()

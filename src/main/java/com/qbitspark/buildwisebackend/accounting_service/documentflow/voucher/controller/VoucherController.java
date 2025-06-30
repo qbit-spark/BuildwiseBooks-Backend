@@ -124,6 +124,7 @@ public class VoucherController {
         response.setCreatedAt(voucher.getCreatedAt());
         response.setUpdatedAt(voucher.getUpdatedAt());
         response.setBudgetAccountName(voucher.getProjectBudgetLineItem().getChartOfAccount().getName());
+        response.setProjectBudgetAccountId(voucher.getProjectBudgetLineItem().getLineItemId());
 
         // Organisation info
         response.setOrganisationId(voucher.getOrganisation().getOrganisationId());

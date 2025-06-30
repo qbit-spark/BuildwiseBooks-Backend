@@ -22,6 +22,7 @@ public class VoucherResponse {
     private String currency;
 
     private String budgetAccountName;
+    private UUID projectBudgetAccountId;
 
     // Organisation info
     private UUID organisationId;
