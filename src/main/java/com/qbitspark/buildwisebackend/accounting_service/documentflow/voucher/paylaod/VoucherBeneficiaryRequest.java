@@ -24,7 +24,6 @@ public class VoucherBeneficiaryRequest {
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
     private BigDecimal amount;
 
-    @Valid
     private List<UUID> deductions = new ArrayList<>();
 
 }
