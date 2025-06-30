@@ -14,6 +14,7 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.en
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.PaymentStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.paylaod.*;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.repo.VoucherBeneficiaryRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.repo.VoucherRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.VoucherNumberService;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.VoucherService;
@@ -67,6 +68,7 @@ public class VoucherServiceImpl implements VoucherService {
     private final ProjectBudgetRepo projectBudgetRepo;
     private final ProjectBudgetLineItemRepo projectBudgetLineItemRepo;
     private final DeductRepo deductRepo;
+    private final VoucherBeneficiaryRepo voucherBeneficiaryRepo;
 
     @Override
     public VoucherEntity createVoucher(UUID organisationId, CreateVoucherRequest request)
@@ -195,7 +197,6 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
 
-
     @Override
     public VoucherEntity updateVoucher(UUID organisationId, UUID voucherId, UpdateVoucherRequest request)
             throws ItemNotFoundException, AccessDeniedException {
@@ -251,6 +252,7 @@ public class VoucherServiceImpl implements VoucherService {
 
         return validateVoucherExists(voucherId, organisation);
     }
+
 
 
     // ====================================================================
@@ -390,6 +392,81 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setProjectBudgetLineItem(newBudgetLineItem);
     }
 
+//    private void updateVoucherBeneficiaries(VoucherEntity voucher, List<VoucherBeneficiaryRequest> newBeneficiaries,
+//                                            UUID organisationId) throws ItemNotFoundException {
+//
+//        // Calculate new total amount
+//        BigDecimal newTotalAmount = newBeneficiaries.stream()
+//                .map(VoucherBeneficiaryRequest::getAmount)
+//                .reduce(BigDecimal.ZERO, BigDecimal::add);
+//
+//        // Validate budget availability with new amount
+//        validateBudgetAvailability(voucher.getProjectBudgetLineItem(), newTotalAmount);
+//
+//
+//        // Clear existing beneficiaries from memory
+//        voucher.getBeneficiaries().clear();
+//
+//        //Clear existing beneficiaries fom table
+//
+//
+//
+//        // Create new beneficiaries
+//        List<VoucherBeneficiaryEntity> beneficiaryEntities = new ArrayList<>();
+//        BigDecimal totalDeductions = BigDecimal.ZERO;
+//
+//        for (VoucherBeneficiaryRequest beneficiaryRequest : newBeneficiaries) {
+//            // Validate vendor
+//            VendorEntity vendor = vendorsRepo.findById(beneficiaryRequest.getVendorId())
+//                    .orElseThrow(() -> new ItemNotFoundException("Vendor not found: " + beneficiaryRequest.getVendorId()));
+//
+//            if (!vendor.getOrganisation().getOrganisationId().equals(organisationId)) {
+//                throw new ItemNotFoundException("Vendor does not belong to this organisation");
+//            }
+//
+//            // Validate and fetch deducts for this beneficiary
+//            List<DeductsEntity> validDeducts = validateAndFetchDeducts(
+//                    beneficiaryRequest.getDeductions(), organisationId);
+//
+//            // Create beneficiary
+//            VoucherBeneficiaryEntity beneficiaryEntity = new VoucherBeneficiaryEntity();
+//            beneficiaryEntity.setVoucher(voucher);
+//            beneficiaryEntity.setVendor(vendor);
+//            beneficiaryEntity.setDescription(beneficiaryRequest.getDescription());
+//            beneficiaryEntity.setAmount(beneficiaryRequest.getAmount());
+//
+//            // Create deductions based on saved deduct entities
+//            List<VoucherDeductionEntity> deductionEntities = new ArrayList<>();
+//            BigDecimal beneficiaryDeductionTotal = BigDecimal.ZERO;
+//
+//            for (DeductsEntity deductEntity : validDeducts) {
+//                VoucherDeductionEntity deductionEntity = new VoucherDeductionEntity();
+//                deductionEntity.setBeneficiary(beneficiaryEntity);
+//                deductionEntity.setPercentage(deductEntity.getDeductPercent());
+//                deductionEntity.setDeductId(deductEntity.getDeductId());
+//                deductionEntity.setDeductName(deductEntity.getDeductName());
+//
+//                // Calculate deduction amount
+//                BigDecimal deductionAmount = beneficiaryRequest.getAmount()
+//                        .multiply(deductEntity.getDeductPercent())
+//                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+//
+//                deductionEntity.setDeductionAmount(deductionAmount);
+//                deductionEntities.add(deductionEntity);
+//
+//                beneficiaryDeductionTotal = beneficiaryDeductionTotal.add(deductionAmount);
+//            }
+//
+//            beneficiaryEntity.setDeductions(deductionEntities);
+//            beneficiaryEntities.add(beneficiaryEntity);
+//            totalDeductions = totalDeductions.add(beneficiaryDeductionTotal);
+//        }
+//
+//        voucher.setBeneficiaries(beneficiaryEntities);
+//        voucher.setTotalAmount(newTotalAmount);
+//    }
+
+
     private void updateVoucherBeneficiaries(VoucherEntity voucher, List<VoucherBeneficiaryRequest> newBeneficiaries,
                                             UUID organisationId) throws ItemNotFoundException {
 
@@ -401,8 +478,18 @@ public class VoucherServiceImpl implements VoucherService {
         // Validate budget availability with new amount
         validateBudgetAvailability(voucher.getProjectBudgetLineItem(), newTotalAmount);
 
-        // Clear existing beneficiaries
-        voucher.getBeneficiaries().clear();
+        // First, explicitly delete existing beneficiaries from database
+        // This ensures cascading deletion of deductions as well
+        if (!voucher.getBeneficiaries().isEmpty()) {
+            List<VoucherBeneficiaryEntity> existingBeneficiaries = new ArrayList<>(voucher.getBeneficiaries());
+            voucherBeneficiaryRepo.deleteAll(existingBeneficiaries);
+
+            // Clear from memory after database deletion
+            voucher.getBeneficiaries().clear();
+
+            // Flush to ensure deletion is committed before creating new ones
+            voucherBeneficiaryRepo.flush();
+        }
 
         // Create new beneficiaries
         List<VoucherBeneficiaryEntity> beneficiaryEntities = new ArrayList<>();
@@ -458,6 +545,7 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setBeneficiaries(beneficiaryEntities);
         voucher.setTotalAmount(newTotalAmount);
     }
+
 
     private List<DeductsEntity> validateAndFetchDeducts(List<UUID> deductIds, UUID organisationId)
             throws ItemNotFoundException {

@@ -16,16 +16,14 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class UpdateDeductRequest {
 
-    @NotBlank(message = "Deduct name is required")
     private String deductName;
 
-    @NotNull(message = "Deduct percentage is required")
     @DecimalMin(value = "0.0", message = "Deduct percentage cannot be negative")
     @DecimalMax(value = "100.0", message = "Deduct percentage cannot exceed 100%")
     private BigDecimal deductPercent;
 
     private String deductDescription;
 
-    @NotNull(message = "Active status is required")
+
     private Boolean isActive;
 }

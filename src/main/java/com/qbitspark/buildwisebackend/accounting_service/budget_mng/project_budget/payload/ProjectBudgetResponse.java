@@ -102,8 +102,8 @@ public class ProjectBudgetResponse {
     @NoArgsConstructor
     public static class LineItemResponse {
 
-        private UUID lineItemId; // null if no budget distributed
-        private UUID accountId;
+        private UUID budgetLineItemId; // null if no budget distributed
+        private UUID coaAccountId;
         private String accountCode;
         private String accountName;
 

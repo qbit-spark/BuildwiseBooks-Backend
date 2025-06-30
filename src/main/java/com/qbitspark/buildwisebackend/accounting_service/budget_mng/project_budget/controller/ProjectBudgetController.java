@@ -226,13 +226,13 @@ public class ProjectBudgetController {
             ProjectBudgetLineItemEntity lineItem) {
 
         ProjectBudgetResponse.LineItemResponse response = new ProjectBudgetResponse.LineItemResponse();
-        response.setAccountId(account.getId());
+        response.setCoaAccountId(account.getId());
         response.setAccountCode(account.getAccountCode());
         response.setAccountName(account.getName());
 
         if (lineItem != null) {
             // Account has budget distributed
-            response.setLineItemId(lineItem.getLineItemId());
+            response.setBudgetLineItemId(lineItem.getLineItemId());
             response.setBudgetAmount(lineItem.getBudgetAmount());
             response.setSpentAmount(lineItem.getSpentAmount());
             response.setCommittedAmount(lineItem.getCommittedAmount());
@@ -241,7 +241,7 @@ public class ProjectBudgetController {
             response.setHasBudgetDistributed(true);
         } else {
             // Account has no budget distributed - show as $0
-            response.setLineItemId(null);
+            response.setBudgetLineItemId(null);
             response.setBudgetAmount(BigDecimal.ZERO);
             response.setSpentAmount(BigDecimal.ZERO);
             response.setCommittedAmount(BigDecimal.ZERO);

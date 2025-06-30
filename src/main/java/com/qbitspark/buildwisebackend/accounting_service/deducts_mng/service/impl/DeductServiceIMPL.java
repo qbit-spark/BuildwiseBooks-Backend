@@ -110,14 +110,31 @@ public class DeductServiceIMPL implements DeductService {
         DeductsEntity existingDeduct = deductRepository.findByDeductIdAndOrganisation_OrganisationId(deductId, organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Deduct not found or does not belong to this organisation"));
 
-        // Check for duplicate deduct name (excluding current deduct)
-        validateNoDuplicateDeductName(request.getDeductName(), organisationId, deductId);
+        // Only update deduct name if provided and different
+        if (request.getDeductName() != null && !request.getDeductName().trim().isEmpty()) {
+            // Check for duplicate deduct name only if name is being changed
+            if (!existingDeduct.getDeductName().equals(request.getDeductName().trim())) {
+                validateNoDuplicateDeductName(request.getDeductName().trim(), organisationId, deductId);
+                existingDeduct.setDeductName(request.getDeductName().trim());
+            }
+        }
 
-        // Update deduct
-        existingDeduct.setDeductName(request.getDeductName());
-        existingDeduct.setDeductPercent(request.getDeductPercent());
-        existingDeduct.setDeductDescription(request.getDeductDescription());
-        existingDeduct.setIsActive(request.getIsActive());
+        // Only update percentage if provided
+        if (request.getDeductPercent() != null) {
+            existingDeduct.setDeductPercent(request.getDeductPercent());
+        }
+
+        // Update description (allow null/empty to clear description)
+        if (request.getDeductDescription() != null) {
+            existingDeduct.setDeductDescription(request.getDeductDescription().trim().isEmpty() ? null : request.getDeductDescription().trim());
+        }
+
+        // Only update active status if provided
+        if (request.getIsActive() != null) {
+            existingDeduct.setIsActive(request.getIsActive());
+        }
+
+        // Always update modified date when any change is made
         existingDeduct.setModifiedDate(LocalDateTime.now());
 
         DeductsEntity savedDeduct = deductRepository.save(existingDeduct);
