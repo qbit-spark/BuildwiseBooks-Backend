@@ -40,4 +40,6 @@ public class VoucherDeductionEntity {
 
     @Column(name = "deduct_id")
     private UUID deductId;
+
+    private String deductName;
 }

@@ -8,6 +8,7 @@ import java.util.UUID;
 @Data
 public class VoucherDeductionResponse {
     private UUID deductionId;
+    private String deductionName;
     private BigDecimal percentage;
     private BigDecimal deductionAmount;
 }

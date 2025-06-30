@@ -126,6 +126,7 @@ public class VoucherServiceImpl implements VoucherService {
                 deductionEntity.setBeneficiary(beneficiaryEntity);
                 deductionEntity.setPercentage(deductEntity.getDeductPercent());
                 deductionEntity.setDeductId(deductEntity.getDeductId());
+                deductionEntity.setDeductName(deductEntity.getDeductName());
 
                 // Calculate deduction amount
                 BigDecimal deductionAmount = beneficiaryRequest.getAmount()
@@ -470,11 +471,11 @@ public class VoucherServiceImpl implements VoucherService {
             throw new ItemNotFoundException("Duplicate deduct IDs found in the request");
         }
 
-        // Fetch deducts from database
+        // Fetch deducts from a database
         List<DeductsEntity> deducts = deductRepo.findByDeductIdInAndOrganisation_OrganisationId(
                 deductIds, organisationId);
 
-        // Verify all requested deducts were found
+        // Verify all requested deducting were found
         if (deducts.size() != deductIds.size()) {
             Set<UUID> foundDeductIds = deducts.stream()
                     .map(DeductsEntity::getDeductId)

@@ -186,6 +186,7 @@ public class VoucherController {
         VoucherDeductionResponse response = new VoucherDeductionResponse();
         response.setDeductionId(deduction.getDeductId());
         response.setPercentage(deduction.getPercentage());
+        response.setDeductionName(deduction.getDeductName());
         response.setDeductionAmount(deduction.getDeductionAmount());
         return response;
     }
