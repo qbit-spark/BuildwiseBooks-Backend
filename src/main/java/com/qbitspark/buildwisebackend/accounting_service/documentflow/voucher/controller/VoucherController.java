@@ -97,6 +97,21 @@ public class VoucherController {
         );
     }
 
+    @GetMapping("/{voucherId}")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getVoucherById(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID voucherId)
+            throws ItemNotFoundException, AccessDeniedException {
+        VoucherEntity voucherEntity = voucherService.getVoucherById(organisationId, voucherId);
+        VoucherResponse response = mapToVoucherResponse(voucherEntity);
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "Voucher retrieved successfully",
+                        response
+                )
+        );
+    }
+
 
     private VoucherResponse mapToVoucherResponse(VoucherEntity voucher) {
         VoucherResponse response = new VoucherResponse();

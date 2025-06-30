@@ -21,4 +21,6 @@ public interface VoucherService {
     VoucherEntity updateVoucher(UUID organisationId, UUID voucherId, UpdateVoucherRequest request)
             throws ItemNotFoundException, AccessDeniedException;
 
+    VoucherEntity getVoucherById(UUID organisationId, UUID voucherId) throws ItemNotFoundException, AccessDeniedException;
+
 }

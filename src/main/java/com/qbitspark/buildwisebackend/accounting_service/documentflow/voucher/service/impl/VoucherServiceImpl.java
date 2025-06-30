@@ -241,6 +241,15 @@ public class VoucherServiceImpl implements VoucherService {
         return updatedVoucher;
     }
 
+    @Override
+    public VoucherEntity getVoucherById(UUID organisationId, UUID voucherId) throws ItemNotFoundException, AccessDeniedException {
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = validateOrganisationExists(organisationId);
+        OrganisationMember organisationMember = validateOrganisationAccess(currentUser, organisation,
+                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+
+        return validateVoucherExists(voucherId, organisation);
+    }
 
 
     // ====================================================================
