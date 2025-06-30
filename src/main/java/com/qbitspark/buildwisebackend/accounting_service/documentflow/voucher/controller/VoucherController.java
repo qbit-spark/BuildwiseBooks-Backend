@@ -154,7 +154,7 @@ public class VoucherController {
         response.setBeneficiaries(beneficiaryResponses);
 
 
-        response.setAttachmentIds(List.of());
+        response.setAttachments(List.of());
 
         return response;
     }
@@ -184,6 +184,7 @@ public class VoucherController {
 
     private VoucherDeductionResponse mapToDeductionResponse(VoucherDeductionEntity deduction) {
         VoucherDeductionResponse response = new VoucherDeductionResponse();
+        response.setDeductionId(deduction.getDeductId());
         response.setPercentage(deduction.getPercentage());
         response.setDeductionAmount(deduction.getDeductionAmount());
         return response;
