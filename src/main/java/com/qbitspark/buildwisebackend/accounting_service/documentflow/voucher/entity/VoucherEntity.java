@@ -77,14 +77,14 @@ public class VoucherEntity {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
-    // Link to organisation
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organisation_id", nullable = false)
     private OrganisationEntity organisation;
 
-    // Link to project (optional)
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = true)
+    @JoinColumn(name = "project_id", nullable = false)
     private ProjectEntity project;
 
     @CreationTimestamp

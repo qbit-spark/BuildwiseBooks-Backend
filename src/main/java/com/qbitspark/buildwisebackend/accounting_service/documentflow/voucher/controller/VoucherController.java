@@ -169,7 +169,6 @@ public class VoucherController {
 
     private VoucherDeductionResponse mapToDeductionResponse(VoucherDeductionEntity deduction) {
         VoucherDeductionResponse response = new VoucherDeductionResponse();
-        response.setDeductionType(deduction.getDeductionType());
         response.setPercentage(deduction.getPercentage());
         response.setDeductionAmount(deduction.getDeductionAmount());
         return response;
@@ -178,11 +177,12 @@ public class VoucherController {
     private VoucherSummaryResponse mapToVoucherSummaryResponse(VoucherEntity voucher) {
         VoucherSummaryResponse response = new VoucherSummaryResponse();
 
-        response.setId(voucher.getId());
+        response.setVoucherId(voucher.getId());
         response.setVoucherNumber(voucher.getVoucherNumber());
         response.setGeneralDescription(voucher.getOverallDescription());
         response.setStatus(voucher.getStatus());
         response.setNumberOfBeneficiaries(voucher.getBeneficiaries().size());
+        response.setCreatedAt(voucher.getCreatedAt());
 
 
         BigDecimal totalDeductions = voucher.getBeneficiaries().stream()

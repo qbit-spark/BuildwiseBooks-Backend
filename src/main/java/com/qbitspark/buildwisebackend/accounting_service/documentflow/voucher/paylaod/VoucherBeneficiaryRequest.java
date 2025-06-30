@@ -25,6 +25,6 @@ public class VoucherBeneficiaryRequest {
     private BigDecimal amount;
 
     @Valid
-    private List<VoucherDeductionRequest> deductions = new ArrayList<>();
+    private List<UUID> deductions = new ArrayList<>();
 
 }

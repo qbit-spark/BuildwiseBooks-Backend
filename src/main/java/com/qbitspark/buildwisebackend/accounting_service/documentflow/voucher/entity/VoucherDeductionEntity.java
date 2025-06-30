@@ -1,6 +1,5 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity;
 
-import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.DeductionType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,15 +22,11 @@ public class VoucherDeductionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    private UUID id ;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "beneficiary_id", nullable = false)
     private VoucherBeneficiaryEntity beneficiary;
-
-    @Column(name = "deduction_type", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private DeductionType deductionType;
 
     @Column(name = "percentage", nullable = false, precision = 5, scale = 2)
     private BigDecimal percentage;
@@ -43,4 +38,6 @@ public class VoucherDeductionEntity {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "deduct_id")
+    private UUID deductId;
 }

@@ -6,6 +6,8 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budg
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.repo.ProjectBudgetRepo;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.JournalEntry;
+import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.entity.DeductsEntity;
+import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.repo.DeductRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherBeneficiaryEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherDeductionEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherEntity;
@@ -45,9 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,6 +66,7 @@ public class VoucherServiceImpl implements VoucherService {
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
     private final ProjectBudgetRepo projectBudgetRepo;
     private final ProjectBudgetLineItemRepo projectBudgetLineItemRepo;
+    private final DeductRepo deductRepo;
 
     @Override
     public VoucherEntity createVoucher(UUID organisationId, CreateVoucherRequest request)
@@ -87,7 +88,6 @@ public class VoucherServiceImpl implements VoucherService {
         validateProjectMemberPermissions(currentUser, project,
                 List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
 
-
         ProjectBudgetLineItemEntity budgetLineItem = validateAndGetBudgetLineItem(
                 request.getProjectBudgetAccountId(), project);
 
@@ -107,25 +107,29 @@ public class VoucherServiceImpl implements VoucherService {
                 throw new ItemNotFoundException("Vendor does not belong to this organisation");
             }
 
+            // Validate and fetch deducts for this beneficiary
+            List<DeductsEntity> validDeducts = validateAndFetchDeducts(
+                    beneficiaryRequest.getDeductions(), organisationId);
+
             // Create beneficiary
             VoucherBeneficiaryEntity beneficiaryEntity = new VoucherBeneficiaryEntity();
             beneficiaryEntity.setVendor(vendor);
             beneficiaryEntity.setDescription(beneficiaryRequest.getDescription());
             beneficiaryEntity.setAmount(beneficiaryRequest.getAmount());
 
-            // Create deductions
+            // Create deductions based on saved deduct entities
             List<VoucherDeductionEntity> deductionEntities = new ArrayList<>();
             BigDecimal beneficiaryDeductionTotal = BigDecimal.ZERO;
 
-            for (VoucherDeductionRequest deductionRequest : beneficiaryRequest.getDeductions()) {
+            for (DeductsEntity deductEntity : validDeducts) {
                 VoucherDeductionEntity deductionEntity = new VoucherDeductionEntity();
                 deductionEntity.setBeneficiary(beneficiaryEntity);
-                deductionEntity.setDeductionType(deductionRequest.getDeductionType());
-                deductionEntity.setPercentage(deductionRequest.getPercentage());
+                deductionEntity.setPercentage(deductEntity.getDeductPercent());
+                deductionEntity.setDeductId(deductEntity.getDeductId());
 
                 // Calculate deduction amount
                 BigDecimal deductionAmount = beneficiaryRequest.getAmount()
-                        .multiply(deductionRequest.getPercentage())
+                        .multiply(deductEntity.getDeductPercent())
                         .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
                 deductionEntity.setDeductionAmount(deductionAmount);
@@ -141,7 +145,6 @@ public class VoucherServiceImpl implements VoucherService {
             totalDeductions = totalDeductions.add(beneficiaryDeductionTotal);
         }
 
-
         validateBudgetAvailability(budgetLineItem, totalAmount);
 
         // Create a voucher with budget line item association
@@ -152,7 +155,7 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setCreatedBy(organisationMember);
         voucher.setOrganisation(organisation);
         voucher.setProject(project);
-        voucher.setProjectBudgetLineItem(budgetLineItem); // NEW: Set budget line item
+        voucher.setProjectBudgetLineItem(budgetLineItem);
         voucher.setStatus(VoucherStatus.DRAFT);
         voucher.setCurrency("TSh");
 
@@ -404,6 +407,10 @@ public class VoucherServiceImpl implements VoucherService {
                 throw new ItemNotFoundException("Vendor does not belong to this organisation");
             }
 
+            // Validate and fetch deducts for this beneficiary
+            List<DeductsEntity> validDeducts = validateAndFetchDeducts(
+                    beneficiaryRequest.getDeductions(), organisationId);
+
             // Create beneficiary
             VoucherBeneficiaryEntity beneficiaryEntity = new VoucherBeneficiaryEntity();
             beneficiaryEntity.setVoucher(voucher);
@@ -411,19 +418,19 @@ public class VoucherServiceImpl implements VoucherService {
             beneficiaryEntity.setDescription(beneficiaryRequest.getDescription());
             beneficiaryEntity.setAmount(beneficiaryRequest.getAmount());
 
-            // Create deductions
+            // Create deductions based on saved deduct entities
             List<VoucherDeductionEntity> deductionEntities = new ArrayList<>();
             BigDecimal beneficiaryDeductionTotal = BigDecimal.ZERO;
 
-            for (VoucherDeductionRequest deductionRequest : beneficiaryRequest.getDeductions()) {
+            for (DeductsEntity deductEntity : validDeducts) {
                 VoucherDeductionEntity deductionEntity = new VoucherDeductionEntity();
                 deductionEntity.setBeneficiary(beneficiaryEntity);
-                deductionEntity.setDeductionType(deductionRequest.getDeductionType());
-                deductionEntity.setPercentage(deductionRequest.getPercentage());
+                deductionEntity.setPercentage(deductEntity.getDeductPercent());
+                deductionEntity.setDeductId(deductEntity.getDeductId());
 
                 // Calculate deduction amount
                 BigDecimal deductionAmount = beneficiaryRequest.getAmount()
-                        .multiply(deductionRequest.getPercentage())
+                        .multiply(deductEntity.getDeductPercent())
                         .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
                 deductionEntity.setDeductionAmount(deductionAmount);
@@ -441,4 +448,51 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setTotalAmount(newTotalAmount);
     }
 
+    private List<DeductsEntity> validateAndFetchDeducts(List<UUID> deductIds, UUID organisationId)
+            throws ItemNotFoundException {
+
+        if (deductIds == null || deductIds.isEmpty()) {
+            return new ArrayList<>(); // No deductions applied
+        }
+
+        // Check for duplicate deduct IDs
+        Set<UUID> uniqueDeductIds = new HashSet<>(deductIds);
+        if (uniqueDeductIds.size() != deductIds.size()) {
+            throw new ItemNotFoundException("Duplicate deduct IDs found in the request");
+        }
+
+        // Fetch deducts from database
+        List<DeductsEntity> deducts = deductRepo.findByDeductIdInAndOrganisation_OrganisationId(
+                deductIds, organisationId);
+
+        // Verify all requested deducts were found
+        if (deducts.size() != deductIds.size()) {
+            Set<UUID> foundDeductIds = deducts.stream()
+                    .map(DeductsEntity::getDeductId)
+                    .collect(Collectors.toSet());
+
+            List<UUID> missingDeductIds = deductIds.stream()
+                    .filter(id -> !foundDeductIds.contains(id))
+                    .toList();
+
+            throw new ItemNotFoundException("The following deduct IDs do not belong to this organisation or do not exist: "
+                    + missingDeductIds);
+        }
+
+        // Check if all deducting are active
+        List<DeductsEntity> inactiveDeducts = deducts.stream()
+                .filter(deduct -> !deduct.getIsActive())
+                .toList();
+
+        if (!inactiveDeducts.isEmpty()) {
+            List<String> inactiveDeductNames = inactiveDeducts.stream()
+                    .map(DeductsEntity::getDeductName)
+                    .toList();
+
+            throw new ItemNotFoundException("The following deducts are inactive and cannot be used: "
+                    + inactiveDeductNames);
+        }
+
+        return deducts;
+    }
 }
