@@ -155,7 +155,7 @@ public class VoucherController {
         response.setBeneficiaries(beneficiaryResponses);
 
 
-        response.setAttachments(List.of());
+       // response.setAttachments(List.of());
 
         return response;
     }

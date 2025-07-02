@@ -95,9 +95,7 @@ public class InvoiceDocEntity {
     @Builder.Default
     private List<InvoiceLineItemEntity> lineItems = new ArrayList<>();
 
-    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @Builder.Default
-    private List<InvoiceAttachmentEntity> attachments = new ArrayList<>();
+
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
