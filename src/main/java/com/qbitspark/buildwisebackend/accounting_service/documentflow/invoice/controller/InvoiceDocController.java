@@ -32,11 +32,10 @@ public class InvoiceDocController {
     private final InvoiceDocService invoiceDocService;
 
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createInvoice(
             @PathVariable UUID organisationId,
-            @RequestPart("invoice") String invoiceJson,
-            @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments,
+            @RequestBody CreateInvoiceDocRequest request ,
             @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException, JsonProcessingException, RandomExceptions {
 
@@ -45,26 +44,20 @@ public class InvoiceDocController {
             throw new IllegalArgumentException("Action parameter is required and cannot be null");
         }
 
-        // Parse JSON manually
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-
-        CreateInvoiceDocRequest request = objectMapper.readValue(invoiceJson, CreateInvoiceDocRequest.class);
-
         InvoiceDocResponse response;
         String successMessage = "";
 
         switch (action) {
             case SAVE:
-                response = invoiceDocService.createInvoiceWithAttachments(
-                        organisationId, request, attachments);
+                response = invoiceDocService.createInvoice(
+                        organisationId, request);
                 successMessage = "Invoice saved successfully";
                 break;
 
             case SAVE_AND_APPROVAL:
                 //Save and approval will be here
-                response = invoiceDocService.createInvoiceWithAttachments(
-                        organisationId, request, attachments);
+                response = invoiceDocService.createInvoice(
+                        organisationId, request);
                 successMessage = "Invoice saved and ready for approval successfully";
                 break;
 
@@ -110,22 +103,16 @@ public class InvoiceDocController {
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Invoice retrieved successfully", response));
     }
 
-    @PutMapping(value = "/{invoiceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> updateInvoice(
             @PathVariable UUID organisationId,
             @PathVariable UUID invoiceId,
-            @RequestPart("invoice") String invoiceJson,
-            @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments)
+            @RequestBody UpdateInvoiceDocRequest request)
             throws ItemNotFoundException, AccessDeniedException, JsonProcessingException {
 
-        // Parse JSON manually
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
 
-        UpdateInvoiceDocRequest request = objectMapper.readValue(invoiceJson, UpdateInvoiceDocRequest.class);
-
-        InvoiceDocResponse response = invoiceDocService.updateInvoiceWithAttachments(
-                organisationId, invoiceId, request, attachments);
+        InvoiceDocResponse response = invoiceDocService.updateInvoice(
+                organisationId, invoiceId, request);
 
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Invoice updated successfully", response));
     }

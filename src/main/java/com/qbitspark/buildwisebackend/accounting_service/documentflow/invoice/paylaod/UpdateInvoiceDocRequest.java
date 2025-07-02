@@ -20,4 +20,6 @@ public class UpdateInvoiceDocRequest {
     private List<InvoiceLineItemRequest> lineItems;
 
     private List<UUID> taxesToApply;
+
+    private List<UUID> attachments;
 }

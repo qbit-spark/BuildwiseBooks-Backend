@@ -3,6 +3,7 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.e
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceLineItemEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.embedings.InvoiceTaxDetail;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.InvoiceStatus;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.utils.UUIDListConverter;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
@@ -95,7 +96,9 @@ public class InvoiceDocEntity {
     @Builder.Default
     private List<InvoiceLineItemEntity> lineItems = new ArrayList<>();
 
-
+    @Column(name = "attachments", columnDefinition = "JSON")
+    @Convert(converter = UUIDListConverter.class)
+    private List<UUID> attachments = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -111,18 +114,7 @@ public class InvoiceDocEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    // JAVA MONEY METHODS (TZS)
-    public MonetaryAmount getSubtotalMoney() {
-        return Money.of(subtotal, "TZS");
-    }
 
-    public MonetaryAmount getTotalAmountMoney() {
-        return Money.of(totalAmount, "TZS");
-    }
-
-    public MonetaryAmount getAmountDueMoney() {
-        return Money.of(amountDue, "TZS");
-    }
 
     public void setSubtotalMoney(MonetaryAmount amount) {
         this.subtotal = amount.getNumber().numberValue(BigDecimal.class);

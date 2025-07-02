@@ -12,6 +12,8 @@ import com.qbitspark.buildwisebackend.accounting_service.tax_mng.repo.TaxRepo;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
+import com.qbitspark.buildwisebackend.drive_mng.entity.OrgFileEntity;
+import com.qbitspark.buildwisebackend.drive_mng.repo.OrgFileRepo;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
@@ -39,7 +41,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.money.MonetaryAmount;
 import java.math.BigDecimal;
@@ -62,10 +63,10 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
     private final InvoiceNumberService invoiceNumberService;
     private final TaxRepo taxRepo;
+    private final OrgFileRepo orgFileRepo;
 
-    @Override
     @Transactional
-    public InvoiceDocResponse createInvoiceWithAttachments(UUID organisationId, CreateInvoiceDocRequest request, List<MultipartFile> attachments) throws ItemNotFoundException, AccessDeniedException {
+    public InvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
@@ -97,6 +98,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                 .updatedAt(LocalDateTime.now())
                 .createdBy(currentUser.getId())
                 .updatedBy(currentUser.getId())
+                .attachments(request.getAttachments())
                 .build();
 
         // Create and add line items
@@ -109,10 +111,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         // Save the invoice
         InvoiceDocEntity savedInvoice = invoiceDocRepo.save(invoice);
 
-        // Handle attachments if provided
-        if (attachments != null && !attachments.isEmpty()) {
-
-        }
 
         // Convert to response
         return mapToInvoiceResponse(savedInvoice, currentUser, request.getCreditApplied());
@@ -177,7 +175,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
     @Override
     @Transactional
-    public InvoiceDocResponse updateInvoiceWithAttachments(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request, List<MultipartFile> attachments) throws ItemNotFoundException, AccessDeniedException {
+    public InvoiceDocResponse updateInvoice(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
@@ -201,6 +199,10 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         if (request.getReference() != null) {
             invoice.setReference(request.getReference());
+        }
+
+        if (request.getAttachments() != null) {
+            updateInvoiceAttachments(invoice, request.getAttachments(), organisation);
         }
 
         // Update line items if provided
@@ -232,11 +234,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         // Update audit fields
         invoice.setUpdatedBy(currentUser.getId());
 
-        // Handle attachments if provided
-        if (attachments != null && !attachments.isEmpty()) {
-            // TODO: Update attachments
-            log.info("Updating {} attachments for invoice: {}", attachments.size(), invoice.getInvoiceNumber());
-        }
+
 
         // Save an updated invoice
         InvoiceDocEntity savedInvoice = invoiceDocRepo.save(invoice);
@@ -256,7 +254,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                             .taxable(true)
                             .build();
 
-                    // Use precise money calculation method
+
                     lineItem.calculateLineTotalWithMoney();
                     return lineItem;
                 })
@@ -264,7 +262,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     }
 
     private void calculateInvoiceTotals(InvoiceDocEntity invoice, List<UUID> taxIds, BigDecimal creditApplied) throws ItemNotFoundException {
-        // Calculate subtotal using BigDecimal then convert to Money for precision
         BigDecimal subtotalBD = invoice.getLineItems().stream()
                 .filter(InvoiceLineItemEntity::getTaxable)
                 .map(InvoiceLineItemEntity::getLineTotal)
@@ -273,7 +270,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         MonetaryAmount subtotalMoney = Money.of(subtotalBD, "TZS");
         invoice.setSubtotalMoney(subtotalMoney);
 
-        // Calculate taxes if any are specified - now with organization validation
         MonetaryAmount totalTaxMoney = Money.of(BigDecimal.ZERO, "TZS");
         List<InvoiceTaxDetail> taxDetails = new ArrayList<>();
 
@@ -286,35 +282,29 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         invoice.setTaxDetails(taxDetails);
         invoice.setTotalTaxAmount(totalTaxMoney.getNumber().numberValue(BigDecimal.class));
 
-        // Calculate total amount using Money API
         MonetaryAmount totalMoney = subtotalMoney.add(totalTaxMoney);
         invoice.setTotalAmountMoney(totalMoney);
 
-        // Calculate the amount due (total - credit applied)
         MonetaryAmount creditMoney = Money.of(creditApplied != null ? creditApplied : BigDecimal.ZERO, "TZS");
         MonetaryAmount amountDueMoney = totalMoney.subtract(creditMoney);
         invoice.setAmountDueMoney(amountDueMoney);
     }
 
     private TaxCalculationResult calculateTaxesWithMoney(List<UUID> taxIds, MonetaryAmount subtotalMoney, OrganisationEntity organisation) throws ItemNotFoundException {
-        // Silently remove duplicates by converting to Set and back to List
         List<UUID> uniqueTaxIds = taxIds != null ?
                 taxIds.stream().distinct().collect(Collectors.toList()) :
                 new ArrayList<>();
 
-        // Validate that all requested taxes exist and belong to the organization
         List<TaxEntity> taxes = validateAndGetTaxes(uniqueTaxIds, organisation);
 
         List<InvoiceTaxDetail> taxDetails = new ArrayList<>();
         MonetaryAmount totalTaxMoney = Money.of(BigDecimal.ZERO, "TZS");
 
         for (TaxEntity tax : taxes) {
-            // Validate tax is active
             if (!tax.getIsActive()) {
                 throw new IllegalArgumentException("Tax '" + tax.getTaxName() + "' is not active and cannot be applied");
             }
 
-            // For simple cases, the entire subtotal is taxable
             MonetaryAmount taxableAmountMoney = subtotalMoney;
             MonetaryAmount taxAmountMoney = calculateTaxAmountWithMoney(taxableAmountMoney, tax.getTaxPercent());
 
@@ -506,4 +496,37 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
     }
 
+    private void updateInvoiceAttachments(InvoiceDocEntity invoiceDoc, List<UUID> newAttachmentIds, OrganisationEntity organisation)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        invoiceDoc.getAttachments().clear();
+        invoiceDocRepo.save(invoiceDoc);
+        invoiceDocRepo.flush();
+
+
+        if (!newAttachmentIds.isEmpty()) {
+            validateVoucherAttachments(newAttachmentIds, organisation);
+
+            invoiceDoc.setAttachments(new ArrayList<>(newAttachmentIds));
+            invoiceDocRepo.save(invoiceDoc);
+
+
+        }
+    }
+    private void validateVoucherAttachments(List<UUID> attachmentIds, OrganisationEntity organisation)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        for (UUID fileId : attachmentIds) {
+            OrgFileEntity file = orgFileRepo.findById(fileId)
+                    .orElseThrow(() -> new ItemNotFoundException("Attachment file not found: " + fileId));
+
+            if (!file.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
+                throw new AccessDeniedException("File does not belong to this organisation: " + fileId);
+            }
+
+            if (Boolean.TRUE.equals(file.getIsDeleted())) {
+                throw new ItemNotFoundException("Cannot attach deleted file: " + fileId);
+            }
+        }
+    }
 }

@@ -4,14 +4,13 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.pa
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface InvoiceDocService {
-    InvoiceDocResponse createInvoiceWithAttachments(UUID organisationId, CreateInvoiceDocRequest request, List<MultipartFile> attachments) throws ItemNotFoundException, AccessDeniedException;
+    InvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException;
 
     Page<SummaryInvoiceDocResponse> getAllInvoicesForOrganisation(UUID organisationId, int page, int size) throws ItemNotFoundException, AccessDeniedException;
 
@@ -21,7 +20,7 @@ public interface InvoiceDocService {
 
     public InvoiceDocResponse getInvoiceById(UUID organisationId, UUID invoiceId) throws ItemNotFoundException, AccessDeniedException;
 
-    InvoiceDocResponse updateInvoiceWithAttachments(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request, List<MultipartFile> attachments) throws ItemNotFoundException, AccessDeniedException;
+    InvoiceDocResponse updateInvoice(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException;
 }
 
 
