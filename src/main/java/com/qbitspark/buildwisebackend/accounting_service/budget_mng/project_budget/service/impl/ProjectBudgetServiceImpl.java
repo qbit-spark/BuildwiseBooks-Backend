@@ -88,7 +88,7 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
         projectBudget.setTotalCommittedAmount(BigDecimal.ZERO);
         projectBudget.setStatus(ProjectBudgetStatus.DRAFT);
         projectBudget.setBudgetNotes("Initialized - awaiting budget distribution");
-        projectBudget.setCreatedBy(null);
+        projectBudget.setCreatedBy(project.getOrganisation().getOwner().getAccountId());
         projectBudget.setCreatedDate(LocalDateTime.now());
 
         // Create line items for each expense account with $0
