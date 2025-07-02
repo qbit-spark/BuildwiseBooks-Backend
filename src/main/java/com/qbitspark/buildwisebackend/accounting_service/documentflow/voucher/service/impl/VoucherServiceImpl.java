@@ -17,6 +17,8 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.se
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.VoucherService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.drive_mng.entity.OrgFileEntity;
+import com.qbitspark.buildwisebackend.drive_mng.repo.OrgFileRepo;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
@@ -65,6 +67,7 @@ public class VoucherServiceImpl implements VoucherService {
     private final ProjectBudgetLineItemRepo projectBudgetLineItemRepo;
     private final DeductRepo deductRepo;
     private final VoucherBeneficiaryRepo voucherBeneficiaryRepo;
+    private final OrgFileRepo orgFileRepo;
 
     @Override
     public VoucherEntity createVoucher(UUID organisationId, CreateVoucherRequest request)
@@ -198,7 +201,6 @@ public class VoucherServiceImpl implements VoucherService {
     public VoucherEntity updateVoucher(UUID organisationId, UUID voucherId, UpdateVoucherRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
-
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = validateOrganisationExists(organisationId);
         OrganisationMember organisationMember = validateOrganisationAccess(currentUser, organisation,
@@ -206,21 +208,16 @@ public class VoucherServiceImpl implements VoucherService {
 
         VoucherEntity existingVoucher = validateVoucherExists(voucherId, organisation);
 
-
         validateVoucherCanBeUpdated(existingVoucher);
-
 
         validateProjectMemberPermissions(currentUser, existingVoucher.getProject(),
                 List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
 
-
         updateVoucherBasicFields(existingVoucher, request);
-
 
         if (request.getProjectBudgetAccountId() != null) {
             updateVoucherBudgetLineItem(existingVoucher, request.getProjectBudgetAccountId());
         }
-
 
         if (request.getBeneficiaries() != null && !request.getBeneficiaries().isEmpty()) {
             updateVoucherBeneficiaries(existingVoucher, request.getBeneficiaries(), organisationId);
@@ -228,9 +225,8 @@ public class VoucherServiceImpl implements VoucherService {
 
 
         if (request.getAttachmentIds() != null) {
-            existingVoucher.setAttachments(request.getAttachmentIds());
+            updateVoucherAttachments(existingVoucher, request.getAttachmentIds(), organisation);
         }
-
 
         VoucherEntity updatedVoucher = voucherRepo.save(existingVoucher);
 
@@ -239,6 +235,7 @@ public class VoucherServiceImpl implements VoucherService {
 
         return updatedVoucher;
     }
+
 
 
     @Override
@@ -517,5 +514,37 @@ public class VoucherServiceImpl implements VoucherService {
         }
 
         return deducts;
+    }
+
+    private void updateVoucherAttachments(VoucherEntity voucher, List<UUID> newAttachmentIds, OrganisationEntity organisation)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        // Validate all new attachments exist and belong to organisation
+        if (!newAttachmentIds.isEmpty()) {
+            validateVoucherAttachments(newAttachmentIds, organisation);
+        }
+
+        // Simply replace the attachment list
+        voucher.setAttachments(new ArrayList<>(newAttachmentIds));
+
+        log.info("Updated attachments for voucher {}: now has {} attachments",
+                voucher.getVoucherNumber(), newAttachmentIds.size());
+    }
+
+    private void validateVoucherAttachments(List<UUID> attachmentIds, OrganisationEntity organisation)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        for (UUID fileId : attachmentIds) {
+            OrgFileEntity file = orgFileRepo.findById(fileId)
+                    .orElseThrow(() -> new ItemNotFoundException("Attachment file not found: " + fileId));
+
+            if (!file.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
+                throw new AccessDeniedException("File does not belong to this organisation: " + fileId);
+            }
+
+            if (Boolean.TRUE.equals(file.getIsDeleted())) {
+                throw new ItemNotFoundException("Cannot attach deleted file: " + fileId);
+            }
+        }
     }
 }
