@@ -39,7 +39,7 @@ public class VoucherResponse {
 
     // Beneficiaries and attachments
     private List<VoucherBeneficiaryResponse> beneficiaries;
-   // private List<VoucherAttachmentResponse> attachments;
+    private List<VoucherAttachmentResponse> attachments;
 
     // Timestamps
     private LocalDateTime createdAt;

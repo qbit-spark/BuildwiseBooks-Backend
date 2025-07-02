@@ -97,9 +97,9 @@ public class ProjectServiceImpl implements ProjectService {
 
         ProjectEntity savedProject = projectRepo.save(project);
 
-//        //Initialize project budget
-//        OrgBudgetEntity orgBudget = orgBudgetRepo.findByOrganisationAndStatus(organisation, OrgBudgetStatus.ACTIVE).orElseThrow(() -> new ItemNotFoundException("Organisation has no active budget"));
-//        projectBudgetService.initialiseProjectBudget(orgBudget, savedProject);
+        //Initialize project budget
+        OrgBudgetEntity orgBudget = orgBudgetRepo.findByOrganisationAndStatus(organisation, OrgBudgetStatus.ACTIVE).orElseThrow(() -> new ItemNotFoundException("Organisation has no active budget"));
+        projectBudgetService.initialiseProjectBudget(orgBudget, savedProject);
 
         // Create a default team member for the creator AND Get the actual organization owner
         OrganisationMember organisationOwner = organisationMemberRepo

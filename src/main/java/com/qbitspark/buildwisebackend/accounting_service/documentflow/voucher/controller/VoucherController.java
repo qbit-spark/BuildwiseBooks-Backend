@@ -5,9 +5,12 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.en
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.paylaod.*;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.VoucherService;
+import com.qbitspark.buildwisebackend.drive_mng.entity.OrgFileEntity;
+import com.qbitspark.buildwisebackend.drive_mng.repo.OrgFileRepo;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
+import com.qbitspark.buildwisebackend.minio_service.service.MinioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +22,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -30,6 +35,8 @@ import java.util.stream.Collectors;
 public class VoucherController {
 
     private final VoucherService voucherService;
+    private final MinioService minioService;
+    private final OrgFileRepo orgFileRepo;
 
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createVoucher(
@@ -46,7 +53,6 @@ public class VoucherController {
                 )
         );
     }
-
 
     @GetMapping("/project/{projectId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectVouchers(
@@ -155,7 +161,7 @@ public class VoucherController {
         response.setBeneficiaries(beneficiaryResponses);
 
 
-       // response.setAttachments(List.of());
+        response.setAttachments(buildAttachments(voucher.getAttachments()));
 
         return response;
     }
@@ -211,6 +217,66 @@ public class VoucherController {
         response.setNetAmount(voucher.getTotalAmount().subtract(totalDeductions));
 
         return response;
+    }
+
+    private List<VoucherAttachmentResponse> buildAttachments(List<UUID> attachmentIds) {
+        if (attachmentIds == null || attachmentIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return attachmentIds.stream()
+                .map(this::buildSingleAttachment)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private VoucherAttachmentResponse buildSingleAttachment(UUID fileId) {
+
+            OrgFileEntity file = orgFileRepo.findById(fileId).orElse(null);
+            if (file == null || Boolean.TRUE.equals(file.getIsDeleted())) {
+                return null;
+            }
+
+            String downloadUrl = minioService.generatePresignedDownloadUrl(
+                    file.getOrganisation().getOrganisationId(),
+                    file.getMinioKey(),
+                    60);
+
+            boolean canPreview = isPreviewable(file.getMimeType());
+
+            return VoucherAttachmentResponse.builder()
+                    .fileId(file.getFileId())
+                    .fileName(file.getFileName())
+                    .fileSize(file.getFileSize())
+                    .sizeFormatted(formatSize(file.getFileSize()))
+                    .mimeType(file.getMimeType())
+                    .downloadUrl(downloadUrl)
+                    .previewUrl(canPreview ? downloadUrl : null)
+                    .canPreview(canPreview)
+                    .build();
+
+    }
+
+    private boolean isPreviewable(String mimeType) {
+        if (mimeType == null) return false;
+        return mimeType.startsWith("image/") ||
+                mimeType.equals("application/pdf") ||
+                mimeType.startsWith("text/");
+    }
+
+    private String formatSize(Long bytes) {
+        if (bytes == null || bytes == 0) return "0 B";
+
+        String[] units = {"B", "KB", "MB", "GB"};
+        int unit = 0;
+        double size = bytes.doubleValue();
+
+        while (size >= 1024 && unit < units.length - 1) {
+            size /= 1024;
+            unit++;
+        }
+
+        return String.format("%.1f %s", size, units[unit]);
     }
 
 }

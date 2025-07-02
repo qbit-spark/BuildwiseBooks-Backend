@@ -157,6 +157,7 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setProjectBudgetLineItem(budgetLineItem);
         voucher.setStatus(VoucherStatus.DRAFT);
         voucher.setCurrency("TSh");
+        voucher.setAttachments(request.getAttachments());
 
         // Set voucher reference for beneficiaries
         beneficiaryEntities.forEach(beneficiary -> beneficiary.setVoucher(voucher));
@@ -248,6 +249,8 @@ public class VoucherServiceImpl implements VoucherService {
                 List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
 
         return validateVoucherExists(voucherId, organisation);
+
+
     }
 
 

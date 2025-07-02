@@ -237,8 +237,6 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
     }
 
 
-
-
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return extractAccount(authentication);

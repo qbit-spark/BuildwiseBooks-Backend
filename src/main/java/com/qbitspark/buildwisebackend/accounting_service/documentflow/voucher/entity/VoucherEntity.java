@@ -4,6 +4,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budg
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.PaymentMode;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherType;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.utils.UUIDListConverter;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
@@ -98,6 +99,7 @@ public class VoucherEntity {
     @OneToMany(mappedBy = "voucher", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<VoucherBeneficiaryEntity> beneficiaries = new ArrayList<>();
 
+    @Column(name = "attachments", columnDefinition = "JSON")
+    @Convert(converter = UUIDListConverter.class)
     private List<UUID> attachments = new ArrayList<>();
-
 }
