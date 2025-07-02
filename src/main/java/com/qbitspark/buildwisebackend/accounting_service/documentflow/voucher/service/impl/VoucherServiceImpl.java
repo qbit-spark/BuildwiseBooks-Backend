@@ -519,18 +519,20 @@ public class VoucherServiceImpl implements VoucherService {
     private void updateVoucherAttachments(VoucherEntity voucher, List<UUID> newAttachmentIds, OrganisationEntity organisation)
             throws ItemNotFoundException, AccessDeniedException {
 
-        // Validate all new attachments exist and belong to organisation
+        voucher.getAttachments().clear();
+        voucherRepo.save(voucher);
+        log.info("Cleared attachments for voucher {}", voucher.getVoucherNumber());
+
         if (!newAttachmentIds.isEmpty()) {
             validateVoucherAttachments(newAttachmentIds, organisation);
+
+            voucher.setAttachments(new ArrayList<>(newAttachmentIds));
+            voucherRepo.save(voucher);
+
+            log.info("Added {} new attachments to voucher {}",
+                    newAttachmentIds.size(), voucher.getVoucherNumber());
         }
-
-        // Simply replace the attachment list
-        voucher.setAttachments(new ArrayList<>(newAttachmentIds));
-
-        log.info("Updated attachments for voucher {}: now has {} attachments",
-                voucher.getVoucherNumber(), newAttachmentIds.size());
     }
-
     private void validateVoucherAttachments(List<UUID> attachmentIds, OrganisationEntity organisation)
             throws ItemNotFoundException, AccessDeniedException {
 
