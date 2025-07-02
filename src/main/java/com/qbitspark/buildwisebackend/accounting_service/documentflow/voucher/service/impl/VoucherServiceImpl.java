@@ -94,13 +94,11 @@ public class VoucherServiceImpl implements VoucherService {
 
         String voucherNumber = voucherNumberService.generateVoucherNumber(project, organisation);
 
-        // Create beneficiaries and calculate totals
         List<VoucherBeneficiaryEntity> beneficiaryEntities = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
         BigDecimal totalDeductions = BigDecimal.ZERO;
 
         for (VoucherBeneficiaryRequest beneficiaryRequest : request.getBeneficiaries()) {
-            // Validate vendor
             VendorEntity vendor = vendorsRepo.findById(beneficiaryRequest.getVendorId())
                     .orElseThrow(() -> new ItemNotFoundException("Vendor(s) not found!"));
 
@@ -108,17 +106,14 @@ public class VoucherServiceImpl implements VoucherService {
                 throw new ItemNotFoundException("Vendor does not belong to this organisation");
             }
 
-            // Validate and fetch deducts for this beneficiary
             List<DeductsEntity> validDeducts = validateAndFetchDeducts(
                     beneficiaryRequest.getDeductions(), organisationId);
 
-            // Create beneficiary
             VoucherBeneficiaryEntity beneficiaryEntity = new VoucherBeneficiaryEntity();
             beneficiaryEntity.setVendor(vendor);
             beneficiaryEntity.setDescription(beneficiaryRequest.getDescription());
             beneficiaryEntity.setAmount(beneficiaryRequest.getAmount());
 
-            // Create deductions based on saved deduct entities
             List<VoucherDeductionEntity> deductionEntities = new ArrayList<>();
             BigDecimal beneficiaryDeductionTotal = BigDecimal.ZERO;
 
@@ -129,7 +124,6 @@ public class VoucherServiceImpl implements VoucherService {
                 deductionEntity.setDeductId(deductEntity.getDeductId());
                 deductionEntity.setDeductName(deductEntity.getDeductName());
 
-                // Calculate deduction amount
                 BigDecimal deductionAmount = beneficiaryRequest.getAmount()
                         .multiply(deductEntity.getDeductPercent())
                         .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
@@ -224,8 +218,8 @@ public class VoucherServiceImpl implements VoucherService {
         }
 
 
-        if (request.getAttachmentIds() != null) {
-            updateVoucherAttachments(existingVoucher, request.getAttachmentIds(), organisation);
+        if (request.getAttachments() != null) {
+            updateVoucherAttachments(existingVoucher, request.getAttachments(), organisation);
         }
 
         VoucherEntity updatedVoucher = voucherRepo.save(existingVoucher);
@@ -521,6 +515,7 @@ public class VoucherServiceImpl implements VoucherService {
 
         voucher.getAttachments().clear();
         voucherRepo.save(voucher);
+        voucherRepo.flush();
         log.info("Cleared attachments for voucher {}", voucher.getVoucherNumber());
 
         if (!newAttachmentIds.isEmpty()) {

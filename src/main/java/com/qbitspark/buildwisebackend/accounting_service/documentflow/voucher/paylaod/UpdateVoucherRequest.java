@@ -16,5 +16,5 @@ public class UpdateVoucherRequest {
     @Valid
     private List<VoucherBeneficiaryRequest> beneficiaries;
 
-    private List<UUID> attachmentIds;
+    private List<UUID> attachments;
 }
