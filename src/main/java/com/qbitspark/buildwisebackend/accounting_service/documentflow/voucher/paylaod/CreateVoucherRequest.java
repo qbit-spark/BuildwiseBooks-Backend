@@ -26,7 +26,6 @@ public class CreateVoucherRequest {
     @Valid
     private List<VoucherBeneficiaryRequest> beneficiaries;
 
-//    @Valid
     private List<UUID> attachments;
 
 }

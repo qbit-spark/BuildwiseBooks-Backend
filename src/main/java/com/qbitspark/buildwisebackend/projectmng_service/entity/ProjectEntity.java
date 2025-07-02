@@ -84,6 +84,8 @@ public class ProjectEntity {
 
     private UUID deletedByMemberId;
 
+
+
     public boolean isTeamMember(OrganisationMember member) {
         return teamMembers.stream().anyMatch(teamMember -> teamMember.getOrganisationMember().equals(member));
     }

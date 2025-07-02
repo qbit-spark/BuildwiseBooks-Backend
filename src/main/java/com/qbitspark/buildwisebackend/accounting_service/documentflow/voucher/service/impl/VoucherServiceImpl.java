@@ -3,15 +3,12 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.s
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetLineItemEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.enums.ProjectBudgetStatus;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.repo.ProjectBudgetLineItemRepo;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.repo.ProjectBudgetRepo;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
-import com.qbitspark.buildwisebackend.accounting_service.coa.entity.JournalEntry;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.entity.DeductsEntity;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.repo.DeductRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherBeneficiaryEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherDeductionEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherEntity;
-import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.PaymentStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.paylaod.*;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.repo.VoucherBeneficiaryRepo;
@@ -65,7 +62,6 @@ public class VoucherServiceImpl implements VoucherService {
     private final OrganisationMemberRepo organisationMemberRepo;
     private final VoucherNumberService voucherNumberService;
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
-    private final ProjectBudgetRepo projectBudgetRepo;
     private final ProjectBudgetLineItemRepo projectBudgetLineItemRepo;
     private final DeductRepo deductRepo;
     private final VoucherBeneficiaryRepo voucherBeneficiaryRepo;
@@ -243,6 +239,7 @@ public class VoucherServiceImpl implements VoucherService {
         return updatedVoucher;
     }
 
+
     @Override
     public VoucherEntity getVoucherById(UUID organisationId, UUID voucherId) throws ItemNotFoundException, AccessDeniedException {
         AccountEntity currentUser = getAuthenticatedAccount();
@@ -295,7 +292,7 @@ public class VoucherServiceImpl implements VoucherService {
         }
     }
 
-    private ProjectTeamMemberEntity validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
+    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
 
         // Step 1: Find the organisation member
         OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
@@ -316,7 +313,6 @@ public class VoucherServiceImpl implements VoucherService {
             throw new AccessDeniedException("Member has insufficient permissions for this operation");
         }
 
-        return projectTeamMember;
     }
 
 
@@ -391,81 +387,6 @@ public class VoucherServiceImpl implements VoucherService {
 
         voucher.setProjectBudgetLineItem(newBudgetLineItem);
     }
-
-//    private void updateVoucherBeneficiaries(VoucherEntity voucher, List<VoucherBeneficiaryRequest> newBeneficiaries,
-//                                            UUID organisationId) throws ItemNotFoundException {
-//
-//        // Calculate new total amount
-//        BigDecimal newTotalAmount = newBeneficiaries.stream()
-//                .map(VoucherBeneficiaryRequest::getAmount)
-//                .reduce(BigDecimal.ZERO, BigDecimal::add);
-//
-//        // Validate budget availability with new amount
-//        validateBudgetAvailability(voucher.getProjectBudgetLineItem(), newTotalAmount);
-//
-//
-//        // Clear existing beneficiaries from memory
-//        voucher.getBeneficiaries().clear();
-//
-//        //Clear existing beneficiaries fom table
-//
-//
-//
-//        // Create new beneficiaries
-//        List<VoucherBeneficiaryEntity> beneficiaryEntities = new ArrayList<>();
-//        BigDecimal totalDeductions = BigDecimal.ZERO;
-//
-//        for (VoucherBeneficiaryRequest beneficiaryRequest : newBeneficiaries) {
-//            // Validate vendor
-//            VendorEntity vendor = vendorsRepo.findById(beneficiaryRequest.getVendorId())
-//                    .orElseThrow(() -> new ItemNotFoundException("Vendor not found: " + beneficiaryRequest.getVendorId()));
-//
-//            if (!vendor.getOrganisation().getOrganisationId().equals(organisationId)) {
-//                throw new ItemNotFoundException("Vendor does not belong to this organisation");
-//            }
-//
-//            // Validate and fetch deducts for this beneficiary
-//            List<DeductsEntity> validDeducts = validateAndFetchDeducts(
-//                    beneficiaryRequest.getDeductions(), organisationId);
-//
-//            // Create beneficiary
-//            VoucherBeneficiaryEntity beneficiaryEntity = new VoucherBeneficiaryEntity();
-//            beneficiaryEntity.setVoucher(voucher);
-//            beneficiaryEntity.setVendor(vendor);
-//            beneficiaryEntity.setDescription(beneficiaryRequest.getDescription());
-//            beneficiaryEntity.setAmount(beneficiaryRequest.getAmount());
-//
-//            // Create deductions based on saved deduct entities
-//            List<VoucherDeductionEntity> deductionEntities = new ArrayList<>();
-//            BigDecimal beneficiaryDeductionTotal = BigDecimal.ZERO;
-//
-//            for (DeductsEntity deductEntity : validDeducts) {
-//                VoucherDeductionEntity deductionEntity = new VoucherDeductionEntity();
-//                deductionEntity.setBeneficiary(beneficiaryEntity);
-//                deductionEntity.setPercentage(deductEntity.getDeductPercent());
-//                deductionEntity.setDeductId(deductEntity.getDeductId());
-//                deductionEntity.setDeductName(deductEntity.getDeductName());
-//
-//                // Calculate deduction amount
-//                BigDecimal deductionAmount = beneficiaryRequest.getAmount()
-//                        .multiply(deductEntity.getDeductPercent())
-//                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-//
-//                deductionEntity.setDeductionAmount(deductionAmount);
-//                deductionEntities.add(deductionEntity);
-//
-//                beneficiaryDeductionTotal = beneficiaryDeductionTotal.add(deductionAmount);
-//            }
-//
-//            beneficiaryEntity.setDeductions(deductionEntities);
-//            beneficiaryEntities.add(beneficiaryEntity);
-//            totalDeductions = totalDeductions.add(beneficiaryDeductionTotal);
-//        }
-//
-//        voucher.setBeneficiaries(beneficiaryEntities);
-//        voucher.setTotalAmount(newTotalAmount);
-//    }
-
 
     private void updateVoucherBeneficiaries(VoucherEntity voucher, List<VoucherBeneficiaryRequest> newBeneficiaries,
                                             UUID organisationId) throws ItemNotFoundException {

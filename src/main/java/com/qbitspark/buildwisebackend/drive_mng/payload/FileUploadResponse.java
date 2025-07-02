@@ -1,27 +1,31 @@
-package com.qbitspark.buildwisebackend.globe_api_client.payloads;
+package com.qbitspark.buildwisebackend.drive_mng.payload;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Data
-@Builder
-@NoArgsConstructor
+@Getter
+@Setter
 @AllArgsConstructor
-public class FileBoxFileResponse {
+@NoArgsConstructor
+@Builder
+public class FileUploadResponse {
     private UUID fileId;
     private String fileName;
     private UUID folderId;
     private String folderPath;
     private Long fileSize;
+    private String sizeFormatted;
     private String mimeType;
-    private String extension;
-    private String scanStatus;
     private LocalDateTime uploadedAt;
-    private Boolean canPreview;
-    private Boolean canDownload;
+    private String projectCode;
+
+    // New fields for URLs
+    private String downloadUrl;
+    private String previewUrl;
 }

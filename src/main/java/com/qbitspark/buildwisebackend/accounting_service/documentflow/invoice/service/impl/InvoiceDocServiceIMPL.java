@@ -5,7 +5,6 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.en
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.embedings.InvoiceTaxDetail;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.paylaod.*;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.repo.InvoiceDocRepo;
-import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceAttachmentService;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceDocService;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceNumberService;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.entity.TaxEntity;
@@ -63,7 +62,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
     private final InvoiceNumberService invoiceNumberService;
     private final TaxRepo taxRepo;
-    private final InvoiceAttachmentService invoiceAttachmentService;
 
     @Override
     @Transactional

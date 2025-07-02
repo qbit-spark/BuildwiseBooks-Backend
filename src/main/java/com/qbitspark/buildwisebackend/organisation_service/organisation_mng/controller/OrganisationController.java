@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.organisation_service.organisation_mng.controller;
 
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
@@ -23,7 +24,7 @@ public class OrganisationController {
     private final OrganisationService organisationService;
 
     @PostMapping
-    public ResponseEntity<GlobeSuccessResponseBuilder> createOrganisation(@Valid @RequestBody CreateOrganisationRequest request) throws ItemNotFoundException {
+    public ResponseEntity<GlobeSuccessResponseBuilder> createOrganisation(@Valid @RequestBody CreateOrganisationRequest request) throws ItemNotFoundException, AccessDeniedException {
         OrganisationEntity organisation = organisationService.createOrganisation(request);
         OrganisationResponse response = mapToResponse(organisation);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Organisation created successfully", response));

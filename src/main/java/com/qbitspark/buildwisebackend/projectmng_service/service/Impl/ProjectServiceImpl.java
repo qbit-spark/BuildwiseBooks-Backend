@@ -6,6 +6,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.r
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.service.ProjectBudgetService;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.repo.ClientsRepo;
+import com.qbitspark.buildwisebackend.drive_mng.service.OrgDriveService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
@@ -54,6 +55,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectCodeSequenceService projectCodeSequenceService;
     private final ProjectBudgetService projectBudgetService;
     private final OrgBudgetRepo orgBudgetRepo;
+    private final OrgDriveService orgDriveService;
 
     @Transactional
     @Override
@@ -110,6 +112,8 @@ public class ProjectServiceImpl implements ProjectService {
                 creator,
                 organisationOwner
         );
+
+        orgDriveService.createProjectSystemFolder(organisation,savedProject);
 
         return mapToProjectResponse(savedProject);
     }

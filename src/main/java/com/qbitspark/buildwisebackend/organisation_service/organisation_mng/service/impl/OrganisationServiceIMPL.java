@@ -1,6 +1,8 @@
 package com.qbitspark.buildwisebackend.organisation_service.organisation_mng.service.impl;
 
 import com.qbitspark.buildwisebackend.accounting_service.coa.service.ChartOfAccountService;
+import com.qbitspark.buildwisebackend.drive_mng.service.OrgDriveService;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
@@ -30,10 +32,11 @@ public class OrganisationServiceIMPL implements OrganisationService {
     private final OrganisationRepo organisationRepo;
     private final OrganisationMemberService organisationMemberService;
     private final ChartOfAccountService chartOfAccountService;
+    private final OrgDriveService orgDriveService;
 
     @Transactional
     @Override
-    public OrganisationEntity createOrganisation(CreateOrganisationRequest createOrganisationRequest) throws ItemNotFoundException {
+    public OrganisationEntity createOrganisation(CreateOrganisationRequest createOrganisationRequest) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
 
@@ -57,8 +60,10 @@ public class OrganisationServiceIMPL implements OrganisationService {
         // ADD THIS: Automatically add an owner as a member with an OWNER role
         organisationMemberService.addOwnerAsMember(savedOrganisation, authenticatedAccount);
 
-        // Create default chart of accounts for the organisation
+        // Create a default chart of accounts for the organisation
         chartOfAccountService.createDefaultChartOfAccountsAndReturnHierarchical(savedOrganisation);
+
+        orgDriveService.initializeOrganisationDrive(savedOrganisation);
 
         return savedOrganisation;
 
@@ -133,5 +138,7 @@ public class OrganisationServiceIMPL implements OrganisationService {
             throw new ItemNotFoundException("User is not authenticated");
         }
     }
+
+
 
 }
