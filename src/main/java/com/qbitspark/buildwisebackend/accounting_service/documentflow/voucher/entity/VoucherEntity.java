@@ -102,4 +102,5 @@ public class VoucherEntity {
     @Column(name = "attachments", columnDefinition = "JSON")
     @Convert(converter = UUIDListConverter.class)
     private List<UUID> attachments = new ArrayList<>();
+
 }
