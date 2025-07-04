@@ -32,6 +32,7 @@ public class InvoiceDocResponse {
     private BigDecimal amountDue;
     private List<InvoiceLineItemResponse> lineItems;
     private List<InvoiceTaxDetailResponse> taxDetails;
+    private List<InvoiceAttachmentResponse> attachments;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String createdByUserName;

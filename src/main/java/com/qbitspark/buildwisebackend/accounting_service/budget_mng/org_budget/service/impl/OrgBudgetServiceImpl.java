@@ -47,7 +47,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
-        OrganisationMember creator = validateMemberPermissions(authenticatedAccount, organisation,
+         validateMemberPermissions(authenticatedAccount, organisation,
                 Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
 
         // Auto-generate budget name based on financial year
