@@ -57,7 +57,7 @@ public class ClientsController {
             @PathVariable UUID organisationId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "clientId") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDirection) throws ItemNotFoundException {
 
         Sort sort = sortDirection.equalsIgnoreCase("desc")
