@@ -53,7 +53,7 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
             throws ItemNotFoundException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, authenticatedAccount,
+        validateOrganisationAccess(organisationId, authenticatedAccount,
                 Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
 
         OrgBudgetEntity budget = validateBudget(budgetId, organisationId);
@@ -270,8 +270,8 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
 
     // ========== VALIDATION METHODS ==========
 
-    private OrganisationEntity validateOrganisationAccess(UUID organisationId, AccountEntity account,
-                                                          List<MemberRole> allowedRoles) throws ItemNotFoundException {
+    private void validateOrganisationAccess(UUID organisationId, AccountEntity account,
+                                            List<MemberRole> allowedRoles) throws ItemNotFoundException {
 
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
@@ -287,7 +287,6 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
             throw new ItemNotFoundException("Insufficient permissions");
         }
 
-        return organisation;
     }
 
     private OrgBudgetEntity validateBudget(UUID budgetId, UUID organisationId) throws ItemNotFoundException {
