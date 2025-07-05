@@ -95,12 +95,5 @@ public class InvoiceNumberServiceIMPL implements InvoiceNumberService {
         return saved;
     }
 
-    /**
-     * Gets the current sequence number for a client (for reporting/monitoring)
-     */
-    public int getCurrentSequence(UUID organisationId, UUID clientId) {
-        return sequenceRepository.findByOrganisationIdAndClientId(organisationId, clientId)
-                .map(ClientInvoiceSequenceEntity::getCurrentSequence)
-                .orElse(0);
-    }
+
 }

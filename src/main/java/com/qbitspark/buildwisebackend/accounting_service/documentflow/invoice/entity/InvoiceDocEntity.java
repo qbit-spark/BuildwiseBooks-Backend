@@ -36,7 +36,7 @@ public class InvoiceDocEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(name = "invoice_number", unique = true, nullable = false)
+    @Column(name = "invoice_number", unique = false, nullable = false)
     private String invoiceNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)

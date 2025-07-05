@@ -30,4 +30,5 @@ public class CreateReceiptRequest {
     private String reference;
     private String description;
     private List<UUID> attachments;
+
 }
