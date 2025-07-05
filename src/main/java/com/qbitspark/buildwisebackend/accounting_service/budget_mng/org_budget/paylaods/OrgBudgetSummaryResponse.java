@@ -19,23 +19,31 @@ public class OrgBudgetSummaryResponse {
 
     private UUID budgetId;
     private String budgetName;
+
+
     private BigDecimal totalBudgetAmount;
     private BigDecimal distributedAmount;
-    private BigDecimal availableAmount;
+    private BigDecimal totalAllocatedToDetails;
+    private BigDecimal availableForAllocation;
+
     private BigDecimal totalSpentAmount;
     private BigDecimal totalCommittedAmount;
     private BigDecimal totalRemainingAmount;
+
     private OrgBudgetStatus status;
     private LocalDate financialYearStart;
     private LocalDate financialYearEnd;
+
     private BigDecimal budgetUtilizationPercentage;
     private BigDecimal spendingPercentage;
-
 
     private int totalAccounts;
     private int accountsWithBudget;
     private int accountsWithoutBudget;
 
+    private int totalDetailAccounts;
+    private int detailAccountsWithAllocation;
+    private int detailAccountsWithoutAllocation;
 
     private List<AccountGroupSummary> accountGroups;
 
@@ -46,10 +54,20 @@ public class OrgBudgetSummaryResponse {
     public static class AccountGroupSummary {
         private String headerAccountName;
         private String headerAccountCode;
+
         private BigDecimal groupBudgetAmount;
+        private BigDecimal groupAllocatedAmount;
+        private BigDecimal groupAvailableForAllocation;
+
         private BigDecimal groupSpentAmount;
+        private BigDecimal groupCommittedAmount;
         private BigDecimal groupRemainingAmount;
+
         private int accountCount;
         private int accountsWithBudget;
+        private int accountsWithoutBudget;
+
+        private BigDecimal allocationPercentage;
+        private BigDecimal utilizationPercentage;
     }
 }

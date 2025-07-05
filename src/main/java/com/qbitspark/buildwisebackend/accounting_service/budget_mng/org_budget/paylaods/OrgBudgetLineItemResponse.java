@@ -29,4 +29,7 @@ public class OrgBudgetLineItemResponse {
     private BigDecimal utilizationPercentage;
     private LocalDateTime createdDate;
     private LocalDateTime modifiedDate;
+    private BigDecimal allocatedToDetails;
+    private BigDecimal availableForAllocation;
+
 }

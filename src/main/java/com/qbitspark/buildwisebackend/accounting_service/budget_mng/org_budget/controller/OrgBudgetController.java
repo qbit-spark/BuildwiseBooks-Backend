@@ -263,7 +263,11 @@ public class OrgBudgetController {
         response.setAccountCode(lineItem.getChartOfAccount().getAccountCode());
         response.setAccountName(lineItem.getChartOfAccount().getName());
         response.setAccountDescription(lineItem.getChartOfAccount().getDescription());
+
         response.setBudgetAmount(lineItem.getBudgetAmount());
+        response.setAllocatedToDetails(lineItem.getAllocatedToDetails());
+        response.setAvailableForAllocation(lineItem.getAvailableForAllocation());
+
         response.setSpentAmount(lineItem.getSpentAmount());
         response.setCommittedAmount(lineItem.getCommittedAmount());
         response.setRemainingAmount(lineItem.getRemainingAmount());

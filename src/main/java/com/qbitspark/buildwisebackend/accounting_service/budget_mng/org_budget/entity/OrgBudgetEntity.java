@@ -70,7 +70,6 @@ public class OrgBudgetEntity {
 
     private boolean isDeleted = false;
 
-    // One-to-Many relationship with budget line items
     @OneToMany(mappedBy = "orgBudget", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<OrgBudgetLineItemEntity> lineItems = new ArrayList<>();
 
@@ -82,13 +81,6 @@ public class OrgBudgetEntity {
 
     public BigDecimal getAvailableAmount() {
         return BigDecimal.ZERO;
-    }
-
-
-    public BigDecimal getDistributedAmount() {
-        return lineItems.stream()
-                .map(OrgBudgetLineItemEntity::getBudgetAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
 
@@ -140,6 +132,15 @@ public class OrgBudgetEntity {
                 .filter(item -> !item.hasBudgetAllocated())
                 .count();
     }
+
+
+    public BigDecimal getDistributedAmount() {
+        return lineItems.stream()
+                .map(OrgBudgetLineItemEntity::getBudgetAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+
 
 
 }

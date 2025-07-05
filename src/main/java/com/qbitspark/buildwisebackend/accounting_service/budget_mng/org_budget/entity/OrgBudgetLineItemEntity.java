@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -43,6 +44,7 @@ public class OrgBudgetLineItemEntity {
     @Column(name = "line_item_notes", columnDefinition = "TEXT")
     private String lineItemNotes;
 
+
     @Column(nullable = false)
     private LocalDateTime createdDate;
 
@@ -53,13 +55,6 @@ public class OrgBudgetLineItemEntity {
     private UUID modifiedBy;
 
     // Business methods
-    public BigDecimal getRemainingAmount() {
-        return budgetAmount.subtract(spentAmount).subtract(committedAmount);
-    }
-
-    public boolean canSpend(BigDecimal amount) {
-        return getRemainingAmount().compareTo(amount) >= 0;
-    }
 
     public boolean hasBudgetAllocated() {
         return budgetAmount.compareTo(BigDecimal.ZERO) > 0;
@@ -71,27 +66,21 @@ public class OrgBudgetLineItemEntity {
         }
         return spentAmount.add(committedAmount)
                 .multiply(BigDecimal.valueOf(100))
-                .divide(budgetAmount, 2, BigDecimal.ROUND_HALF_UP);
+                .divide(budgetAmount, 2, RoundingMode.HALF_UP);
     }
 
-    public void addSpentAmount(BigDecimal amount) {
-        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
-            this.spentAmount = this.spentAmount.add(amount);
-        }
+
+    @Transient
+    public BigDecimal getAllocatedToDetails() {
+        return BigDecimal.ZERO;
     }
 
-    public void addCommittedAmount(BigDecimal amount) {
-        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
-            this.committedAmount = this.committedAmount.add(amount);
-        }
+    public BigDecimal getRemainingAmount() {
+        return budgetAmount.subtract(spentAmount).subtract(committedAmount);
     }
 
-    public void subtractCommittedAmount(BigDecimal amount) {
-        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
-            this.committedAmount = this.committedAmount.subtract(amount);
-            if (this.committedAmount.compareTo(BigDecimal.ZERO) < 0) {
-                this.committedAmount = BigDecimal.ZERO;
-            }
-        }
+    @Transient
+    public BigDecimal getAvailableForAllocation() {
+        return budgetAmount.subtract(getAllocatedToDetails());
     }
 }
