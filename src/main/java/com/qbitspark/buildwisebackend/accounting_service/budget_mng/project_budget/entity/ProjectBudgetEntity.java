@@ -27,7 +27,6 @@ public class ProjectBudgetEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID projectBudgetId;
 
-
     @ManyToOne
     @JoinColumn(name = "org_budget_id", nullable = false)
     private OrgBudgetEntity orgBudget;
@@ -74,11 +73,6 @@ public class ProjectBudgetEntity {
 
     public BigDecimal getTotalRemainingAmount() {
         return totalBudgetAmount.subtract(totalSpentAmount).subtract(totalCommittedAmount);
-    }
-
-
-    public boolean canSpend(BigDecimal amount) {
-        return getTotalRemainingAmount().compareTo(amount) >= 0;
     }
 
 

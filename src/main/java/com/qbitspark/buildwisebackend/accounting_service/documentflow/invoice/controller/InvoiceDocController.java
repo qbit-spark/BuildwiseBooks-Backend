@@ -31,15 +31,14 @@ public class InvoiceDocController {
 
     private final InvoiceDocService invoiceDocService;
 
-
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createInvoice(
             @PathVariable UUID organisationId,
             @RequestBody CreateInvoiceDocRequest request ,
             @RequestParam(value = "action") ActionType action)
-            throws ItemNotFoundException, AccessDeniedException, JsonProcessingException, RandomExceptions {
+            throws ItemNotFoundException, AccessDeniedException, RandomExceptions {
 
-        // Input validation
+
         if (action == null) {
             throw new IllegalArgumentException("Action parameter is required and cannot be null");
         }
@@ -99,6 +98,7 @@ public class InvoiceDocController {
             @PathVariable UUID invoiceId) throws ItemNotFoundException, AccessDeniedException {
 
         InvoiceDocResponse response = invoiceDocService.getInvoiceById(organisationId, invoiceId);
+
 
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Invoice retrieved successfully", response));
     }

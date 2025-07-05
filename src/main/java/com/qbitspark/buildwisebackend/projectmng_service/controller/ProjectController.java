@@ -46,6 +46,7 @@ public class ProjectController {
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project retrieved successfully", response));
     }
 
+
     @PutMapping("/{projectId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> updateProject(
             @PathVariable UUID projectId,
@@ -54,6 +55,7 @@ public class ProjectController {
         ProjectResponse response = projectService.updateProject(projectId, request);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project updated successfully", response));
     }
+
 
     @DeleteMapping("/{projectId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> deleteProject(@PathVariable UUID projectId) throws ItemNotFoundException, AccessDeniedException, RandomExceptions {
@@ -65,6 +67,7 @@ public class ProjectController {
         }
     }
 
+
     @GetMapping("/organisation/{organisationId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getOrganisationProjects(
             @PathVariable UUID organisationId,
@@ -75,6 +78,7 @@ public class ProjectController {
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Organisation projects retrieved successfully", response));
     }
 
+
     @GetMapping("/organisation/{organisationId}/my-projects")
     public ResponseEntity<GlobeSuccessResponseBuilder> getMyProjectsInOrganisation(
             @PathVariable UUID organisationId,
@@ -84,6 +88,7 @@ public class ProjectController {
         Page<ProjectResponse> response = projectService.getAllProjectsAmBelongingToOrganisation(organisationId, page, size);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("My projects retrieved successfully", response));
     }
+
 
     @GetMapping("/organisation/{organisationId}/my-projects/unpaginated")
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllMyProjectsInOrganisation(
