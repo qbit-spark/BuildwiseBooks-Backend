@@ -80,4 +80,160 @@ public class OrgBudgetAllocationController {
         List<OrgBudgetDetailAllocationEntity> allocations = allocationService.getHeaderAllocations(
                 organisationId, budgetId, headerLineItemId);
 
-        List
+        List<DetailAllocationResponse> responses = allocations.stream()
+                .map(this::mapToAllocationResponse)
+                .collect(Collectors.toList());
+
+        GlobeSuccessResponseBuilder successResponse = GlobeSuccessResponseBuilder.success(
+                "Header allocations retrieved successfully",
+                responses
+        );
+
+        return new ResponseEntity<>(successResponse, HttpStatus.OK);
+    }
+
+    // Get allocation summary for a header account
+    @GetMapping("/header/{headerLineItemId}/summary")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getHeaderAllocationSummary(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID budgetId,
+            @PathVariable UUID headerLineItemId) throws ItemNotFoundException {
+
+        AllocationSummaryResponse summary = allocationService.getAllocationSummary(
+                organisationId, budgetId, headerLineItemId);
+
+        GlobeSuccessResponseBuilder successResponse = GlobeSuccessResponseBuilder.success(
+                "Header allocation summary retrieved successfully",
+                summary
+        );
+
+        return new ResponseEntity<>(successResponse, HttpStatus.OK);
+    }
+
+    // Get all allocations for the entire budget
+    @GetMapping("/all")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getAllBudgetAllocations(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID budgetId) throws ItemNotFoundException {
+
+        List<OrgBudgetDetailAllocationEntity> allocations = allocationService.getAllBudgetAllocations(
+                organisationId, budgetId);
+
+        List<DetailAllocationResponse> responses = allocations.stream()
+                .map(this::mapToAllocationResponse)
+                .collect(Collectors.toList());
+
+        GlobeSuccessResponseBuilder successResponse = GlobeSuccessResponseBuilder.success(
+                "All budget allocations retrieved successfully",
+                responses
+        );
+
+        return new ResponseEntity<>(successResponse, HttpStatus.OK);
+    }
+
+    // Get available detail accounts for allocation under a header
+    @GetMapping("/header/{headerLineItemId}/available-accounts")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getAvailableDetailAccounts(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID budgetId,
+            @PathVariable UUID headerLineItemId) throws ItemNotFoundException {
+
+        // Get header allocations to check existing allocations
+        List<OrgBudgetDetailAllocationEntity> existingAllocations = allocationService.getHeaderAllocations(
+                organisationId, budgetId, headerLineItemId);
+
+        // Get available detail accounts
+        List<AvailableDetailAccountResponse> availableAccounts = getDetailAccountsForHeader(
+                organisationId, headerLineItemId, existingAllocations);
+
+        GlobeSuccessResponseBuilder successResponse = GlobeSuccessResponseBuilder.success(
+                "Available detail accounts retrieved successfully",
+                availableAccounts
+        );
+
+        return new ResponseEntity<>(successResponse, HttpStatus.OK);
+    }
+
+    // Mapping methods
+    private DetailAllocationResponse mapToAllocationResponse(OrgBudgetDetailAllocationEntity allocation) {
+        DetailAllocationResponse response = new DetailAllocationResponse();
+        response.setAllocationId(allocation.getAllocationId());
+
+        // Header account info
+        response.setHeaderLineItemId(allocation.getHeaderLineItem().getLineItemId());
+        response.setHeaderAccountCode(allocation.getHeaderAccountCode());
+        response.setHeaderAccountName(allocation.getHeaderAccountName());
+
+        // Detail account info
+        response.setDetailAccountId(allocation.getDetailAccount().getId());
+        response.setDetailAccountCode(allocation.getDetailAccountCode());
+        response.setDetailAccountName(allocation.getDetailAccountName());
+
+        // Allocation amounts
+        response.setAllocatedAmount(allocation.getAllocatedAmount());
+        response.setSpentAmount(allocation.getSpentAmount());
+        response.setCommittedAmount(allocation.getCommittedAmount());
+        response.setRemainingAmount(allocation.getRemainingAmount());
+
+        // Metadata
+        response.setAllocationNotes(allocation.getAllocationNotes());
+        response.setHasAllocation(allocation.hasAllocation());
+        response.setAllocationStatus(allocation.getAllocationStatus());
+        response.setUtilizationPercentage(allocation.getUtilizationPercentage());
+        response.setCreatedDate(allocation.getCreatedDate());
+        response.setModifiedDate(allocation.getModifiedDate());
+
+        return response;
+    }
+
+    private List<AvailableDetailAccountResponse> getDetailAccountsForHeader(
+            UUID organisationId, UUID headerLineItemId, List<OrgBudgetDetailAllocationEntity> existingAllocations)
+            throws ItemNotFoundException {
+
+        // Get organisation
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        // Get all expense detail accounts
+        List<ChartOfAccounts> detailAccounts = chartOfAccountsRepo
+                .findByOrganisationAndAccountTypeAndIsActive(organisation, AccountType.EXPENSE, true)
+                .stream()
+                .filter(account -> !account.getIsHeader()) // Only detail accounts
+                .filter(ChartOfAccounts::getIsPostable) // Only postable accounts
+                .toList();
+
+        // Map existing allocations for a quick lookup
+        var allocationMap = existingAllocations.stream()
+                .collect(Collectors.toMap(
+                        alloc -> alloc.getDetailAccount().getId(),
+                        alloc -> alloc
+                ));
+
+        // Map to response
+        return detailAccounts.stream()
+                .map(account -> {
+                    AvailableDetailAccountResponse response = new AvailableDetailAccountResponse();
+                    response.setDetailAccountId(account.getId());
+                    response.setAccountCode(account.getAccountCode());
+                    response.setAccountName(account.getName());
+                    response.setDescription(account.getDescription());
+                    response.setPostable(account.getIsPostable());
+                    response.setActive(account.getIsActive());
+
+                    // Check if allocation exists
+                    OrgBudgetDetailAllocationEntity existingAllocation = allocationMap.get(account.getId());
+                    if (existingAllocation != null) {
+                        response.setCurrentAllocation(existingAllocation.getAllocatedAmount());
+                        response.setRemainingAmount(existingAllocation.getRemainingAmount());
+                        response.setHasExistingAllocation(true);
+                    } else {
+                        response.setCurrentAllocation(BigDecimal.ZERO);
+                        response.setRemainingAmount(BigDecimal.ZERO);
+                        response.setHasExistingAllocation(false);
+                    }
+
+                    return response;
+                })
+                .collect(Collectors.toList());
+    }
+}
