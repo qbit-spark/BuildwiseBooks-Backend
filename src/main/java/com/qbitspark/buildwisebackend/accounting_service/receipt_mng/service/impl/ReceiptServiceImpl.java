@@ -1,0 +1,330 @@
+package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.impl;
+
+import com.qbitspark.buildwisebackend.accounting_service.bank_mng.entity.BankAccountEntity;
+import com.qbitspark.buildwisebackend.accounting_service.bank_mng.repo.BankAccountRepo;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceDocEntity;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.InvoiceStatus;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.repo.InvoiceDocRepo;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.ReceiptStatus;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.CreateReceiptRequest;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.UpdateReceiptRequest;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptRepo;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.ReceiptService;
+import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberRole;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
+import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
+import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ReceiptServiceImpl implements ReceiptService {
+
+    private final ReceiptRepo receiptRepo;
+    private final InvoiceDocRepo invoiceDocRepo;
+    private final BankAccountRepo bankAccountRepo;
+    private final OrganisationRepo organisationRepo;
+    private final ProjectRepo projectRepo;
+    private final OrganisationMemberRepo organisationMemberRepo;
+    private final ProjectTeamMemberRepo projectTeamMemberRepo;
+    private final AccountRepo accountRepo;
+    private final ReceiptNumberService receiptNumberService;
+
+    @Override
+    public ReceiptEntity createReceipt(UUID organisationId, CreateReceiptRequest request)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        InvoiceDocEntity invoice = validateInvoice(request.getInvoiceId(), organisation);
+        ProjectEntity project = invoice.getProject();
+        ClientEntity client = invoice.getClient();
+
+        validateProjectMemberPermissions(currentUser, project);
+
+        BankAccountEntity bankAccount = null;
+        if (request.getBankAccountId() != null) {
+            bankAccount = validateBankAccount(request.getBankAccountId(), organisation);
+        }
+
+        String receiptNumber = receiptNumberService.generateReceiptNumber(project, organisation);
+
+        ReceiptEntity receipt = new ReceiptEntity();
+        receipt.setReceiptNumber(receiptNumber);
+        receipt.setReceiptDate(request.getReceiptDate());
+        receipt.setOrganisation(organisation);
+        receipt.setProject(project);
+        receipt.setClient(client);
+        receipt.setInvoice(invoice);
+        receipt.setBankAccount(bankAccount);
+        receipt.setTotalAmount(request.getTotalAmount());
+        receipt.setPaymentMethod(request.getPaymentMethod());
+        receipt.setReference(request.getReference());
+        receipt.setDescription(request.getDescription());
+        receipt.setAttachments(request.getAttachments());
+        receipt.setCreatedBy(currentUser.getAccountId());
+
+        ReceiptEntity savedReceipt = receiptRepo.save(receipt);
+        updateInvoicePaymentStatus(invoice);
+
+        return savedReceipt;
+    }
+
+    @Override
+    public Page<ReceiptEntity> getOrganisationReceipts(UUID organisationId, Pageable pageable)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        return receiptRepo.findByOrganisation(organisation, pageable);
+    }
+
+    @Override
+    public ReceiptEntity getReceiptById(UUID organisationId, UUID receiptId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        return receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
+    }
+
+    @Override
+    public ReceiptEntity updateReceipt(UUID organisationId, UUID receiptId, UpdateReceiptRequest request)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
+
+        validateProjectMemberPermissions(currentUser, receipt.getProject());
+
+        if (receipt.getStatus() != ReceiptStatus.DRAFT) {
+            throw new ItemNotFoundException("Only draft receipts can be updated");
+        }
+
+        if (request.getTotalAmount() != null) {
+            receipt.setTotalAmount(request.getTotalAmount());
+        }
+        if (request.getPaymentMethod() != null) {
+            receipt.setPaymentMethod(request.getPaymentMethod());
+        }
+        if (request.getReceiptDate() != null) {
+            receipt.setReceiptDate(request.getReceiptDate());
+        }
+        if (request.getBankAccountId() != null) {
+            BankAccountEntity bankAccount = validateBankAccount(request.getBankAccountId(), organisation);
+            receipt.setBankAccount(bankAccount);
+        }
+        if (request.getReference() != null) {
+            receipt.setReference(request.getReference());
+        }
+        if (request.getDescription() != null) {
+            receipt.setDescription(request.getDescription());
+        }
+        if (request.getAttachments() != null) {
+            receipt.setAttachments(request.getAttachments());
+        }
+
+        receipt.setUpdatedBy(currentUser.getAccountId());
+
+        ReceiptEntity savedReceipt = receiptRepo.save(receipt);
+        updateInvoicePaymentStatus(receipt.getInvoice());
+
+        return savedReceipt;
+    }
+
+    @Override
+    public void confirmReceipt(UUID organisationId, UUID receiptId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
+
+        validateProjectMemberPermissions(currentUser, receipt.getProject());
+
+        receipt.setStatus(ReceiptStatus.CONFIRMED);
+        receipt.setUpdatedBy(currentUser.getAccountId());
+        receiptRepo.save(receipt);
+    }
+
+    @Override
+    public void cancelReceipt(UUID organisationId, UUID receiptId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
+
+        validateProjectMemberPermissions(currentUser, receipt.getProject());
+
+        receipt.setStatus(ReceiptStatus.CANCELLED);
+        receipt.setUpdatedBy(currentUser.getAccountId());
+
+        ReceiptEntity savedReceipt = receiptRepo.save(receipt);
+        updateInvoicePaymentStatus(savedReceipt.getInvoice());
+    }
+
+    @Override
+    public List<ReceiptEntity> getInvoicePayments(UUID organisationId, UUID invoiceId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        InvoiceDocEntity invoice = validateInvoice(invoiceId, organisation);
+        validateProjectMemberPermissions(currentUser, invoice.getProject());
+
+        return receiptRepo.findByInvoiceOrderByReceiptDateDesc(invoice);
+    }
+
+    @Override
+    public Page<ReceiptEntity> getProjectReceipts(UUID organisationId, UUID projectId, Pageable pageable)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        ProjectEntity project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new ItemNotFoundException("Project not found"));
+
+        validateProject(project, organisation);
+        validateProjectMemberPermissions(currentUser, project);
+
+        return receiptRepo.findByProject(project, pageable);
+    }
+
+    private void updateInvoicePaymentStatus(InvoiceDocEntity invoice) {
+        List<ReceiptEntity> confirmedReceipts = receiptRepo.findByInvoiceOrderByReceiptDateDesc(invoice)
+                .stream()
+                .filter(receipt -> receipt.getStatus() == ReceiptStatus.CONFIRMED)
+                .toList();
+
+        BigDecimal totalPaid = confirmedReceipts.stream()
+                .map(ReceiptEntity::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        invoice.setAmountPaid(totalPaid);
+        invoice.setAmountDue(invoice.getTotalAmount().subtract(totalPaid));
+
+        if (totalPaid.compareTo(invoice.getTotalAmount()) >= 0) {
+            invoice.setInvoiceStatus(InvoiceStatus.PAID);
+        } else if (totalPaid.compareTo(BigDecimal.ZERO) > 0) {
+            invoice.setInvoiceStatus(InvoiceStatus.PARTIALLY_PAID);
+        } else {
+            invoice.setInvoiceStatus(InvoiceStatus.SENT);
+        }
+
+        invoiceDocRepo.save(invoice);
+    }
+
+    private OrganisationEntity validateOrganisationAccess(UUID organisationId, AccountEntity currentUser)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(currentUser, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("User is not a member of this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new AccessDeniedException("User membership is not active");
+        }
+
+        if (member.getRole() != MemberRole.OWNER && member.getRole() != MemberRole.ADMIN && member.getRole() != MemberRole.MEMBER) {
+            throw new AccessDeniedException("Insufficient permissions");
+        }
+
+        return organisation;
+    }
+
+    private InvoiceDocEntity validateInvoice(UUID invoiceId, OrganisationEntity organisation)
+            throws ItemNotFoundException {
+
+        InvoiceDocEntity invoice = invoiceDocRepo.findByIdAndOrganisation(invoiceId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Invoice not found"));
+
+        return invoice;
+    }
+
+    private BankAccountEntity validateBankAccount(UUID bankAccountId, OrganisationEntity organisation)
+            throws ItemNotFoundException {
+
+        return bankAccountRepo.findByBankAccountIdAndOrganisation(bankAccountId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Bank account not found"));
+    }
+
+    private void validateProject(ProjectEntity project, OrganisationEntity organisation)
+            throws ItemNotFoundException {
+
+        if (!project.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
+            throw new ItemNotFoundException("Project does not belong to this organisation");
+        }
+    }
+
+    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
+                .orElseThrow(() -> new ItemNotFoundException("Member not found in organisation"));
+
+        if (organisationMember.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        ProjectTeamMemberEntity projectTeamMember = projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
+                .orElseThrow(() -> new ItemNotFoundException("Project team member not found"));
+
+        List<TeamMemberRole> allowedRoles = List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER, TeamMemberRole.MEMBER);
+
+        if (!allowedRoles.contains(projectTeamMember.getRole())) {
+            throw new AccessDeniedException("Insufficient permissions for this operation");
+        }
+    }
+
+    private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String userName = userDetails.getUsername();
+            return accountRepo.findByUserName(userName)
+                    .orElseThrow(() -> new ItemNotFoundException("User not found"));
+        }
+        throw new ItemNotFoundException("User not authenticated");
+    }
+}
