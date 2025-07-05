@@ -39,7 +39,6 @@ public class ProjectController {
         );
     }
 
-
     @GetMapping("/{projectId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectById(
             @PathVariable UUID projectId) throws ItemNotFoundException, AccessDeniedException {
@@ -98,6 +97,5 @@ public class ProjectController {
         List<ProjectResponseSummary> response = projectService.getAllProjectsAmBelongingToOrganisationUnpaginated(organisationId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("All my projects retrieved successfully", response));
     }
-
 
 }

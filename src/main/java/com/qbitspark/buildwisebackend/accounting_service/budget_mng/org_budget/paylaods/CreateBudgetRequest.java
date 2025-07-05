@@ -24,10 +24,6 @@ public class CreateBudgetRequest {
     @NotNull(message = "Financial year end date is required")
     private LocalDate financialYearEnd;
 
-    @NotNull(message = "Total budget amount is required")
-    @Positive(message = "Total budget amount must be positive")
-    private BigDecimal totalBudgetAmount;
-
     private String description;
 
 }

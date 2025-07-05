@@ -166,7 +166,7 @@ public class ProjectBudgetServiceImpl implements ProjectBudgetService {
 
         // Update organization budget allocated amount
         OrgBudgetEntity orgBudget = projectBudget.getOrgBudget();
-        orgBudget.setAllocatedAmount(orgBudget.getAllocatedAmount().add(totalDistributionAmount));
+    //    orgBudget.setAllocatedAmount(orgBudget.getAllocatedAmount().add(totalDistributionAmount));
         orgBudgetRepo.save(orgBudget);
 
         return projectBudgetRepo.save(projectBudget);

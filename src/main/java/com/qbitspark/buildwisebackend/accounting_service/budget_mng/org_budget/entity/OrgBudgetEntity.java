@@ -4,6 +4,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.e
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import jakarta.persistence.*;
 
+import java.math.RoundingMode;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -13,6 +14,8 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "org_budget")
@@ -39,11 +42,9 @@ public class OrgBudgetEntity {
     @Column(nullable = false)
     private LocalDate financialYearEnd;
 
-    @Column(precision = 18, scale = 2, nullable = false)
-    private BigDecimal totalBudgetAmount;
 
-    @Column(precision = 18, scale = 2, nullable = false)
-    private BigDecimal allocatedAmount = BigDecimal.ZERO;
+    @Column(precision = 18, scale = 2, nullable = true)
+    private BigDecimal spentAmount = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -56,7 +57,6 @@ public class OrgBudgetEntity {
     @Column(nullable = false)
     private LocalDateTime createdDate;
 
-    //This can be null, because a sometime budget is initialized by project creation
     private UUID modifiedBy;
 
     private LocalDateTime modifiedDate;
@@ -67,10 +67,103 @@ public class OrgBudgetEntity {
     private UUID parentBudgetId;
 
     private boolean isActive = true;
+
     private boolean isDeleted = false;
 
-    public BigDecimal getAvailableAmount() {
-        return this.totalBudgetAmount.subtract(this.allocatedAmount);
+    // One-to-Many relationship with budget line items
+    @OneToMany(mappedBy = "orgBudget", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<OrgBudgetLineItemEntity> lineItems = new ArrayList<>();
+
+    // Business methods
+
+    /**
+     * Get total budget amount - calculated from line items distribution
+     */
+    public BigDecimal getTotalBudgetAmount() {
+        return getDistributedAmount();
     }
+
+    /**
+     * Get available amount - always ZERO since budget = distribution
+     */
+    public BigDecimal getAvailableAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    /**
+     * Get the total distributed amount from all line items
+     */
+    public BigDecimal getDistributedAmount() {
+        return lineItems.stream()
+                .map(OrgBudgetLineItemEntity::getBudgetAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Get total spent amount from all line items
+     */
+    public BigDecimal getTotalSpentFromLineItems() {
+        return lineItems.stream()
+                .map(OrgBudgetLineItemEntity::getSpentAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Get the total committed amount from all line items
+     */
+    public BigDecimal getTotalCommittedAmount() {
+        return lineItems.stream()
+                .map(OrgBudgetLineItemEntity::getCommittedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Get the total remaining amount from all line items
+     */
+    public BigDecimal getTotalRemainingAmount() {
+        return lineItems.stream()
+                .map(OrgBudgetLineItemEntity::getRemainingAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+
+    /**
+     * Get budget utilization percentage - always 100% since budget = distribution
+     */
+    public BigDecimal getBudgetUtilizationPercentage() {
+        return BigDecimal.valueOf(100);
+    }
+
+    /**
+     * Get spending percentage from distributed budget
+     */
+    public BigDecimal getSpendingPercentage() {
+        BigDecimal distributedAmount = getDistributedAmount();
+        if (distributedAmount.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return getTotalSpentFromLineItems()
+                .multiply(BigDecimal.valueOf(100)).divide(distributedAmount, 2, RoundingMode.HALF_UP);
+    }
+
+
+    /**
+     * Get count of line items with budget allocated
+     */
+    public long getLineItemsWithBudgetCount() {
+        return lineItems.stream()
+                .filter(OrgBudgetLineItemEntity::hasBudgetAllocated)
+                .count();
+    }
+
+    /**
+     * Get count of line items without budget allocated
+     */
+    public long getLineItemsWithoutBudgetCount() {
+        return lineItems.stream()
+                .filter(item -> !item.hasBudgetAllocated())
+                .count();
+    }
+
 
 }
