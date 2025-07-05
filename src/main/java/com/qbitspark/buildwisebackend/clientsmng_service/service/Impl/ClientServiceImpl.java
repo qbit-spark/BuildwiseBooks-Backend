@@ -22,6 +22,8 @@ import com.qbitspark.buildwisebackend.projectmng_service.payloads.TeamMemberResp
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -104,6 +106,29 @@ public class ClientServiceImpl implements ClientService {
 
         return mapToResponse(client);
     }
+
+    @Override
+    public Page<ClientResponse> getAllClientsWithinOrganisation(
+            UUID organisationId,
+            Pageable pageable
+    ) throws ItemNotFoundException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        // Get organisation
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        validateMemberPermissions(currentUser, organisation,
+                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+
+        // Get paginated active clients for this organisation
+        Page<ClientEntity> clientsPage = clientsRepo.findByIsActiveTrueAndOrganisation(
+                organisation, pageable);
+
+        return clientsPage.map(this::mapToResponse);
+    }
+
 
     @Override
     public List<ClientResponse> getAllClientsWithinOrganisation(UUID organisationId) throws ItemNotFoundException {

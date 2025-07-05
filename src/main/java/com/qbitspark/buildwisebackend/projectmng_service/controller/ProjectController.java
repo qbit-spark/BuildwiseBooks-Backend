@@ -92,5 +92,4 @@ public class ProjectController {
         List<ProjectResponseSummary> response = projectService.getAllProjectsAmBelongingToOrganisationUnpaginated(organisationId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("All my projects retrieved successfully", response));
     }
-
 }

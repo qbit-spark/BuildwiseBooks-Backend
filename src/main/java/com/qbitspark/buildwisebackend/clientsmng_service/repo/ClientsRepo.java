@@ -22,5 +22,6 @@ public interface ClientsRepo extends JpaRepository<ClientEntity, UUID> {
     boolean existsByEmailIgnoreCaseAndOrganisationAndIsActiveTrue(String email, OrganisationEntity organisation);
 
     Optional<ClientEntity> findClientEntitiesByClientIdAndOrganisation(UUID clientId, OrganisationEntity organisation);
+    Page<ClientEntity> findByIsActiveTrueAndOrganisation(OrganisationEntity organisation, Pageable pageable);
 
 }

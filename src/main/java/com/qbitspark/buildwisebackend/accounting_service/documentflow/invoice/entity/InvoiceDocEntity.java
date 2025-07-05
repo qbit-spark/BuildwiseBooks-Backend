@@ -114,8 +114,7 @@ public class InvoiceDocEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-
-
+    
     public void setSubtotalMoney(MonetaryAmount amount) {
         this.subtotal = amount.getNumber().numberValue(BigDecimal.class);
     }
