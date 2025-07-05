@@ -74,52 +74,38 @@ public class OrgBudgetEntity {
     @OneToMany(mappedBy = "orgBudget", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<OrgBudgetLineItemEntity> lineItems = new ArrayList<>();
 
-    // Business methods
 
-    /**
-     * Get total budget amount - calculated from line items distribution
-     */
     public BigDecimal getTotalBudgetAmount() {
         return getDistributedAmount();
     }
 
-    /**
-     * Get available amount - always ZERO since budget = distribution
-     */
+
     public BigDecimal getAvailableAmount() {
         return BigDecimal.ZERO;
     }
 
-    /**
-     * Get the total distributed amount from all line items
-     */
+
     public BigDecimal getDistributedAmount() {
         return lineItems.stream()
                 .map(OrgBudgetLineItemEntity::getBudgetAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /**
-     * Get total spent amount from all line items
-     */
+
     public BigDecimal getTotalSpentFromLineItems() {
         return lineItems.stream()
                 .map(OrgBudgetLineItemEntity::getSpentAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /**
-     * Get the total committed amount from all line items
-     */
+
     public BigDecimal getTotalCommittedAmount() {
         return lineItems.stream()
                 .map(OrgBudgetLineItemEntity::getCommittedAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /**
-     * Get the total remaining amount from all line items
-     */
+
     public BigDecimal getTotalRemainingAmount() {
         return lineItems.stream()
                 .map(OrgBudgetLineItemEntity::getRemainingAmount)
@@ -127,16 +113,10 @@ public class OrgBudgetEntity {
     }
 
 
-    /**
-     * Get budget utilization percentage - always 100% since budget = distribution
-     */
     public BigDecimal getBudgetUtilizationPercentage() {
         return BigDecimal.valueOf(100);
     }
 
-    /**
-     * Get spending percentage from distributed budget
-     */
     public BigDecimal getSpendingPercentage() {
         BigDecimal distributedAmount = getDistributedAmount();
         if (distributedAmount.compareTo(BigDecimal.ZERO) == 0) {
@@ -147,18 +127,14 @@ public class OrgBudgetEntity {
     }
 
 
-    /**
-     * Get count of line items with budget allocated
-     */
+
     public long getLineItemsWithBudgetCount() {
         return lineItems.stream()
                 .filter(OrgBudgetLineItemEntity::hasBudgetAllocated)
                 .count();
     }
 
-    /**
-     * Get count of line items without budget allocated
-     */
+
     public long getLineItemsWithoutBudgetCount() {
         return lineItems.stream()
                 .filter(item -> !item.hasBudgetAllocated())
