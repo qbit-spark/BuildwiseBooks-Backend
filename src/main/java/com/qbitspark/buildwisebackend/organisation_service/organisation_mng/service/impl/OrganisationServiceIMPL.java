@@ -40,7 +40,6 @@ public class OrganisationServiceIMPL implements OrganisationService {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
 
-        //Check if Organisation name already exists for the authenticated account
         if (organisationRepo.existsByOrganisationNameAndOwner(
                 createOrganisationRequest.getName(),
                 authenticatedAccount)) {
@@ -57,10 +56,8 @@ public class OrganisationServiceIMPL implements OrganisationService {
 
         OrganisationEntity savedOrganisation = organisationRepo.save(organisationEntity);
 
-        // ADD THIS: Automatically add an owner as a member with an OWNER role
         organisationMemberService.addOwnerAsMember(savedOrganisation, authenticatedAccount);
 
-        // Create a default chart of accounts for the organisation
         chartOfAccountService.createDefaultChartOfAccountsAndReturnHierarchical(savedOrganisation);
 
         orgDriveService.initializeOrganisationDrive(savedOrganisation);
@@ -80,7 +77,6 @@ public class OrganisationServiceIMPL implements OrganisationService {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
 
-        //Make sure the authenticated account is the owner of the organisation
         return organisationRepo.findByOrganisationIdAndOwner(id, authenticatedAccount)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation with the given ID does not exist or you are not the owner"));
 

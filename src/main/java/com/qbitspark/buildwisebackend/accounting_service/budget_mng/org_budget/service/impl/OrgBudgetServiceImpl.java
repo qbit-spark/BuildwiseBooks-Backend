@@ -4,10 +4,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.e
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetLineItemEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.CreateBudgetRequest;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.DistributeBudgetRequest;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.OrgBudgetSummaryResponse;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.UpdateBudgetRequest;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.*;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetDetailAllocationRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetLineItemRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
@@ -36,10 +33,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -344,6 +340,112 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         return orgBudgetRepo.save(budgetToUpdate);
     }
 
+
+    @Override
+    public BudgetHierarchyWithAllocationsResponse getBudgetHierarchyWithAllocations(
+            UUID budgetId, UUID organisationId) throws ItemNotFoundException {
+
+        AccountEntity authenticatedAccount = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        validateMemberPermissions(authenticatedAccount, organisation,
+                Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+
+        OrgBudgetEntity budget;
+
+        if (budgetId != null) {
+
+            budget = validateBudget(budgetId, organisationId);
+
+        } else {
+            budget = orgBudgetRepo.findByOrganisationAndStatus(organisation, OrgBudgetStatus.ACTIVE).orElseThrow(
+                    () -> new ItemNotFoundException("There is no active budget for this organisation")
+            );
+        }
+
+
+        List<ChartOfAccounts> allExpenseHeaderAccounts = chartOfAccountsRepo
+                .findByOrganisationAndAccountTypeAndIsActive(organisation, AccountType.EXPENSE, true)
+                .stream()
+                .filter(ChartOfAccounts::getIsHeader)
+                .toList();
+
+        List<ChartOfAccounts> allExpenseDetailAccounts = chartOfAccountsRepo
+                .findByOrganisationAndAccountTypeAndIsActive(organisation, AccountType.EXPENSE, true)
+                .stream()
+                .filter(account -> !account.getIsHeader())
+                .collect(Collectors.toList());
+
+        Map<UUID, OrgBudgetLineItemEntity> budgetLineItemsByHeaderId = budget.getLineItems().stream()
+                .collect(Collectors.toMap(
+                        lineItem -> lineItem.getChartOfAccount().getId(),
+                        Function.identity()));
+
+        Map<UUID, List<OrgBudgetDetailAllocationEntity>> allocationsByDetailAccount =
+                budget.getLineItems().stream()
+                        .flatMap(headerLineItem -> allocationRepo.findByHeaderLineItem(headerLineItem).stream())
+                        .collect(Collectors.groupingBy(allocation -> allocation.getDetailAccount().getId()));
+
+        List<BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails> headerAccounts =
+                allExpenseHeaderAccounts.stream()
+                        .map(headerAccount -> buildHeaderWithDetails(
+                                headerAccount, budgetLineItemsByHeaderId.get(headerAccount.getId()),
+                                allExpenseDetailAccounts, allocationsByDetailAccount))
+                        .collect(Collectors.toList());
+
+        // Calculate budget-level totals
+        BigDecimal totalAllocatedToDetails = calculateTotalAllocatedToDetails(budget);
+        BigDecimal totalSpentFromAllocations = calculateTotalSpentFromAllocations(budget);
+        BigDecimal totalCommittedFromAllocations = calculateTotalCommittedFromAllocations(budget);
+        BigDecimal totalRemainingFromAllocations = totalAllocatedToDetails
+                .subtract(totalSpentFromAllocations)
+                .subtract(totalCommittedFromAllocations);
+
+        // Build summary statistics
+        int totalDetailAccounts = allExpenseDetailAccounts.size();
+        int detailsWithAllocation = (int) allocationsByDetailAccount.values().stream()
+                .flatMap(List::stream)
+                .filter(OrgBudgetDetailAllocationEntity::hasAllocation)
+                .count();
+
+        // Create response
+        BudgetHierarchyWithAllocationsResponse response = new BudgetHierarchyWithAllocationsResponse();
+
+        // Budget summary
+        response.setBudgetId(budget.getBudgetId());
+        response.setBudgetName(budget.getBudgetName());
+        response.setFinancialYearStart(budget.getFinancialYearStart());
+        response.setFinancialYearEnd(budget.getFinancialYearEnd());
+        response.setBudgetStatus(budget.getStatus());
+        response.setCreatedAt(budget.getCreatedDate());
+
+        // Budget totals
+        response.setTotalBudgetAmount(budget.getDistributedAmount());
+        response.setTotalAllocatedToDetails(totalAllocatedToDetails);
+        response.setTotalSpentAmount(totalSpentFromAllocations);
+        response.setTotalCommittedAmount(totalCommittedFromAllocations);
+        response.setTotalRemainingAmount(totalRemainingFromAllocations);
+        response.setAvailableForAllocation(budget.getDistributedAmount().subtract(totalAllocatedToDetails));
+
+        // Summary statistics
+        response.setBudgetUtilizationPercentage(calculateBudgetUtilizationPercentage(
+                budget.getDistributedAmount(), totalAllocatedToDetails));
+        response.setSpendingPercentage(calculateSpendingPercentage(
+                totalAllocatedToDetails, totalSpentFromAllocations));
+        response.setTotalHeaderAccounts(allExpenseHeaderAccounts.size());
+        response.setHeadersWithBudget((int) budget.getLineItems().size());
+        response.setHeadersWithoutBudget(allExpenseHeaderAccounts.size() - budget.getLineItems().size());
+        response.setTotalDetailAccounts(totalDetailAccounts);
+        response.setDetailsWithAllocation(detailsWithAllocation);
+        response.setDetailsWithoutAllocation(totalDetailAccounts - detailsWithAllocation);
+
+        // Hierarchy data
+        response.setHeaderAccounts(headerAccounts);
+
+        return response;
+    }
+
     // ========== ALLOCATION CALCULATION METHODS ==========
 
     private BigDecimal calculateTotalAllocatedToDetails(OrgBudgetEntity budget) {
@@ -377,6 +479,142 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         return headerLineItem.getBudgetAmount().subtract(allocated);
     }
 
+    private BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails.DetailAccountAllocation buildDetailAccountAllocation(
+            ChartOfAccounts detailAccount,
+            List<OrgBudgetDetailAllocationEntity> allocations) {
+
+        BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails.DetailAccountAllocation detail =
+                new BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails.DetailAccountAllocation();
+
+        detail.setDetailAccountId(detailAccount.getId());
+        detail.setDetailAccountCode(detailAccount.getAccountCode());
+        detail.setDetailAccountName(detailAccount.getName());
+        detail.setDetailDescription(detailAccount.getDescription());
+
+        if (allocations == null || allocations.isEmpty()) {
+            detail.setAllocationId(null);
+            detail.setAllocatedAmount(BigDecimal.ZERO);
+            detail.setSpentAmount(BigDecimal.ZERO);
+            detail.setCommittedAmount(BigDecimal.ZERO);
+            detail.setBudgetRemaining(BigDecimal.ZERO);
+            detail.setAllocationStatus("No Allocation");
+            detail.setHasAllocation(false);
+            detail.setNotes("No budget allocated to this account");
+            detail.setUtilizationPercentage(BigDecimal.ZERO);
+        } else {
+            // Aggregate multiple allocations for the same detail account
+            BigDecimal totalAllocated = allocations.stream()
+                    .map(OrgBudgetDetailAllocationEntity::getAllocatedAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalSpent = allocations.stream()
+                    .map(OrgBudgetDetailAllocationEntity::getSpentAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalCommitted = allocations.stream()
+                    .map(OrgBudgetDetailAllocationEntity::getCommittedAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal budgetRemaining = totalAllocated.subtract(totalSpent).subtract(totalCommitted);
+
+            OrgBudgetDetailAllocationEntity firstAllocation = allocations.get(0);
+
+            detail.setAllocationId(firstAllocation.getAllocationId());
+            detail.setAllocatedAmount(totalAllocated);
+            detail.setSpentAmount(totalSpent);
+            detail.setCommittedAmount(totalCommitted);
+            detail.setBudgetRemaining(budgetRemaining);
+            detail.setHasAllocation(true);
+            detail.setUtilizationPercentage(calculateUtilizationPercentage(totalAllocated, totalSpent.add(totalCommitted)));
+            detail.setAllocationCreatedDate(firstAllocation.getCreatedDate());
+            detail.setAllocationModifiedDate(firstAllocation.getModifiedDate());
+
+            if (budgetRemaining.compareTo(BigDecimal.ZERO) <= 0) {
+                detail.setAllocationStatus("Fully Used");
+            } else {
+                detail.setAllocationStatus("Available");
+            }
+
+            if (allocations.size() == 1) {
+                detail.setNotes(firstAllocation.getAllocationNotes() != null ?
+                        firstAllocation.getAllocationNotes() : "Available for vouchers");
+            } else {
+                detail.setNotes(String.format("Aggregated from %d allocations - Total available", allocations.size()));
+            }
+        }
+
+        return detail;
+    }
+
+
+    private BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails buildHeaderWithDetails(
+            ChartOfAccounts headerAccount,
+            OrgBudgetLineItemEntity budgetLineItem,
+            List<ChartOfAccounts> allDetailAccounts,
+            Map<UUID, List<OrgBudgetDetailAllocationEntity>> allocationsByDetailAccount) {
+
+        // Get detail accounts under this header
+        List<ChartOfAccounts> detailAccountsForHeader = allDetailAccounts.stream()
+                .filter(account -> headerAccount.getId().equals(account.getParentAccountId()))
+                .toList();
+
+        // Build detail account allocation responses
+        List<BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails.DetailAccountAllocation> detailAllocations =
+                detailAccountsForHeader.stream()
+                        .map(detailAccount -> buildDetailAccountAllocation(
+                                detailAccount, allocationsByDetailAccount.get(detailAccount.getId())))
+                        .collect(Collectors.toList());
+
+        // Calculate header totals from detail allocations
+        BigDecimal headerAllocatedToDetails = detailAllocations.stream()
+                .map(BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails.DetailAccountAllocation::getAllocatedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal headerSpentAmount = detailAllocations.stream()
+                .map(BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails.DetailAccountAllocation::getSpentAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal headerCommittedAmount = detailAllocations.stream()
+                .map(BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails.DetailAccountAllocation::getCommittedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Determine header budget amount (zero if no budget line item exists)
+        BigDecimal headerBudgetAmount = budgetLineItem != null ? budgetLineItem.getBudgetAmount() : BigDecimal.ZERO;  // ← Added null check
+
+        // Build header response
+        BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails header =
+                new BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails();
+
+        // ← Changed: Use headerAccount and budgetLineItem with null checks
+        header.setHeaderLineItemId(budgetLineItem != null ? budgetLineItem.getLineItemId() : null);
+        header.setHeaderAccountId(headerAccount.getId());
+        header.setHeaderAccountCode(headerAccount.getAccountCode());
+        header.setHeaderAccountName(headerAccount.getName());
+        header.setHeaderDescription(headerAccount.getDescription());
+
+        header.setHeaderBudgetAmount(headerBudgetAmount);  // ← Changed: Use calculated amount
+        header.setHeaderAllocatedToDetails(headerAllocatedToDetails);
+        header.setHeaderAvailableForAllocation(headerBudgetAmount.subtract(headerAllocatedToDetails));  // ← Changed
+        header.setHeaderSpentAmount(headerSpentAmount);
+        header.setHeaderCommittedAmount(headerCommittedAmount);
+        header.setHeaderRemainingAmount(headerAllocatedToDetails.subtract(headerSpentAmount).subtract(headerCommittedAmount));
+
+        header.setHeaderUtilizationPercentage(calculateUtilizationPercentage(
+                headerAllocatedToDetails, headerSpentAmount.add(headerCommittedAmount)));
+        header.setHeaderAllocationPercentage(calculateAllocationPercentage(
+                headerBudgetAmount, headerAllocatedToDetails));  // ← Changed
+        header.setHasBudgetAllocated(budgetLineItem != null && budgetLineItem.hasBudgetAllocated());  // ← Added null check
+        header.setDetailAccountCount(detailAccountsForHeader.size());
+        header.setDetailsWithAllocation((int) detailAllocations.stream()
+                .filter(BudgetHierarchyWithAllocationsResponse.HeaderAccountWithDetails.DetailAccountAllocation::isHasAllocation)
+                .count());
+        header.setDetailsWithoutAllocation(detailAccountsForHeader.size() - header.getDetailsWithAllocation());
+
+        header.setDetailAccounts(detailAllocations);
+
+        return header;
+    }
+
     // ========== HELPER METHODS ==========
 
     private void validateHeaderAccountForDistribution(ChartOfAccounts account, UUID organisationId)
@@ -396,6 +634,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
                     account.getName() + "' is not an expense account.");
         }
     }
+
 
     private OrgBudgetLineItemEntity createNewLineItem(OrgBudgetEntity budget, ChartOfAccounts account,
                                                       AccountEntity authenticatedAccount) {
@@ -465,4 +704,49 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
             ));
         }
     }
+
+
+    private BigDecimal calculateBudgetUtilizationPercentage(BigDecimal totalBudget, BigDecimal totalAllocated) {
+        if (totalBudget.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return totalAllocated.multiply(BigDecimal.valueOf(100))
+                .divide(totalBudget, 2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal calculateSpendingPercentage(BigDecimal totalAllocated, BigDecimal totalSpent) {
+        if (totalAllocated.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return totalSpent.multiply(BigDecimal.valueOf(100))
+                .divide(totalAllocated, 2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal calculateUtilizationPercentage(BigDecimal allocated, BigDecimal used) {
+        if (allocated.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return used.multiply(BigDecimal.valueOf(100))
+                .divide(allocated, 2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal calculateAllocationPercentage(BigDecimal headerBudget, BigDecimal allocated) {
+        if (headerBudget.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return allocated.multiply(BigDecimal.valueOf(100))
+                .divide(headerBudget, 2, RoundingMode.HALF_UP);
+    }
+
+    private OrgBudgetEntity validateBudget(UUID budgetId, UUID organisationId) throws ItemNotFoundException {
+        OrgBudgetEntity budget = orgBudgetRepo.findById(budgetId)
+                .orElseThrow(() -> new ItemNotFoundException("Budget not found"));
+
+        if (!budget.getOrganisation().getOrganisationId().equals(organisationId)) {
+            throw new ItemNotFoundException("Budget does not belong to this organisation");
+        }
+
+        return budget;
+    }
+
 }

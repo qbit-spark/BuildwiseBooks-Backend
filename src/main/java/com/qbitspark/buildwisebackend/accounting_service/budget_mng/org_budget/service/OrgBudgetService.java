@@ -1,10 +1,7 @@
 package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service;
 
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.CreateBudgetRequest;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.UpdateBudgetRequest;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.DistributeBudgetRequest;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.OrgBudgetSummaryResponse;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.*;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 
 import java.util.List;
@@ -29,4 +26,8 @@ public interface OrgBudgetService {
 
 
     OrgBudgetEntity getBudgetWithAccounts(UUID budgetId, UUID organisationId) throws ItemNotFoundException;
+
+    BudgetHierarchyWithAllocationsResponse getBudgetHierarchyWithAllocations(
+            UUID budgetId, UUID organisationId) throws ItemNotFoundException;
+
 }

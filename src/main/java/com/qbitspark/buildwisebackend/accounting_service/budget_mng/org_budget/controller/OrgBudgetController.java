@@ -160,7 +160,7 @@ public class OrgBudgetController {
         return new ResponseEntity<>(successResponse, HttpStatus.OK);
     }
 
-    @GetMapping("/{budgetId}/detailed")
+    @GetMapping("/{budgetId}/distribute-detailed")
     public ResponseEntity<GlobeSuccessResponseBuilder> getDetailedBudget(
             @PathVariable UUID organisationId,
             @PathVariable UUID budgetId) throws ItemNotFoundException {
@@ -193,6 +193,16 @@ public class OrgBudgetController {
         );
 
         return new ResponseEntity<>(successResponse, HttpStatus.OK);
+    }
+
+    @GetMapping("/detailed")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getBudgetHierarchyWithAllocations(
+            @PathVariable UUID organisationId, @RequestParam(required = false) UUID budgetId) throws ItemNotFoundException {
+
+        BudgetHierarchyWithAllocationsResponse response = orgBudgetService.getBudgetHierarchyWithAllocations(budgetId, organisationId);
+
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Budget hierarchy with allocations retrieved successfully", response));
     }
 
     // Mapping methods

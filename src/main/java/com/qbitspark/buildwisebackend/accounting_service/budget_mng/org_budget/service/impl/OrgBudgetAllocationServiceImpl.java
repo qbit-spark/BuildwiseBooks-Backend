@@ -102,6 +102,7 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         return allNewAllocations;
     }
 
+
     @Override
     public List<OrgBudgetDetailAllocationEntity> getHeaderAllocations(
             UUID organisationId, UUID budgetId, UUID headerLineItemId) throws ItemNotFoundException {
@@ -114,6 +115,7 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         return allocationRepo.findByHeaderLineItemOrderByDetailAccountAccountCode(headerLineItem);
     }
 
+
     @Override
     public AllocationSummaryResponse getAllocationSummary(
             UUID organisationId, UUID budgetId, UUID headerLineItemId) throws ItemNotFoundException {
@@ -122,6 +124,7 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         OrgBudgetLineItemEntity headerLineItem = validateHeaderLineItem(headerLineItemId, organisationId);
         return buildAllocationSummary(headerLineItem, allocations);
     }
+
 
     @Override
     public List<OrgBudgetDetailAllocationEntity> getAllBudgetAllocations(UUID organisationId, UUID budgetId)
@@ -171,6 +174,7 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
                         .thenComparing(AvailableDetailAllocationResponse::getAccountCode))
                 .collect(Collectors.toList());
     }
+
 
     // ========== BUSINESS LOGIC METHODS ==========
 
@@ -428,7 +432,7 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         }
 
         if (!receipt.isEligibleForFunding()) {
-            throw new ItemNotFoundException("Only confirmed receipts can fund allocations");
+            throw new ItemNotFoundException("Only approved receipts can fund allocations");
         }
 
         return receipt;
