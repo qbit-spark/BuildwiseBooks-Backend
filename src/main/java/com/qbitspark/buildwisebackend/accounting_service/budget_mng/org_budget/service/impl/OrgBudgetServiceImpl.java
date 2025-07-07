@@ -404,10 +404,11 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
 
         // Build summary statistics
         int totalDetailAccounts = allExpenseDetailAccounts.size();
-        int detailsWithAllocation = (int) allocationsByDetailAccount.values().stream()
-                .flatMap(List::stream)
-                .filter(OrgBudgetDetailAllocationEntity::hasAllocation)
+        int detailsWithAllocation = (int) allocationsByDetailAccount.entrySet().stream()
+                .filter(entry -> !entry.getValue().isEmpty())
+                .filter(entry -> entry.getValue().stream().anyMatch(OrgBudgetDetailAllocationEntity::hasAllocation))
                 .count();
+
 
         // Create response
         BudgetHierarchyWithAllocationsResponse response = new BudgetHierarchyWithAllocationsResponse();
