@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.qbitspark.buildwisebackend.accounting_service.bank_mng.entity.BankAccountEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceDocEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.PaymentMethod;
@@ -18,6 +19,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -91,4 +93,32 @@ public class ReceiptEntity {
 
     @Column(name = "updated_by")
     private UUID updatedBy;
+
+
+    @OneToMany(mappedBy = "receipt", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ReceiptAllocationFundingEntity> fundingAllocations = new ArrayList<>();
+
+    public BigDecimal getTotalAllocatedAmount() {
+        return fundingAllocations.stream()
+                .map(ReceiptAllocationFundingEntity::getFundedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public BigDecimal getRemainingAmount() {
+        return totalAmount.subtract(getTotalAllocatedAmount());
+    }
+
+    public boolean canFund(BigDecimal amount) {
+        return getRemainingAmount().compareTo(amount) >= 0;
+    }
+
+    public boolean isEligibleForFunding() {
+        return status == ReceiptStatus.CONFIRMED;
+    }
+
+    public static BigDecimal calculateTotalFunded(List<ReceiptAllocationFundingEntity> fundings) {
+        return fundings.stream()
+                .map(ReceiptAllocationFundingEntity::getFundedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 }

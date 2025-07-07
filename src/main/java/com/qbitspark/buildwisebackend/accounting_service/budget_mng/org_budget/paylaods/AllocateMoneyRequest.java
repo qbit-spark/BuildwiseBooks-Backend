@@ -19,6 +19,9 @@ import java.util.UUID;
 @NoArgsConstructor
 public class AllocateMoneyRequest {
 
+    @NotNull(message = "Receipt ID is required")
+    private  UUID receiptId;
+
     @NotEmpty(message = "Detail allocations cannot be empty")
     @Valid
     private List<DetailAllocation> detailAllocations;

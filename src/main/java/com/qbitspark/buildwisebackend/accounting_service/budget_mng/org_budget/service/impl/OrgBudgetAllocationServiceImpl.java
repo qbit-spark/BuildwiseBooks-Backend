@@ -12,6 +12,10 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.s
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationFundingEntity;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptAllocationFundingRepo;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptRepo;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
@@ -46,6 +50,8 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
     private final OrganisationRepo organisationRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
     private final AccountRepo accountRepo;
+    private final ReceiptRepo receiptRepo;
+    private final ReceiptAllocationFundingRepo fundingRepo;
 
     @Override
     public List<OrgBudgetDetailAllocationEntity> allocateMoneyToDetailAccounts(
@@ -58,14 +64,38 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
 
         OrgBudgetEntity budget = validateBudget(budgetId, organisationId);
 
+
+        ReceiptEntity receipt = validateReceipt(request.getReceiptId(), organisationId);
+
+
+        BigDecimal totalRequestAmount = request.getDetailAllocations().stream()
+                .map(AllocateMoneyRequest.DetailAllocation::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal receiptRemainingAmount = getReceiptRemainingAmount(receipt);
+        if (totalRequestAmount.compareTo(receiptRemainingAmount) > 0) {
+            throw new ItemNotFoundException(
+                    String.format("Receipt has insufficient balance. Available: %s, Requested: %s",
+                            receiptRemainingAmount, totalRequestAmount));
+        }
+
         Map<UUID, List<AllocateMoneyRequest.DetailAllocation>> allocationsByHeader =
                 groupAllocationsByHeader(request.getDetailAllocations(), organisationId);
 
         List<OrgBudgetDetailAllocationEntity> allNewAllocations = new ArrayList<>();
+
         for (Map.Entry<UUID, List<AllocateMoneyRequest.DetailAllocation>> entry : allocationsByHeader.entrySet()) {
             List<OrgBudgetDetailAllocationEntity> headerAllocations = processHeaderAllocations(
                     entry.getKey(), entry.getValue(), budget, authenticatedAccount);
             allNewAllocations.addAll(headerAllocations);
+        }
+
+
+        for (int i = 0; i < allNewAllocations.size(); i++) {
+            OrgBudgetDetailAllocationEntity allocation = allNewAllocations.get(i);
+            BigDecimal amount = request.getDetailAllocations().get(i).getAmount();
+
+            createFundingLink(receipt, allocation, amount, authenticatedAccount);
         }
 
         return allNewAllocations;
@@ -268,6 +298,28 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         return summary;
     }
 
+
+    private BigDecimal getReceiptRemainingAmount(ReceiptEntity receipt) {
+        List<ReceiptAllocationFundingEntity> fundings = fundingRepo.findByReceiptReceiptId(receipt.getReceiptId());
+        BigDecimal totalAllocated = ReceiptEntity.calculateTotalFunded(fundings);
+        return receipt.getTotalAmount().subtract(totalAllocated);
+    }
+
+
+    private void createFundingLink(ReceiptEntity receipt, OrgBudgetDetailAllocationEntity allocation,
+                                   BigDecimal amount, AccountEntity authenticatedAccount) {
+
+        ReceiptAllocationFundingEntity funding = new ReceiptAllocationFundingEntity();
+        funding.setReceipt(receipt);
+        funding.setAllocation(allocation);
+        funding.setFundedAmount(amount);
+        funding.setFundingDate(LocalDateTime.now());
+        funding.setAuthorizedBy(authenticatedAccount.getAccountId());
+        funding.setCreatedDate(LocalDateTime.now());
+
+        fundingRepo.save(funding);
+    }
+
     // ========== VALIDATION METHODS ==========
 
     private void validateOrganisationAccess(UUID organisationId, AccountEntity account,
@@ -333,6 +385,24 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         }
     }
 
+    private ReceiptEntity validateReceipt(UUID receiptId, UUID organisationId) throws ItemNotFoundException {
+        ReceiptEntity receipt = receiptRepo.findById(receiptId)
+                .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
+
+        if (!receipt.getOrganisation().getOrganisationId().equals(organisationId)) {
+            throw new ItemNotFoundException("Receipt does not belong to this organisation");
+        }
+
+        if (!receipt.isEligibleForFunding()) {
+            throw new ItemNotFoundException("Only confirmed receipts can fund allocations");
+        }
+
+        return receipt;
+    }
+
+
+
+    // =================== UTILS METHODS =======================
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -343,4 +413,7 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         return accountRepo.findByUserName(userDetails.getUsername())
                 .orElseThrow(() -> new ItemNotFoundException("User not found"));
     }
+
+
+
 }

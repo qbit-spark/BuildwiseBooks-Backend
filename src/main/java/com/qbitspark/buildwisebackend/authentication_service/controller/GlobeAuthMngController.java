@@ -32,7 +32,7 @@ public class GlobeAuthMngController {
                 "User account created successful, please verify your email"
         );
 
-        return ResponseEntity.status(201).body(response);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")

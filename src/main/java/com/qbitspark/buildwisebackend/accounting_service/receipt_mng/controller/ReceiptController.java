@@ -1,10 +1,9 @@
 package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.controller;
 
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationFundingEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.CreateReceiptRequest;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.PaymentHistoryResponse;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.ReceiptResponse;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.UpdateReceiptRequest;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.*;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptAllocationFundingRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.ReceiptService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
@@ -30,6 +29,7 @@ import java.util.stream.Collectors;
 public class ReceiptController {
 
     private final ReceiptService receiptService;
+    private final ReceiptAllocationFundingRepo fundingRepo;
 
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createReceipt(
@@ -152,6 +152,32 @@ public class ReceiptController {
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success("Project receipts retrieved successfully", responsePage)
+        );
+    }
+
+    @GetMapping("/{receiptId}/funding-summary")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getReceiptFundingSummary(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID receiptId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        ReceiptEntity receipt = receiptService.getReceiptById(organisationId, receiptId);
+
+        List<ReceiptAllocationFundingEntity> fundings = fundingRepo.findByReceiptReceiptId(receiptId);
+        BigDecimal allocatedAmount = ReceiptEntity.calculateTotalFunded(fundings);
+        BigDecimal remainingAmount = receipt.getTotalAmount().subtract(allocatedAmount);
+
+        ReceiptFundingSummaryResponse summary = new ReceiptFundingSummaryResponse();
+        summary.setReceiptId(receipt.getReceiptId());
+        summary.setReceiptNumber(receipt.getReceiptNumber());
+        summary.setTotalAmount(receipt.getTotalAmount());
+        summary.setAllocatedAmount(allocatedAmount);
+        summary.setRemainingAmount(remainingAmount);
+        summary.setProjectName(receipt.getProject() != null ? receipt.getProject().getName() : null);
+        summary.setClientName(receipt.getClient().getName());
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success("Receipt funding summary retrieved successfully", summary)
         );
     }
 

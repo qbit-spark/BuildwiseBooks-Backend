@@ -1,6 +1,7 @@
 package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity;
 
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationFundingEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,6 +10,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -180,5 +183,32 @@ public class OrgBudgetDetailAllocationEntity {
         } else {
             return "Available";
         }
+    }
+
+    @OneToMany(mappedBy = "allocation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ReceiptAllocationFundingEntity> receivedFundings = new ArrayList<>();
+
+    public BigDecimal getTotalFundingReceived() {
+        return receivedFundings.stream()
+                .map(ReceiptAllocationFundingEntity::getFundedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public BigDecimal getUnfundedAmount() {
+        return allocatedAmount.subtract(getTotalFundingReceived());
+    }
+
+    public String getFundingStatus() {
+        BigDecimal funded = getTotalFundingReceived();
+        if (funded.compareTo(BigDecimal.ZERO) == 0) return "Unfunded";
+        if (funded.compareTo(allocatedAmount) >= 0) return "Fully Funded";
+        return "Partially Funded";
+    }
+
+    // Helper method to calculate from repo list
+    public static BigDecimal calculateTotalFunding(List<ReceiptAllocationFundingEntity> fundings) {
+        return fundings.stream()
+                .map(ReceiptAllocationFundingEntity::getFundedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
