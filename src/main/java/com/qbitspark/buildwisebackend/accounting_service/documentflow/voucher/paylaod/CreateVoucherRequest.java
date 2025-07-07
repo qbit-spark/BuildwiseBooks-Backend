@@ -19,7 +19,7 @@ public class CreateVoucherRequest {
     @NotNull(message = "Project ID is required")
     private UUID projectId;
 
-    @NotNull(message = "Detail allocation ID is required")
+    @NotNull(message = "Detail account allocation ID is required")
     private UUID detailAllocationId;
 
     @NotEmpty(message = "At least one beneficiary is required")
