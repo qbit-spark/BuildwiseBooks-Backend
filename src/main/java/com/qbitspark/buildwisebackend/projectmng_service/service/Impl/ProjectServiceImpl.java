@@ -3,7 +3,6 @@ package com.qbitspark.buildwisebackend.projectmng_service.service.Impl;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.service.ProjectBudgetService;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.repo.ClientsRepo;
 import com.qbitspark.buildwisebackend.drive_mng.service.OrgDriveService;
@@ -53,7 +52,6 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectTeamMemberService projectTeamMemberService;
     private final ClientsRepo clientsRepo;
     private final ProjectCodeSequenceService projectCodeSequenceService;
-    private final ProjectBudgetService projectBudgetService;
     private final OrgBudgetRepo orgBudgetRepo;
     private final OrgDriveService orgDriveService;
 
@@ -97,9 +95,6 @@ public class ProjectServiceImpl implements ProjectService {
 
         ProjectEntity savedProject = projectRepo.save(project);
 
-        //Initialize project budget
-        OrgBudgetEntity orgBudget = orgBudgetRepo.findByOrganisationAndStatus(organisation, OrgBudgetStatus.ACTIVE).orElseThrow(() -> new ItemNotFoundException("Organisation has no active budget"));
-        projectBudgetService.initialiseProjectBudget(orgBudget, savedProject);
 
         // Create a default team member for the creator AND Get the actual organization owner
         OrganisationMember organisationOwner = organisationMemberRepo

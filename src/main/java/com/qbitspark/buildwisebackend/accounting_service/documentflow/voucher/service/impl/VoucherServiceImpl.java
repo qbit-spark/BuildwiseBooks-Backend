@@ -3,9 +3,6 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.s
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetDetailAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetDetailAllocationRepo;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetLineItemEntity;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.enums.ProjectBudgetStatus;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.repo.ProjectBudgetLineItemRepo;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.entity.DeductsEntity;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.repo.DeductRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherBeneficiaryEntity;
@@ -66,7 +63,6 @@ public class VoucherServiceImpl implements VoucherService {
     private final OrganisationMemberRepo organisationMemberRepo;
     private final VoucherNumberService voucherNumberService;
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
-    private final ProjectBudgetLineItemRepo projectBudgetLineItemRepo;
     private final DeductRepo deductRepo;
     private final VoucherBeneficiaryRepo voucherBeneficiaryRepo;
     private final OrgFileRepo orgFileRepo;
@@ -309,26 +305,6 @@ public class VoucherServiceImpl implements VoucherService {
 
     }
 
-
-    private ProjectBudgetLineItemEntity validateAndGetBudgetLineItem(UUID budgetLineItemId, ProjectEntity project)
-            throws ItemNotFoundException {
-
-        ProjectBudgetLineItemEntity budgetLineItem = projectBudgetLineItemRepo.findById(budgetLineItemId)
-                .orElseThrow(() -> new ItemNotFoundException("Project Budget Line Item not found"));
-
-        // Validate budget line item belonging to this project
-        if (!budgetLineItem.getProjectBudget().getProject().getProjectId().equals(project.getProjectId())) {
-            throw new ItemNotFoundException("Budget Line Item does not belong to this project");
-        }
-
-        // Validate project budget is active
-        if (budgetLineItem.getProjectBudget().getStatus() != ProjectBudgetStatus.ACTIVE &&
-                budgetLineItem.getProjectBudget().getStatus() != ProjectBudgetStatus.APPROVED) {
-            throw new ItemNotFoundException("Project budget is not active. Cannot create vouchers.");
-        }
-
-        return budgetLineItem;
-    }
 
     private void validateBudgetAvailability(OrgBudgetDetailAllocationEntity allocation,
                                             BigDecimal requestedAmount) throws ItemNotFoundException {
