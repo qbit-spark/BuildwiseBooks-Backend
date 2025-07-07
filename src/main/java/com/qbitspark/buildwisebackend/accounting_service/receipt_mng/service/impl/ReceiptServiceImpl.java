@@ -176,7 +176,7 @@ public class ReceiptServiceImpl implements ReceiptService {
 
         validateProjectMemberPermissions(currentUser, receipt.getProject());
 
-        receipt.setStatus(ReceiptStatus.CONFIRMED);
+        receipt.setStatus(ReceiptStatus.APPROVED);
         receipt.setUpdatedBy(currentUser.getAccountId());
         receiptRepo.save(receipt);
     }
@@ -229,10 +229,13 @@ public class ReceiptServiceImpl implements ReceiptService {
         return receiptRepo.findByProject(project, pageable);
     }
 
+
+
+
     private void updateInvoicePaymentStatus(InvoiceDocEntity invoice) {
         List<ReceiptEntity> confirmedReceipts = receiptRepo.findByInvoiceOrderByReceiptDateDesc(invoice)
                 .stream()
-                .filter(receipt -> receipt.getStatus() == ReceiptStatus.CONFIRMED)
+                .filter(receipt -> receipt.getStatus() == ReceiptStatus.APPROVED)
                 .toList();
 
         BigDecimal totalPaid = confirmedReceipts.stream()

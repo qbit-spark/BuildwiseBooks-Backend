@@ -285,9 +285,8 @@ public class OrgBudgetController {
                     var parentId = lineItem.getChartOfAccount().getParentAccountId();
                     return parentId != null ? parentId.toString() : "No Parent";
                 }))
-                .entrySet().stream()
-                .map(entry -> {
-                    var groupLineItems = entry.getValue();
+                .values().stream()
+                .map(groupLineItems -> {
                     var groupResponse = new OrgBudgetDetailedResponse.AccountGroupResponse();
 
                     if (!groupLineItems.isEmpty() && groupLineItems.get(0).getChartOfAccount().getParentAccountId() != null) {

@@ -96,6 +96,19 @@ public class OrgBudgetAllocationController {
                 "All budget allocations retrieved successfully", responses));
     }
 
+    @GetMapping("/summary-list")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getAvailableDetailAllocationsForVouchers(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID budgetId) throws ItemNotFoundException {
+
+        List<AvailableDetailAllocationResponse> availableAllocations =
+                allocationService.getDetailAccountsForVouchers(organisationId, budgetId);
+
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Available detail allocations retrieved successfully",
+                availableAllocations));
+    }
+
     // Mapping method
     private DetailAllocationResponse mapToAllocationResponse(OrgBudgetDetailAllocationEntity allocation) {
         DetailAllocationResponse response = new DetailAllocationResponse();

@@ -1,6 +1,5 @@
 package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.qbitspark.buildwisebackend.accounting_service.bank_mng.entity.BankAccountEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceDocEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.PaymentMethod;
@@ -113,7 +112,7 @@ public class ReceiptEntity {
     }
 
     public boolean isEligibleForFunding() {
-        return status == ReceiptStatus.CONFIRMED;
+        return status == ReceiptStatus.APPROVED;
     }
 
     public static BigDecimal calculateTotalFunded(List<ReceiptAllocationFundingEntity> fundings) {

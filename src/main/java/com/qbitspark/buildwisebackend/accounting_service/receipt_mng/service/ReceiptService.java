@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service;
 
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AvailableDetailAllocationResponse;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.CreateReceiptRequest;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.UpdateReceiptRequest;
@@ -36,4 +37,5 @@ public interface ReceiptService {
 
     Page<ReceiptEntity> getProjectReceipts(UUID organisationId, UUID projectId, Pageable pageable)
             throws ItemNotFoundException, AccessDeniedException;
+
 }

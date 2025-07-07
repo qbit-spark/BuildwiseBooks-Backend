@@ -3,6 +3,7 @@ package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetDetailAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AllocateMoneyRequest;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AllocationSummaryResponse;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AvailableDetailAllocationResponse;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 
 import java.util.List;
@@ -36,4 +37,8 @@ public interface OrgBudgetAllocationService {
             UUID organisationId,
             UUID budgetId
     ) throws ItemNotFoundException;
+
+
+    List<AvailableDetailAllocationResponse> getDetailAccountsForVouchers(
+            UUID organisationId, UUID budgetId)  throws ItemNotFoundException;
 }

@@ -5,6 +5,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.e
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetLineItemEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AllocateMoneyRequest;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AllocationSummaryResponse;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AvailableDetailAllocationResponse;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetDetailAllocationRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetLineItemRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
@@ -135,6 +136,39 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         return budget.getLineItems().stream()
                 .flatMap(headerLineItem ->
                         allocationRepo.findByHeaderLineItemOrderByDetailAccountAccountCode(headerLineItem).stream())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AvailableDetailAllocationResponse> getDetailAccountsForVouchers(
+            UUID organisationId, UUID budgetId) throws ItemNotFoundException {
+
+        AccountEntity authenticatedAccount = getAuthenticatedAccount();
+        validateOrganisationAccess(organisationId, authenticatedAccount,
+                Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+
+        OrgBudgetEntity budget = validateBudget(budgetId, organisationId);
+        OrganisationEntity organisation = budget.getOrganisation();
+
+        List<ChartOfAccounts> allDetailAccounts = chartOfAccountsRepo
+                .findByOrganisationAndAccountTypeAndIsActiveAndIsPostable(
+                        organisation, AccountType.EXPENSE, true, true)
+                .stream()
+                .filter(account -> !account.getIsHeader())
+                .toList();
+
+        Map<UUID, List<OrgBudgetDetailAllocationEntity>> allocationsByDetailAccount =
+                budget.getLineItems().stream()
+                        .flatMap(headerLineItem ->
+                                allocationRepo.findByHeaderLineItem(headerLineItem).stream())
+                        .collect(Collectors.groupingBy(allocation ->
+                                allocation.getDetailAccount().getId()));
+
+        return allDetailAccounts.stream()
+                .map(account -> createAggregatedAllocationResponse(account,
+                        allocationsByDetailAccount.get(account.getId())))
+                .sorted(Comparator.comparing(AvailableDetailAllocationResponse::getHeadingParent)
+                        .thenComparing(AvailableDetailAllocationResponse::getAccountCode))
                 .collect(Collectors.toList());
     }
 
@@ -414,6 +448,85 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
                 .orElseThrow(() -> new ItemNotFoundException("User not found"));
     }
 
+    private AvailableDetailAllocationResponse createAggregatedAllocationResponse(
+            ChartOfAccounts detailAccount,
+            List<OrgBudgetDetailAllocationEntity> allocations) {
 
+        AvailableDetailAllocationResponse response = new AvailableDetailAllocationResponse();
+
+        response.setDetailAccountId(detailAccount.getId());
+        response.setAccountCode(detailAccount.getAccountCode());
+        response.setAccountName(detailAccount.getName());
+
+        String parentName = getParentHeaderAccountName(detailAccount);
+        response.setHeadingParent(parentName);
+
+        if (allocations == null || allocations.isEmpty()) {
+            response.setAllocationId(null); // No specific allocation
+            response.setHeaderLineItemId(null);
+            response.setAllocatedAmount(BigDecimal.ZERO);
+            response.setSpentAmount(BigDecimal.ZERO);
+            response.setCommittedAmount(BigDecimal.ZERO);
+            response.setBudgetRemaining(BigDecimal.ZERO);
+            response.setAvailableBalance(BigDecimal.ZERO);
+            response.setHasAllocation(false);
+            response.setAllocationStatus("No Allocation");
+            response.setNotes("No budget allocated to this account");
+        } else {
+            BigDecimal totalAllocated = allocations.stream()
+                    .map(OrgBudgetDetailAllocationEntity::getAllocatedAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalSpent = allocations.stream()
+                    .map(OrgBudgetDetailAllocationEntity::getSpentAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalCommitted = allocations.stream()
+                    .map(OrgBudgetDetailAllocationEntity::getCommittedAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal budgetRemaining = totalAllocated.subtract(totalSpent).subtract(totalCommitted);
+
+            OrgBudgetDetailAllocationEntity firstAllocation = allocations.getFirst();
+
+            response.setAllocationId(firstAllocation.getAllocationId());
+            response.setHeaderLineItemId(firstAllocation.getHeaderLineItem().getLineItemId());
+            response.setDetailAccountId(detailAccount.getId());
+
+            response.setAllocatedAmount(totalAllocated);
+            response.setSpentAmount(totalSpent);
+            response.setCommittedAmount(totalCommitted);
+            response.setBudgetRemaining(budgetRemaining);
+            response.setAvailableBalance(budgetRemaining);
+            response.setHasAllocation(true);
+
+            if (budgetRemaining.compareTo(BigDecimal.ZERO) <= 0) {
+                response.setAllocationStatus("Fully Used");
+            } else {
+                response.setAllocationStatus("Available");
+            }
+
+            if (allocations.size() == 1) {
+                response.setNotes(firstAllocation.getAllocationNotes() != null ?
+                        firstAllocation.getAllocationNotes() : "Available for vouchers");
+            } else {
+                response.setNotes(String.format("Aggregated from %d allocations - Total available",
+                        allocations.size()));
+            }
+        }
+
+        return response;
+    }
+
+
+    private String getParentHeaderAccountName(ChartOfAccounts detailAccount) {
+        if (detailAccount.getParentAccountId() == null) {
+            return "Uncategorized";
+        }
+
+        return chartOfAccountsRepo.findById(detailAccount.getParentAccountId())
+                .map(ChartOfAccounts::getName)
+                .orElse("Unknown Parent");
+    }
 
 }
