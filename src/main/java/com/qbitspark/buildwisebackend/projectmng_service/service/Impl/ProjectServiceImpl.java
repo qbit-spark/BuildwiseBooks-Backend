@@ -67,7 +67,6 @@ public class ProjectServiceImpl implements ProjectService {
         OrganisationMember creator = validateMemberPermissions(authenticatedAccount, organisation,
                 Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
 
-        //If this organisation does not have an active project, then user can perform this action
         validateOrgBudget(organisation);
 
         ClientEntity client = clientsRepo.findClientEntitiesByClientIdAndOrganisation(request.getClientId(), organisation)
@@ -96,12 +95,10 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectEntity savedProject = projectRepo.save(project);
 
 
-        // Create a default team member for the creator AND Get the actual organization owner
         OrganisationMember organisationOwner = organisationMemberRepo
                 .findByOrganisationAndRole(organisation, MemberRole.OWNER)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation owner member not found"));
 
-        // Pass creator and actual owner
         projectTeamMemberService.addCreatorAndOwnerAsTeamMembers(
                 savedProject,
                 creator,
@@ -139,7 +136,6 @@ public class ProjectServiceImpl implements ProjectService {
 
         OrganisationMember projectTeamMember = validateOrganisationMemberAccess(authenticatedAccount, project.getOrganisation());
 
-        //Make sure the authenticated user is a team member in the project in organisation
         if (!validateOrganisationMemberIsTeamMemberInProject(projectTeamMember, project)) {
             throw new AccessDeniedException("You do not have permission to access this project");
         }
@@ -193,7 +189,6 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
 
-        // Validate user is OWNER/ADMIN of THIS PROJECT'S organisation
         OrganisationMember deleter = validateMemberPermissions(
                 authenticatedAccount,
                 project.getOrganisation(),
