@@ -11,7 +11,7 @@ public class UpdateVoucherRequest {
 
     private String generalDescription;
 
-    private UUID projectBudgetAccountId;
+   private UUID detailAllocationId;;
 
     @Valid
     private List<VoucherBeneficiaryRequest> beneficiaries;

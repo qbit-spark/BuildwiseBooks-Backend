@@ -1,11 +1,9 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity;
 
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetLineItemEntity;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetDetailAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.PaymentMode;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherStatus;
-import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherType;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.utils.UUIDListConverter;
-import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
@@ -50,8 +48,8 @@ public class VoucherEntity {
     private LocalDateTime voucherDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_budget_line_item_id", nullable = false)
-    private ProjectBudgetLineItemEntity projectBudgetLineItem;
+    @JoinColumn(name = "detail_allocation_id", nullable = false)
+    private OrgBudgetDetailAllocationEntity detailAllocation;
 
     @Column(name = "overall_description", columnDefinition = "TEXT")
     private String overallDescription;

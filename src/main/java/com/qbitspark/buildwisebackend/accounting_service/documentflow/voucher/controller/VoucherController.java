@@ -129,8 +129,14 @@ public class VoucherController {
         response.setCurrency(voucher.getCurrency());
         response.setCreatedAt(voucher.getCreatedAt());
         response.setUpdatedAt(voucher.getUpdatedAt());
-        response.setBudgetAccountName(voucher.getProjectBudgetLineItem().getChartOfAccount().getName());
-        response.setProjectBudgetAccountId(voucher.getProjectBudgetLineItem().getLineItemId());
+
+
+        response.setDetailAllocationId(voucher.getDetailAllocation().getAllocationId());
+        response.setHeaderAccountName(voucher.getDetailAllocation().getHeaderAccountName());
+        response.setHeaderAccountCode(voucher.getDetailAllocation().getHeaderAccountCode());
+        response.setDetailAccountName(voucher.getDetailAllocation().getDetailAccountName());
+        response.setDetailAccountCode(voucher.getDetailAllocation().getDetailAccountCode());
+        response.setAllocationRemaining(voucher.getDetailAllocation().getRemainingAmount());
 
         // Organisation info
         response.setOrganisationId(voucher.getOrganisation().getOrganisationId());
@@ -160,12 +166,10 @@ public class VoucherController {
                 .collect(Collectors.toList());
         response.setBeneficiaries(beneficiaryResponses);
 
-
         response.setAttachments(buildAttachments(voucher.getAttachments()));
 
         return response;
     }
-
     private VoucherBeneficiaryResponse mapToBeneficiaryResponse(VoucherBeneficiaryEntity beneficiary) {
         VoucherBeneficiaryResponse response = new VoucherBeneficiaryResponse();
         response.setVendorId(beneficiary.getVendor().getVendorId());

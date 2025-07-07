@@ -1,16 +1,16 @@
-package com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.service.impl;
+package com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.service.impl;
 
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetEntity;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetLineItemEntity;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.DistributeBudgetRequest;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.enums.ProjectBudgetStatus;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.ProjectBudgetSummaryResponse;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.repo.ProjectBudgetLineItemRepo;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.repo.ProjectBudgetRepo;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.service.ProjectBudgetService;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.entity.ProjectBudgetEntity;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.entity.ProjectBudgetLineItemEntity;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.payload.DistributeBudgetRequest;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.enums.ProjectBudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.payload.ProjectBudgetSummaryResponse;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.repo.ProjectBudgetLineItemRepo;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.repo.ProjectBudgetRepo;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.service.ProjectBudgetService;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Deprecated
 @Service
 @RequiredArgsConstructor
 @Transactional

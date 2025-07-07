@@ -1,6 +1,6 @@
-package com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload;
+package com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.payload;
 
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.enums.ProjectBudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.enums.ProjectBudgetStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Deprecated
 @Getter
 @Setter
 @AllArgsConstructor

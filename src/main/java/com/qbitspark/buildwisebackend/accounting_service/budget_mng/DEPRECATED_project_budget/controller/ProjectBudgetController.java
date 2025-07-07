@@ -1,11 +1,11 @@
-package com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.controller;
+package com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.controller;
 
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetEntity;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.entity.ProjectBudgetLineItemEntity;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.DistributeBudgetRequest;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.ProjectBudgetResponse;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload.ProjectBudgetSummaryResponse;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.service.ProjectBudgetService;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.entity.ProjectBudgetEntity;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.entity.ProjectBudgetLineItemEntity;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.payload.DistributeBudgetRequest;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.payload.ProjectBudgetResponse;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.payload.ProjectBudgetSummaryResponse;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.service.ProjectBudgetService;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
@@ -26,8 +26,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Deprecated
 @RestController
-@RequestMapping("/api/v1/accounting/{organisationId}/project-budgets")
+//@RequestMapping("/api/v1/accounting/{organisationId}/project-budgets")
 @RequiredArgsConstructor
 public class ProjectBudgetController {
 
@@ -38,7 +39,7 @@ public class ProjectBudgetController {
      * Distribute budget to project accounts
      * PUT /api/v1/project-budgets/{projectBudgetId}/distribute
      */
-    @PutMapping("/{projectBudgetId}/distribute")
+    //@PutMapping("/{projectBudgetId}/distribute")
     public ResponseEntity<GlobeSuccessResponseBuilder> distributeBudget(
             @PathVariable UUID projectBudgetId,
             @Valid @RequestBody DistributeBudgetRequest request,
@@ -60,7 +61,7 @@ public class ProjectBudgetController {
      * Get project budget with complete COA view
      * GET /api/v1/project-budgets/project/{projectId}
      */
-    @GetMapping("/project/{projectId}")
+    //@GetMapping("/project/{projectId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectBudget(
             @PathVariable UUID projectId, @PathVariable UUID organisationId)
             throws ItemNotFoundException, AccessDeniedException {
@@ -77,7 +78,7 @@ public class ProjectBudgetController {
     }
 
 
-    @GetMapping("/project/{projectId}/summary-list")
+   // @GetMapping("/project/{projectId}/summary-list")
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectBudgetSummary(
             @PathVariable UUID projectId,
             @PathVariable UUID organisationId)

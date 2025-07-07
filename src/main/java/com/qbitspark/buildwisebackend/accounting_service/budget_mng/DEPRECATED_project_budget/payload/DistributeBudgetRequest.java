@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.accounting_service.budget_mng.project_budget.payload;
+package com.qbitspark.buildwisebackend.accounting_service.budget_mng.DEPRECATED_project_budget.payload;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+@Deprecated
 @Getter
 @Setter
 @AllArgsConstructor
