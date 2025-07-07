@@ -48,9 +48,10 @@ public class VoucherEntity {
     @Column(name = "voucher_date", nullable = false)
     private LocalDateTime voucherDate;
 
+    //Todo: ON production this should not be null
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "detail_allocation_id", nullable = false)
+    @JoinColumn(name = "detail_allocation_id", nullable = true)
     private OrgBudgetDetailAllocationEntity detailAllocation;
 
     @Column(name = "overall_description", columnDefinition = "TEXT")
@@ -70,7 +71,6 @@ public class VoucherEntity {
     @Enumerated(EnumType.STRING)
     private VoucherStatus status;
 
-    // Creator relationship
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id", nullable = false)
     private OrganisationMember createdBy;

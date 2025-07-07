@@ -27,7 +27,7 @@ public class InvoiceDocResponse {
     private BigDecimal subtotal;
     private BigDecimal taxAmount;
     private BigDecimal totalAmount;
-    private BigDecimal amountPaid;
+    private BigDecimal paidAmount;
     private BigDecimal creditApplied;
     private BigDecimal amountDue;
     private List<InvoiceLineItemResponse> lineItems;

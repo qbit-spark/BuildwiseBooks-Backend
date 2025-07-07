@@ -41,4 +41,5 @@ public interface OrgBudgetAllocationService {
 
     List<AvailableDetailAllocationResponse> getDetailAccountsForVouchers(
             UUID organisationId, UUID budgetId)  throws ItemNotFoundException;
+
 }

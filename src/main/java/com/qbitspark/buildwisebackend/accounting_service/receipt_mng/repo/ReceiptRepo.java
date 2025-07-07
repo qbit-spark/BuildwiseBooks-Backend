@@ -2,6 +2,7 @@ package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo;
 
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceDocEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.ReceiptStatus;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
@@ -38,4 +39,6 @@ public interface ReceiptRepo extends JpaRepository<ReceiptEntity, UUID> {
             OrganisationEntity organisation, LocalDate startDate, LocalDate endDate);
 
     List<ReceiptEntity> findByReceiptNumberContainingAndOrganisation(String pattern, OrganisationEntity organisation);
+
+    List<ReceiptEntity> findByInvoiceIdAndStatus(UUID invoiceId, ReceiptStatus receiptStatus);
 }

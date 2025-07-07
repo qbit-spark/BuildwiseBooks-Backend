@@ -13,6 +13,7 @@ public class SummaryInvoiceDocResponse {
     private String invoiceNumber;
     private InvoiceStatus status;
     private BigDecimal totalAmount;
+    private BigDecimal paidAmount;
     private LocalDate dateOfIssue;
     private LocalDate dueDate;
     private String projectName;

@@ -7,6 +7,9 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.pa
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.repo.InvoiceDocRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceDocService;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceNumberService;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.ReceiptStatus;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptRepo;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.entity.TaxEntity;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.repo.TaxRepo;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
@@ -64,6 +67,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     private final InvoiceNumberService invoiceNumberService;
     private final TaxRepo taxRepo;
     private final OrgFileRepo orgFileRepo;
+    private final ReceiptRepo receiptRepo;
 
     @Transactional
     public InvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException {
@@ -85,7 +89,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         String invoiceNumber = invoiceNumberService.generateInvoiceNumber(project, client, organisation);
 
-        // Create the invoice entity
         InvoiceDocEntity invoice = InvoiceDocEntity.builder()
                 .invoiceNumber(invoiceNumber)
                 .project(project)
@@ -101,18 +104,13 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                 .attachments(request.getAttachments())
                 .build();
 
-        // Create and add line items
         List<InvoiceLineItemEntity> lineItems = createLineItems(request.getLineItems(), invoice);
         invoice.setLineItems(lineItems);
 
-        // Calculate totals using Money API for precision
         calculateInvoiceTotals(invoice, request.getTaxesToApply(), request.getCreditApplied());
 
-        // Save the invoice
         InvoiceDocEntity savedInvoice = invoiceDocRepo.save(invoice);
 
-
-        // Convert to response
         return mapToInvoiceResponse(savedInvoice, currentUser, request.getCreditApplied());
     }
 
@@ -205,7 +203,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
             updateInvoiceAttachments(invoice, request.getAttachments(), organisation);
         }
 
-        // Update line items if provided
         if (request.getLineItems() != null && !request.getLineItems().isEmpty()) {
             // Remove orphaned line items properly
             invoice.getLineItems().forEach(lineItem -> lineItem.setInvoice(null));
@@ -412,7 +409,9 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         response.setSubtotal(invoice.getSubtotal());
         response.setTaxAmount(invoice.getTotalTaxAmount());
         response.setTotalAmount(invoice.getTotalAmount());
-        response.setAmountPaid(invoice.getAmountPaid());
+
+
+        response.setPaidAmount(calculatePaidAmount(invoice.getId()));
         response.setCreditApplied(creditApplied != null ? creditApplied : BigDecimal.ZERO);
         response.setAmountDue(invoice.getAmountDue());
         response.setCreatedAt(invoice.getCreatedAt());
@@ -456,22 +455,12 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         return response;
     }
 
-    // Helper class for tax calculation results with Money API
-    @Data
-    @AllArgsConstructor
-    private static class TaxCalculationResult {
-        private List<InvoiceTaxDetail> taxDetails;
-        private MonetaryAmount totalTaxMoney;
-
-        public BigDecimal getTotalTaxAmount() {
-            return totalTaxMoney.getNumber().numberValue(BigDecimal.class);
-        }
-    }
 
     private SummaryInvoiceDocResponse mapToSummaryResponse(InvoiceDocEntity invoice) {
         SummaryInvoiceDocResponse response = new SummaryInvoiceDocResponse();
         response.setInvoiceId(invoice.getId());
         response.setInvoiceNumber(invoice.getInvoiceNumber());
+        response.setPaidAmount(calculatePaidAmount(invoice.getId()));
         response.setStatus(invoice.getInvoiceStatus());
         response.setTotalAmount(invoice.getTotalAmount());
         response.setProjectName(invoice.getProject().getName());
@@ -528,5 +517,13 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                 throw new ItemNotFoundException("Cannot attach deleted file: " + fileId);
             }
         }
+    }
+
+
+    private BigDecimal calculatePaidAmount(UUID invoiceId) {
+        List<ReceiptEntity> approvedReceipts = receiptRepo.findByInvoiceIdAndStatus(invoiceId, ReceiptStatus.APPROVED);
+        return approvedReceipts.stream()
+                .map(ReceiptEntity::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
