@@ -254,6 +254,7 @@ public class ReceiptController {
     private ReceiptSummaryResponse mapToSummaryResponse(ReceiptEntity receipt) {
         ReceiptSummaryResponse response = new ReceiptSummaryResponse();
         response.setReceiptId(receipt.getReceiptId());
+        response.setProjectName(receipt.getProject() != null ? receipt.getProject().getName() : null);
         response.setReceiptNumber(receipt.getReceiptNumber());
         response.setReceiptDate(receipt.getReceiptDate());
         response.setClientName(receipt.getClient() != null ? receipt.getClient().getName() : null);

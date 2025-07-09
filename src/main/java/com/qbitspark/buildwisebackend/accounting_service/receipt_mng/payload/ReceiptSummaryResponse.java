@@ -17,5 +17,6 @@ public class ReceiptSummaryResponse {
     private BigDecimal totalAmount;
     private PaymentMethod paymentMethod;
     private ReceiptStatus status;
+    private String projectName;
     private String reference;
 }
