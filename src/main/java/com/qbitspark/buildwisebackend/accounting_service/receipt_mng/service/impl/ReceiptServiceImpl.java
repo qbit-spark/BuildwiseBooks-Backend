@@ -236,7 +236,7 @@ public class ReceiptServiceImpl implements ReceiptService {
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
 
-        return receiptRepo.findByOrganisation(organisation);
+        return receiptRepo.findByOrganisationAndStatus(organisation, ReceiptStatus.APPROVED);
     }
 
 
