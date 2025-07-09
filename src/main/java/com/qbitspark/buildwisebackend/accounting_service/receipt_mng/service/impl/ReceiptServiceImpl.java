@@ -229,6 +229,16 @@ public class ReceiptServiceImpl implements ReceiptService {
         return receiptRepo.findByProject(project, pageable);
     }
 
+    @Override
+    public List<ReceiptEntity> getOrganisationReceiptsSummary(UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        return receiptRepo.findByOrganisation(organisation);
+    }
+
 
 
 

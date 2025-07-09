@@ -38,4 +38,8 @@ public interface ReceiptService {
     Page<ReceiptEntity> getProjectReceipts(UUID organisationId, UUID projectId, Pageable pageable)
             throws ItemNotFoundException, AccessDeniedException;
 
+    List<ReceiptEntity> getOrganisationReceiptsSummary(UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException;
+
+
 }

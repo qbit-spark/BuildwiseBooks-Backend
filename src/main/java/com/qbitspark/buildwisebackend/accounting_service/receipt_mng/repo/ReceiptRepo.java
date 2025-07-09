@@ -23,6 +23,8 @@ public interface ReceiptRepo extends JpaRepository<ReceiptEntity, UUID> {
 
     Page<ReceiptEntity> findByOrganisation(OrganisationEntity organisation, Pageable pageable);
 
+    List<ReceiptEntity> findByOrganisation(OrganisationEntity organisation);
+
     List<ReceiptEntity> findByInvoiceOrderByReceiptDateDesc(InvoiceDocEntity invoice);
 
     Page<ReceiptEntity> findByClient(ClientEntity client, Pageable pageable);

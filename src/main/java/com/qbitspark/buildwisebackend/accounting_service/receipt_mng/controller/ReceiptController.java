@@ -68,6 +68,23 @@ public class ReceiptController {
         );
     }
 
+    @GetMapping("/summary-list")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getOrganisationReceiptsSummary(
+            @PathVariable UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        List<ReceiptEntity> receipts = receiptService.getOrganisationReceiptsSummary(organisationId);
+
+        List<ReceiptSummaryResponse> summaryList = receipts.stream()
+                .map(this::mapToSummaryResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success("Receipt summary retrieved successfully", summaryList)
+        );
+    }
+
+
     @GetMapping("/{receiptId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getReceiptById(
             @PathVariable UUID organisationId,
@@ -232,5 +249,18 @@ public class ReceiptController {
                     return history;
                 })
                 .collect(Collectors.toList());
+    }
+
+    private ReceiptSummaryResponse mapToSummaryResponse(ReceiptEntity receipt) {
+        ReceiptSummaryResponse response = new ReceiptSummaryResponse();
+        response.setReceiptId(receipt.getReceiptId());
+        response.setReceiptNumber(receipt.getReceiptNumber());
+        response.setReceiptDate(receipt.getReceiptDate());
+        response.setClientName(receipt.getClient() != null ? receipt.getClient().getName() : null);
+        response.setTotalAmount(receipt.getTotalAmount());
+        response.setPaymentMethod(receipt.getPaymentMethod());
+        response.setStatus(receipt.getStatus());
+        response.setReference(receipt.getReference());
+        return response;
     }
 }
