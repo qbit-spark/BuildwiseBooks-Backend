@@ -14,7 +14,7 @@ public interface OrganisationService {
     OrganisationEntity getOrganisationById(UUID id) throws ItemNotFoundException;
     List<OrganisationEntity> getAllOrganisations();
     List<OrganisationEntity> getAllMyOrganisations() throws ItemNotFoundException;
-    OrganisationEntity updateOrganisation(UUID id, UpdateOrganisationRequest updateOrganisationRequest) throws ItemNotFoundException;
+    OrganisationEntity updateOrganisation(UUID id, UpdateOrganisationRequest updateOrganisationRequest) throws ItemNotFoundException, AccessDeniedException;
     OrganisationEntity getMyOrganisationById(UUID id) throws ItemNotFoundException;
 
 }

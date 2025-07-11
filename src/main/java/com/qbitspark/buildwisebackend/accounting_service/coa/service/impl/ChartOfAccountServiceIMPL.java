@@ -17,7 +17,6 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundExcepti
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
-import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberRole;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import lombok.RequiredArgsConstructor;

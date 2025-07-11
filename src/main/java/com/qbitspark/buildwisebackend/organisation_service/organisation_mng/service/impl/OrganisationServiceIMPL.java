@@ -11,7 +11,12 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.payl
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.payloads.UpdateOrganisationRequest;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.service.OrganisationService;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.OrganisationMemberService;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.MemberRoleService;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,6 +38,9 @@ public class OrganisationServiceIMPL implements OrganisationService {
     private final OrganisationMemberService organisationMemberService;
     private final ChartOfAccountService chartOfAccountService;
     private final OrgDriveService orgDriveService;
+    private final MemberRoleService memberRoleService;
+    private final PermissionCheckerService permissionChecker;
+    private final OrganisationMemberRepo organisationMemberRepo;
 
     @Transactional
     @Override
@@ -61,6 +69,8 @@ public class OrganisationServiceIMPL implements OrganisationService {
         chartOfAccountService.createDefaultChartOfAccountsAndReturnHierarchical(savedOrganisation);
 
         orgDriveService.initializeOrganisationDrive(savedOrganisation);
+
+        memberRoleService.createDefaultRolesForOrganisation(savedOrganisation);
 
         return savedOrganisation;
 
@@ -94,10 +104,16 @@ public class OrganisationServiceIMPL implements OrganisationService {
 
     @Transactional
     @Override
-    public OrganisationEntity updateOrganisation(UUID id, UpdateOrganisationRequest updateOrganisationRequest) throws ItemNotFoundException {
+    public OrganisationEntity updateOrganisation(UUID id, UpdateOrganisationRequest updateOrganisationRequest) throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentAccount = getAuthenticatedAccount();
 
         OrganisationEntity existingOrganisation = organisationRepo.findByOrganisationIdAndOwner(id, getAuthenticatedAccount())
                 .orElseThrow(() -> new ItemNotFoundException("This organisation does not exist or you are not the owner"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentAccount, existingOrganisation);
+
+        permissionChecker.checkMemberPermission(member,"ORGANISATION", "updateOrganisation");
 
         if (updateOrganisationRequest.getName() != null && !updateOrganisationRequest.getName().trim().isEmpty()) {
             existingOrganisation.setOrganisationName(updateOrganisationRequest.getName().trim());
@@ -135,6 +151,17 @@ public class OrganisationServiceIMPL implements OrganisationService {
         }
     }
 
+
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
+    }
 
 
 }

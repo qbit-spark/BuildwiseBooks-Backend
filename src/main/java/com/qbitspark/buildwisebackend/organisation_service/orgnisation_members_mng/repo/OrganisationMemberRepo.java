@@ -3,19 +3,15 @@ package com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
-import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberRole;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 public interface OrganisationMemberRepo extends JpaRepository<OrganisationMember, UUID> {
 
     boolean existsByAccountEmailAndOrganisation(String email, OrganisationEntity organisation);
-
-    Optional<OrganisationMember> findByOrganisationAndRole(OrganisationEntity organisation, MemberRole role);
 
     Optional<OrganisationMember> findByAccountAndOrganisation(AccountEntity account, OrganisationEntity organisation);
 
