@@ -65,6 +65,7 @@ public class OrgBudgetAllocationController {
                 "Header allocations retrieved successfully", responses));
     }
 
+
     @GetMapping("/header/{headerLineItemId}/summary")
     public ResponseEntity<GlobeSuccessResponseBuilder> getHeaderAllocationSummary(
             @PathVariable UUID organisationId,
@@ -77,6 +78,7 @@ public class OrgBudgetAllocationController {
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
                 "Header allocation summary retrieved successfully", summary));
     }
+
 
     @GetMapping("/all")
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllBudgetAllocations(
@@ -93,6 +95,7 @@ public class OrgBudgetAllocationController {
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
                 "All budget allocations retrieved successfully", responses));
     }
+
 
     @GetMapping("/summary-list")
     public ResponseEntity<GlobeSuccessResponseBuilder> getAvailableDetailAllocationsForVouchers(
