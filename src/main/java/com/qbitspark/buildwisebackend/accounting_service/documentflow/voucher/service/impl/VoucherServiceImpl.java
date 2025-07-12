@@ -25,6 +25,7 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
@@ -66,6 +67,7 @@ public class VoucherServiceImpl implements VoucherService {
     private final VoucherBeneficiaryRepo voucherBeneficiaryRepo;
     private final OrgFileRepo orgFileRepo;
     private final OrgBudgetDetailAllocationRepo allocationRepo;
+    private final PermissionCheckerService permissionChecker;
 
     @Override
     public VoucherEntity createVoucher(UUID organisationId, CreateVoucherRequest request)
@@ -73,19 +75,14 @@ public class VoucherServiceImpl implements VoucherService {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-
-        OrganisationMember organisationMember = validateOrganisationAccess(currentUser, organisation,
-                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
         ProjectEntity project = projectRepo.findById(request.getProjectId())
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
-        validateProject(project, organisation);
+        OrganisationMember member = validateProjectAndOrganisationAccess(currentUser, project, organisation);
 
-        validateProjectMemberPermissions(currentUser, project,
-                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+        permissionChecker.checkMemberPermission(member, "VOUCHERS","createVoucher");
 
         OrgBudgetDetailAllocationEntity detailAllocation = validateAndGetDetailAllocation(
                 request.getDetailAllocationId(), organisationId);
@@ -145,7 +142,7 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setVoucherNumber(voucherNumber);
         voucher.setVoucherDate(LocalDateTime.now());
         voucher.setOverallDescription(request.getGeneralDescription());
-        voucher.setCreatedBy(organisationMember);
+        voucher.setCreatedBy(member);
         voucher.setOrganisation(organisation);
         voucher.setProject(project);
         voucher.setDetailAllocation(detailAllocation);
@@ -160,48 +157,39 @@ public class VoucherServiceImpl implements VoucherService {
         return voucherRepo.save(voucher);
     }
 
-
     @Override
     public Page<VoucherEntity> getProjectVouchers(UUID organisationId, UUID projectId, Pageable pageable)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-
-        validateOrganisationAccess(currentUser, organisation,
-                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
-        validateProject(project, organisation);
+        OrganisationMember member = validateProjectAndOrganisationAccess(currentUser, project, organisation);
 
-        validateProjectMemberPermissions(currentUser, project,
-                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER,
-                        TeamMemberRole.PROJECT_MANAGER, TeamMemberRole.MEMBER));
-
+        permissionChecker.checkMemberPermission(member, "VOUCHERS","viewVouchers");
 
         return voucherRepo.findAllByProject(project, pageable);
     }
-
 
     @Override
     public VoucherEntity updateVoucher(UUID organisationId, UUID voucherId, UpdateVoucherRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationExists(organisationId);
-        OrganisationMember organisationMember = validateOrganisationAccess(currentUser, organisation,
-                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
         VoucherEntity existingVoucher = validateVoucherExists(voucherId, organisation);
 
-        validateVoucherCanBeUpdated(existingVoucher);
+        OrganisationMember member = validateProjectAndOrganisationAccess(currentUser, existingVoucher.getProject(), organisation);
 
-        validateProjectMemberPermissions(currentUser, existingVoucher.getProject(),
-                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+        permissionChecker.checkMemberPermission(member, "VOUCHERS","updateVoucher");
+
+        validateVoucherCanBeUpdated(existingVoucher);
 
         updateVoucherBasicFields(existingVoucher, request);
 
@@ -217,22 +205,22 @@ public class VoucherServiceImpl implements VoucherService {
             updateVoucherAttachments(existingVoucher, request.getAttachments(), organisation);
         }
 
-        VoucherEntity updatedVoucher = voucherRepo.save(existingVoucher);
-
-        log.info("Voucher {} updated by user {}",
-                updatedVoucher.getVoucherNumber(), organisationMember.getAccount().getUserName());
-
-        return updatedVoucher;
+        return voucherRepo.save(existingVoucher);
     }
-
 
 
     @Override
     public VoucherEntity getVoucherById(UUID organisationId, UUID voucherId) throws ItemNotFoundException, AccessDeniedException {
+
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationExists(organisationId);
-        OrganisationMember organisationMember = validateOrganisationAccess(currentUser, organisation,
-                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        VoucherEntity existingVoucher = validateVoucherExists(voucherId, organisation);
+
+        OrganisationMember member = validateProjectAndOrganisationAccess(currentUser, existingVoucher.getProject(), organisation);
+
+        permissionChecker.checkMemberPermission(member, "VOUCHERS","viewVouchers");
 
         return validateVoucherExists(voucherId, organisation);
 
@@ -258,23 +246,6 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
 
-    private OrganisationMember validateOrganisationAccess(AccountEntity account, OrganisationEntity organisation,
-                                                          List<MemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
-
-        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("User is not a member of this organisation"));
-
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new AccessDeniedException("User membership is not active");
-        }
-
-        if (!allowedRoles.contains(member.getRole())) {
-            throw new AccessDeniedException("User does not have sufficient permissions");
-        }
-
-        return member; // RETURN THE MEMBER
-    }
-
     private void validateProject(ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {
         if (!project.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
             throw new ItemNotFoundException("Project does not belong to this organisation");
@@ -283,21 +254,17 @@ public class VoucherServiceImpl implements VoucherService {
 
     private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
 
-        // Step 1: Find the organisation member
         OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
                 .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
 
-        // Step 2: Check if an organisation member is active
         if (organisationMember.getStatus() != MemberStatus.ACTIVE) {
             throw new ItemNotFoundException("Member is not active");
         }
 
 
-        // Step 3: Get the project team member details
         ProjectTeamMemberEntity projectTeamMember = projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
                 .orElseThrow(() -> new ItemNotFoundException("Project team member not found"));
 
-        // Step 5: Check if the member has one of the allowed roles
         if (!allowedRoles.contains(projectTeamMember.getRole())) {
             throw new AccessDeniedException("Member has insufficient permissions for this operation");
         }
@@ -529,5 +496,35 @@ public class VoucherServiceImpl implements VoucherService {
         }
 
         return allocation;
+    }
+
+
+    private OrganisationMember validateProjectAndOrganisationAccess(AccountEntity account, ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {
+        if (!project.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
+            throw new ItemNotFoundException("Project does not belong to this organisation");
+        }
+
+        OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (organisationMember.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
+                .orElseThrow(() -> new ItemNotFoundException("Project team member not found"));
+
+        return organisationMember;
+    }
+
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
     }
 }
