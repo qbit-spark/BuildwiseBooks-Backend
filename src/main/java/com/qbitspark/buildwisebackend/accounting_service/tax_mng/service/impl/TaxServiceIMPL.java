@@ -8,14 +8,15 @@ import com.qbitspark.buildwisebackend.accounting_service.tax_mng.repo.TaxRepo;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.service.TaxService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -33,39 +34,42 @@ import java.util.stream.Collectors;
 public class TaxServiceIMPL implements TaxService {
 
     private final TaxRepo taxRepository;
-    private final OrganisationRepo organisationRepository;
+    private final OrganisationRepo organisationRepo;
     private final AccountRepo accountRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
+    private final PermissionCheckerService permissionChecker;
 
     @Override
     @Transactional
-    public TaxResponse createTax(UUID organisationId, CreateTaxRequest request) throws ItemNotFoundException {
+    public TaxResponse createTax(UUID organisationId, CreateTaxRequest request) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, true); // Admin only
+        AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Get organisation
-        OrganisationEntity organisation = organisationRepository.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        // Check for duplicate tax name
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "TAXES","createTaxes");
+
         validateNoDuplicateTaxName(request.getTaxName(), organisationId, null);
 
-        // Create tax entity
-        TaxEntity taxEntity = createTaxFromRequest(request, organisation, account.getUserName());
+        TaxEntity taxEntity = createTaxFromRequest(request, organisation, currentUser.getUserName());
 
-        // Save tax
         TaxEntity savedTax = taxRepository.save(taxEntity);
 
         return toTaxResponse(savedTax);
     }
 
     @Override
-    public List<TaxResponse> getAllTaxesByOrganisation(UUID organisationId) throws ItemNotFoundException {
+    public List<TaxResponse> getAllTaxesByOrganisation(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
+        AccountEntity currentUser = getAuthenticatedAccount();
 
-        validateUserPermission(account, organisationId, false); // Any member can view
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "TAXES","viewTaxes");
 
         List<TaxEntity> taxes = taxRepository.findByOrganisation_OrganisationId(organisationId);
 
@@ -75,10 +79,15 @@ public class TaxServiceIMPL implements TaxService {
     }
 
     @Override
-    public List<TaxResponse> getActiveTaxesByOrganisation(UUID organisationId) throws ItemNotFoundException {
+    public List<TaxResponse> getActiveTaxesByOrganisation(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, false); // Any member can view
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "TAXES","viewTaxes");
 
         List<TaxEntity> activeTaxes = taxRepository.findByOrganisation_OrganisationIdAndIsActiveTrue(organisationId);
 
@@ -88,10 +97,15 @@ public class TaxServiceIMPL implements TaxService {
     }
 
     @Override
-    public TaxResponse getTaxById(UUID organisationId, UUID taxId) throws ItemNotFoundException {
+    public TaxResponse getTaxById(UUID organisationId, UUID taxId) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, false); // Any member can view
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "TAXES","viewTaxes");
 
         TaxEntity tax = taxRepository.findByTaxIdAndOrganisation_OrganisationId(taxId, organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Tax not found or does not belong to this organisation"));
@@ -101,19 +115,22 @@ public class TaxServiceIMPL implements TaxService {
 
     @Override
     @Transactional
-    public TaxResponse updateTax(UUID organisationId, UUID taxId, UpdateTaxRequest request) throws ItemNotFoundException {
+    public TaxResponse updateTax(UUID organisationId, UUID taxId, UpdateTaxRequest request) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, true);
+        AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Get existing tax
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "TAXES","updateTaxes");
+
+
         TaxEntity existingTax = taxRepository.findByTaxIdAndOrganisation_OrganisationId(taxId, organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Tax not found or does not belong to this organisation"));
 
-        // Check for duplicate tax name (excluding current tax)
         validateNoDuplicateTaxName(request.getTaxName(), organisationId, taxId);
 
-        // Update tax
         existingTax.setTaxName(request.getTaxName());
         existingTax.setTaxPercent(request.getTaxPercent());
         existingTax.setTaxDescription(request.getTaxDescription());
@@ -127,22 +144,23 @@ public class TaxServiceIMPL implements TaxService {
 
     @Override
     @Transactional
-    public void deleteTax(UUID organisationId, UUID taxId) throws ItemNotFoundException {
+    public void deleteTax(UUID organisationId, UUID taxId) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, true);
+        AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Get existing tax
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "TAXES","deleteTaxes");
+
         TaxEntity existingTax = taxRepository.findByTaxIdAndOrganisation_OrganisationId(taxId, organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Tax not found or does not belong to this organisation"));
 
-        // Hard delete - completely remove from database
         taxRepository.delete(existingTax);
     }
 
-    /**
-     * Validate no duplicate tax names within the same organisation (case-sensitive)
-     */
+
     private void validateNoDuplicateTaxName(String taxName, UUID organisationId, UUID excludeTaxId)
             throws ItemNotFoundException {
 
@@ -158,9 +176,6 @@ public class TaxServiceIMPL implements TaxService {
     }
 
 
-    /**
-     * Create a tax entity from request
-     */
     private TaxEntity createTaxFromRequest(CreateTaxRequest request, OrganisationEntity organisation, String createdBy) {
         TaxEntity taxEntity = new TaxEntity();
         taxEntity.setTaxName(request.getTaxName());
@@ -173,9 +188,7 @@ public class TaxServiceIMPL implements TaxService {
         return taxEntity;
     }
 
-    /**
-     * Convert tax entity to response DTO
-     */
+
     private TaxResponse toTaxResponse(TaxEntity taxEntity) {
         return TaxResponse.builder()
                 .taxId(taxEntity.getTaxId())
@@ -189,39 +202,6 @@ public class TaxServiceIMPL implements TaxService {
                 .organisationId(taxEntity.getOrganisation().getOrganisationId())
                 .organisationName(taxEntity.getOrganisation().getOrganisationName())
                 .build();
-    }
-
-    /**
-     * Validate user permissions
-     */
-    private void validateUserPermission(AccountEntity account, UUID organisationId, boolean adminOnly)
-            throws ItemNotFoundException, AccessDeniedException {
-
-        OrganisationEntity organisation = organisationRepository.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-
-        if (organisation.getOwner().equals(account)) {
-            return; // Owner always has access
-        }
-
-        Optional<OrganisationMember> memberOptional = organisationMemberRepo.findByAccountAndOrganisation(account, organisation);
-
-        if (memberOptional.isEmpty()) {
-            throw new AccessDeniedException("User is not a member of this organisation");
-        }
-
-        OrganisationMember member = memberOptional.get();
-
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new AccessDeniedException("User membership is not active");
-        }
-
-        if (adminOnly) {
-            MemberRole role = member.getRole();
-            if (role != MemberRole.OWNER && role != MemberRole.ADMIN) {
-                throw new AccessDeniedException("User does not have sufficient permissions for this operation");
-            }
-        }
     }
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
@@ -244,4 +224,16 @@ public class TaxServiceIMPL implements TaxService {
             throw new ItemNotFoundException("User is not authenticated");
         }
     }
+
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
+    }
+
 }

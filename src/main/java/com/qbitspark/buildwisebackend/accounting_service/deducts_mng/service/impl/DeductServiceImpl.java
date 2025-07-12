@@ -8,14 +8,15 @@ import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.repo.Deduct
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.service.DeductService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,41 +31,45 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class DeductServiceIMPL implements DeductService {
+public class DeductServiceImpl implements DeductService {
 
     private final DeductRepo deductRepository;
-    private final OrganisationRepo organisationRepository;
+    private final OrganisationRepo organisationRepo;
     private final AccountRepo accountRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
+    private final PermissionCheckerService permissionChecker;
 
     @Override
     @Transactional
-    public DeductResponse createDeduct(UUID organisationId, CreateDeductRequest request) throws ItemNotFoundException {
+    public DeductResponse createDeduct(UUID organisationId, CreateDeductRequest request) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, true); // Admin only
+        AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Get organisation
-        OrganisationEntity organisation = organisationRepository.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        // Check for duplicate deduct name
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "DEDUCTS","createDeducts");
+
         validateNoDuplicateDeductName(request.getDeductName(), organisationId, null);
 
-        // Create deduct entity
-        DeductsEntity deductEntity = createDeductFromRequest(request, organisation, account.getUserName());
+        DeductsEntity deductEntity = createDeductFromRequest(request, organisation, currentUser.getUserName());
 
-        // Save deduct
         DeductsEntity savedDeduct = deductRepository.save(deductEntity);
 
         return toDeductResponse(savedDeduct);
     }
 
     @Override
-    public List<DeductResponse> getAllDeductsByOrganisation(UUID organisationId) throws ItemNotFoundException {
+    public List<DeductResponse> getAllDeductsByOrganisation(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, false); // Any member can view
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "DEDUCTS","viewDeducts");
 
         List<DeductsEntity> deducts = deductRepository.findByOrganisation_OrganisationId(organisationId);
 
@@ -74,10 +79,15 @@ public class DeductServiceIMPL implements DeductService {
     }
 
     @Override
-    public List<DeductResponse> getActiveDeductsByOrganisation(UUID organisationId) throws ItemNotFoundException {
+    public List<DeductResponse> getActiveDeductsByOrganisation(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, false); // Any member can view
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "DEDUCTS","viewDeducts");
 
         List<DeductsEntity> activeDeducts = deductRepository.findByOrganisation_OrganisationIdAndIsActiveTrue(organisationId);
 
@@ -87,23 +97,32 @@ public class DeductServiceIMPL implements DeductService {
     }
 
     @Override
-    public DeductResponse getDeductById(UUID organisationId, UUID deductId) throws ItemNotFoundException {
+    public DeductResponse getDeductById(UUID organisationId, UUID deductId) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, false); // Any member can view
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "DEDUCTS","viewDeducts");
 
         DeductsEntity deduct = deductRepository.findByDeductIdAndOrganisation_OrganisationId(deductId, organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Deduct not found or does not belong to this organisation"));
 
         return toDeductResponse(deduct);
     }
-
     @Override
     @Transactional
-    public DeductResponse updateDeduct(UUID organisationId, UUID deductId, UpdateDeductRequest request) throws ItemNotFoundException {
+    public DeductResponse updateDeduct(UUID organisationId, UUID deductId, UpdateDeductRequest request) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, true);
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "DEDUCTS","updateDeducts");
 
         // Get existing deduct
         DeductsEntity existingDeduct = deductRepository.findByDeductIdAndOrganisation_OrganisationId(deductId, organisationId)
@@ -143,22 +162,23 @@ public class DeductServiceIMPL implements DeductService {
 
     @Override
     @Transactional
-    public void deleteDeduct(UUID organisationId, UUID deductId) throws ItemNotFoundException {
+    public void deleteDeduct(UUID organisationId, UUID deductId) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, true);
+        AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Get existing deduct
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "DEDUCTS","deleteDeducts");
+
         DeductsEntity existingDeduct = deductRepository.findByDeductIdAndOrganisation_OrganisationId(deductId, organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Deduct not found or does not belong to this organisation"));
 
-        // Hard delete - completely remove from database
         deductRepository.delete(existingDeduct);
     }
 
-    /**
-     * Validate no duplicate deduct names within the same organisation (case-insensitive)
-     */
+
     private void validateNoDuplicateDeductName(String deductName, UUID organisationId, UUID excludeDeductId)
             throws ItemNotFoundException {
 
@@ -173,9 +193,7 @@ public class DeductServiceIMPL implements DeductService {
         }
     }
 
-    /**
-     * Create a deduct entity from request
-     */
+
     private DeductsEntity createDeductFromRequest(CreateDeductRequest request, OrganisationEntity organisation, String createdBy) {
         DeductsEntity deductEntity = new DeductsEntity();
         deductEntity.setDeductName(request.getDeductName());
@@ -188,9 +206,7 @@ public class DeductServiceIMPL implements DeductService {
         return deductEntity;
     }
 
-    /**
-     * Convert deduct entity to response DTO
-     */
+
     private DeductResponse toDeductResponse(DeductsEntity deductEntity) {
         return DeductResponse.builder()
                 .deductId(deductEntity.getDeductId())
@@ -206,38 +222,18 @@ public class DeductServiceIMPL implements DeductService {
                 .build();
     }
 
-    /**
-     * Validate user permissions
-     */
-    private void validateUserPermission(AccountEntity account, UUID organisationId, boolean adminOnly)
-            throws ItemNotFoundException, AccessDeniedException {
 
-        OrganisationEntity organisation = organisationRepository.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-
-        if (organisation.getOwner().equals(account)) {
-            return; // Owner always has access
-        }
-
-        Optional<OrganisationMember> memberOptional = organisationMemberRepo.findByAccountAndOrganisation(account, organisation);
-
-        if (memberOptional.isEmpty()) {
-            throw new AccessDeniedException("User is not a member of this organisation");
-        }
-
-        OrganisationMember member = memberOptional.get();
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
 
         if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new AccessDeniedException("User membership is not active");
+            throw new ItemNotFoundException("Member is not active");
         }
 
-        if (adminOnly) {
-            MemberRole role = member.getRole();
-            if (role != MemberRole.OWNER && role != MemberRole.ADMIN) {
-                throw new AccessDeniedException("User does not have sufficient permissions for this operation");
-            }
-        }
+        return member;
     }
+
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

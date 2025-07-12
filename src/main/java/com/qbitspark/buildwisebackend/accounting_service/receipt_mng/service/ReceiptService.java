@@ -41,5 +41,4 @@ public interface ReceiptService {
     List<ReceiptEntity> getOrganisationReceiptsSummary(UUID organisationId)
             throws ItemNotFoundException, AccessDeniedException;
 
-
 }

@@ -14,17 +14,20 @@ public class PermissionConfig {
     public static final String CLIENTS = "CLIENTS";
     public static final String VENDORS = "VENDORS";
     public static final String BUDGET = "BUDGET";
-    public static final String FINANCIAL = "FINANCIAL";
+    public static final String TRANSACTIONS = "TRANSACTIONS";
     public static final String RECEIPTS = "RECEIPTS";
     public static final String CHART_OF_ACCOUNTS = "CHART_OF_ACCOUNTS";
     public static final String DRIVE = "DRIVE";
     public static final String SYSTEM = "SYSTEM";
+    public static final String BANK_ACCOUNTS = "BANK_ACCOUNTS";
+    public static final String DEDUCTS = "DEDUCTS";
+    private static final String TAXES = "TAXES";
 
     // Get all available resources
     public static List<String> getAllResources() {
         return Arrays.asList(
                 ORGANISATION, PROJECTS, INVOICES, VOUCHERS, CLIENTS, VENDORS,
-                BUDGET, FINANCIAL, RECEIPTS, CHART_OF_ACCOUNTS, DRIVE, SYSTEM
+                BUDGET, TRANSACTIONS, RECEIPTS, CHART_OF_ACCOUNTS, DRIVE, SYSTEM, BANK_ACCOUNTS, DEDUCTS, TAXES, RECEIPT
         );
     }
 
@@ -38,11 +41,14 @@ public class PermissionConfig {
             case CLIENTS -> getClientPermissions();
             case VENDORS -> getVendorPermissions();
             case BUDGET -> getBudgetPermissions();
-            case FINANCIAL -> getFinancialPermissions();
+            case TRANSACTIONS -> getTransactionsPermissions();
             case RECEIPTS -> getReceiptPermissions();
             case CHART_OF_ACCOUNTS -> getChartOfAccountsPermissions();
             case DRIVE -> getDrivePermissions();
             case SYSTEM -> getSystemPermissions();
+            case BANK_ACCOUNTS -> getBankAccountsPermissions();
+            case DEDUCTS -> getDeductsPermissions();
+            case TAXES -> getTaxesPermissions();
             default -> new HashMap<>();
         };
     }
@@ -141,15 +147,10 @@ public class PermissionConfig {
         return permissions;
     }
 
-    private static Map<String, Boolean> getFinancialPermissions() {
+    private static Map<String, Boolean> getTransactionsPermissions() {
         Map<String, Boolean> permissions = new HashMap<>();
         permissions.put("viewFinancialReports", false);
         permissions.put("exportReports", false);
-        permissions.put("manageTaxes", false);
-        permissions.put("manageDeductions", false);
-        permissions.put("viewReceiptHistory", false);
-        permissions.put("manageBankAccounts", false);
-        permissions.put("setDefaultBankAccount", false);
         return permissions;
     }
 
@@ -159,7 +160,6 @@ public class PermissionConfig {
         permissions.put("updateReceipt", false);
         permissions.put("deleteReceipt", false);
         permissions.put("viewReceipts", false);
-        permissions.put("confirmReceipt", false);
         permissions.put("cancelReceipt", false);
         permissions.put("viewPaymentHistory", false);
         return permissions;
@@ -193,4 +193,36 @@ public class PermissionConfig {
         permissions.put("accessAdminPanel", false);
         return permissions;
     }
+
+    private static Map<String, Boolean> getBankAccountsPermissions() {
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put("createBankAccounts", false);
+        permissions.put("updateBankAccounts", false);
+        permissions.put("setDefaultBankAccounts", false);
+        permissions.put("deactivateBankAccounts", false);
+        permissions.put("viewBankAccounts", false);
+        return permissions;
+    }
+
+    private static Map<String, Boolean> getDeductsPermissions() {
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put("createDeducts", false);
+        permissions.put("updateDeducts", false);
+        permissions.put("deleteDeducts", false);
+        permissions.put("viewDeducts", false);
+        permissions.put("manageDeducts", false);
+        return permissions;
+    }
+
+    private static Map<String, Boolean> getTaxesPermissions() {
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put("createTaxes", false);
+        permissions.put("updateTaxes", false);
+        permissions.put("viewTaxes", false);
+        permissions.put("manageTaxes", false);
+        permissions.put("deleteTaxes", false);
+        return permissions;
+    }
+
+
 }

@@ -13,14 +13,15 @@ import com.qbitspark.buildwisebackend.accounting_service.coa.utils.DefaultChartO
 import com.qbitspark.buildwisebackend.accounting_service.coa.utils.HierarchicalChartOfAccountsMapper;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -33,15 +34,16 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
+public class ChartOfAccountServiceImpl implements ChartOfAccountService {
 
     private final ChartOfAccountsRepo chartOfAccountsRepository;
-    private final OrganisationRepo organisationRepository;
+    private final OrganisationRepo organisationRepo;
     private final AccountRepo accountRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
     private final ChartOfAccountsMapper chartOfAccountsMapper;
     private final HierarchicalChartOfAccountsMapper hierarchicalMapper;
     private final AccountCodeGenerator accountCodeGenerator;
+    private final PermissionCheckerService permissionChecker;
 
     @Override
     @Transactional
@@ -65,16 +67,10 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
 
     @Override
     @Transactional
-    public GroupedChartOfAccountsResponse initializeDefaultChartOfAccounts(UUID organisationId) throws ItemNotFoundException {
+    public GroupedChartOfAccountsResponse initializeDefaultChartOfAccounts(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, true); // Admin only
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        // Get organisation
-        OrganisationEntity organisation = organisationRepository.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-
-        // Check if organization already has chart of accounts
         List<ChartOfAccounts> existingAccounts = chartOfAccountsRepository
                 .findByOrganisation_OrganisationId(organisationId);
 
@@ -91,10 +87,15 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
 
     @Override
     public GroupedChartOfAccountsResponse getGroupedHierarchicalChartOfAccounts(UUID organisationId)
-            throws ItemNotFoundException {
+            throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, organisationId, false);
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "CHART_OF_ACCOUNTS","viewChartOfAccounts");
 
         // Check if organization has chart of accounts
         List<ChartOfAccounts> allAccounts = chartOfAccountsRepository
@@ -109,34 +110,33 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
 
     @Override
     @Transactional
-    public ChartOfAccountsResponse addNewAccount(AddAccountRequest request) throws ItemNotFoundException {
+    public ChartOfAccountsResponse addNewAccount(UUID organisationId, AddAccountRequest request) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, request.getOrganisationId(), true);
+        AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Get organisation
-        OrganisationEntity organisation = organisationRepository.findById(request.getOrganisationId())
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        // Check if the organization has any chart of accounts
-        validateOrganisationHasChartOfAccounts(request.getOrganisationId());
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
-        // Validate a parent account if provided
-        validateParentAccount(request);
+        permissionChecker.checkMemberPermission(member, "CHART_OF_ACCOUNTS","viewChartOfAccounts");
+
+        validateOrganisationHasChartOfAccounts(organisationId);
+
+        validateParentAccount(request, organisationId);
 
         // Check for duplicate names within the same parent group
-        validateNoDuplicateName(request.getName(), request.getOrganisationId(),
+        validateNoDuplicateName(request.getName(), organisationId,
                 request.getParentAccountId(), request.getAccountType(), null);
 
         // Generate account code
         String accountCode = accountCodeGenerator.generateNextAccountCode(
                 request.getAccountType(),
-                request.getOrganisationId(),
+                organisationId,
                 request.getParentAccountId()
         );
 
         // Create a new account
-        ChartOfAccounts newAccount = createAccountFromRequest(request, organisation, accountCode, account.getUserName());
+        ChartOfAccounts newAccount = createAccountFromRequest(request, organisation, accountCode, currentUser.getUserName());
 
         // Save account
         ChartOfAccounts savedAccount = chartOfAccountsRepository.save(newAccount);
@@ -146,22 +146,27 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
 
     @Override
     @Transactional
-    public ChartOfAccountsResponse updateAccount(UUID accountId, AddAccountRequest request) throws ItemNotFoundException {
+    public ChartOfAccountsResponse updateAccount(UUID organisationId, UUID accountId, AddAccountRequest request) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity account = getAuthenticatedAccount();
-        validateUserPermission(account, request.getOrganisationId(), true);
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "CHART_OF_ACCOUNTS","updateAccounts");
 
         // Get an existing account
         ChartOfAccounts existingAccount = chartOfAccountsRepository.findById(accountId)
                 .orElseThrow(() -> new ItemNotFoundException("Account not found"));
 
         // Validate organisation ownership
-        if (!existingAccount.getOrganisation().getOrganisationId().equals(request.getOrganisationId())) {
+        if (!existingAccount.getOrganisation().getOrganisationId().equals(organisationId)) {
             throw new ItemNotFoundException("Account belongs to different organisation");
         }
 
         // Check for duplicate names (excluding the current account)
-        validateNoDuplicateName(request.getName(), request.getOrganisationId(),
+        validateNoDuplicateName(request.getName(), organisationId,
                 existingAccount.getParentAccountId(), existingAccount.getAccountType(), accountId);
 
         // Update account
@@ -174,10 +179,6 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
     }
 
 
-
-    /**
-     * Validate that organization has chart of accounts before allowing account operations
-     */
     private void validateOrganisationHasChartOfAccounts(UUID organisationId) throws ItemNotFoundException {
         List<ChartOfAccounts> existingAccounts = chartOfAccountsRepository
                 .findByOrganisation_OrganisationId(organisationId);
@@ -187,10 +188,7 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
         }
     }
 
-    /**
-     * Validate parent account exists and belongs to the same account type and organisation
-     */
-    private void validateParentAccount(AddAccountRequest request) throws ItemNotFoundException {
+    private void validateParentAccount(AddAccountRequest request, UUID organisationId) throws ItemNotFoundException {
         if (request.getParentAccountId() == null) {
             return;
         }
@@ -199,7 +197,7 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
                 .orElseThrow(() -> new ItemNotFoundException("Parent account not found"));
 
         // Check the same organisation
-        if (!parentAccount.getOrganisation().getOrganisationId().equals(request.getOrganisationId())) {
+        if (!parentAccount.getOrganisation().getOrganisationId().equals(organisationId)) {
             throw new ItemNotFoundException("Parent account belongs to different organisation");
         }
 
@@ -219,9 +217,7 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
         }
     }
 
-    /**
-     * Validate no duplicate account names within the same parent group
-     */
+
     private void validateNoDuplicateName(String accountName, UUID organisationId,
                                          UUID parentAccountId, AccountType accountType, UUID excludeAccountId)
             throws ItemNotFoundException {
@@ -244,7 +240,7 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
                         return parentAccountId.equals(account.getParentAccountId());
                     }
                 })
-                .filter(account -> excludeAccountId == null || !account.getId().equals(excludeAccountId))
+                .filter(account -> !account.getId().equals(excludeAccountId))
                 .toList();
 
         // Check for duplicate names (case-insensitive)
@@ -257,9 +253,7 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
         }
     }
 
-    /**
-     * Create account entity from request
-     */
+
     private ChartOfAccounts createAccountFromRequest(AddAccountRequest request, OrganisationEntity organisation,
                                                      String accountCode, String createdBy) {
         ChartOfAccounts newAccount = new ChartOfAccounts();
@@ -304,38 +298,17 @@ public class ChartOfAccountServiceIMPL implements ChartOfAccountService {
         }
     }
 
-    /**
-     * Validate user permissions
-     */
-    private void validateUserPermission(AccountEntity account, UUID organisationId, boolean adminOnly)
-            throws ItemNotFoundException, AccessDeniedException {
-
-        OrganisationEntity organisation = organisationRepository.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-
-        if (organisation.getOwner().equals(account)) {
-            return; // Owner always has access
-        }
-
-        Optional<OrganisationMember> memberOptional = organisationMemberRepo.findByAccountAndOrganisation(account, organisation);
-
-        if (memberOptional.isEmpty()) {
-            throw new AccessDeniedException("User is not a member of this organisation");
-        }
-
-        OrganisationMember member = memberOptional.get();
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
 
         if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new AccessDeniedException("User membership is not active");
+            throw new ItemNotFoundException("Member is not active");
         }
 
-        if (adminOnly) {
-            MemberRole role = member.getRole();
-            if (role != MemberRole.OWNER && role != MemberRole.ADMIN) {
-                throw new AccessDeniedException("User does not have sufficient permissions for this operation");
-            }
-        }
+        return member;
     }
+
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

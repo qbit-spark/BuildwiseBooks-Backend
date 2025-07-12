@@ -4,6 +4,7 @@ package com.qbitspark.buildwisebackend.accounting_service.tax_mng.service;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.payload.CreateTaxRequest;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.payload.UpdateTaxRequest;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.payload.TaxResponse;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 
 import java.util.List;
@@ -11,33 +12,17 @@ import java.util.UUID;
 
 public interface TaxService {
 
-    /**
-     * Create new tax for organisation
-     */
-    TaxResponse createTax(UUID organisationId, CreateTaxRequest request) throws ItemNotFoundException;
 
-    /**
-     * Get all taxes for organisation
-     */
-    List<TaxResponse> getAllTaxesByOrganisation(UUID organisationId) throws ItemNotFoundException;
+    TaxResponse createTax(UUID organisationId, CreateTaxRequest request) throws ItemNotFoundException, AccessDeniedException;
 
-    /**
-     * Get active taxes for organisation
-     */
-    List<TaxResponse> getActiveTaxesByOrganisation(UUID organisationId) throws ItemNotFoundException;
+    List<TaxResponse> getAllTaxesByOrganisation(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
 
-    /**
-     * Get tax by ID
-     */
-    TaxResponse getTaxById(UUID organisationId, UUID taxId) throws ItemNotFoundException;
+    List<TaxResponse> getActiveTaxesByOrganisation(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
 
-    /**
-     * Update existing tax
-     */
-    TaxResponse updateTax(UUID organisationId, UUID taxId, UpdateTaxRequest request) throws ItemNotFoundException;
+    TaxResponse getTaxById(UUID organisationId, UUID taxId) throws ItemNotFoundException, AccessDeniedException;
 
-    /**
-     * Delete tax (hard delete - permanently remove)
-     */
-    void deleteTax(UUID organisationId, UUID taxId) throws ItemNotFoundException;
+    TaxResponse updateTax(UUID organisationId, UUID taxId, UpdateTaxRequest request) throws ItemNotFoundException, AccessDeniedException;
+
+
+    void deleteTax(UUID organisationId, UUID taxId) throws ItemNotFoundException, AccessDeniedException;
 }

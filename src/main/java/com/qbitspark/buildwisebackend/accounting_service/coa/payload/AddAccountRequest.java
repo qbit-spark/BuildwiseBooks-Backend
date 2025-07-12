@@ -14,9 +14,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AddAccountRequest {
 
-    @NotNull(message = "Organisation ID is required")
-    private UUID organisationId;
-
     @NotBlank(message = "Account name is required")
     private String name;
 

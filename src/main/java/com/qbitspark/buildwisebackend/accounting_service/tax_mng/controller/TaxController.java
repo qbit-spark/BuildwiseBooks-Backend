@@ -4,6 +4,7 @@ import com.qbitspark.buildwisebackend.accounting_service.tax_mng.payload.CreateT
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.payload.UpdateTaxRequest;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.payload.TaxResponse;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.service.TaxService;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,9 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/organisations/{organisationId}/taxes")
+//@RequestMapping("/api/v1/organisations/{organisationId}/taxes")
+//Todo: changed
+@RequestMapping("/api/v1/taxes/{organisationId}")
 @RequiredArgsConstructor
 public class TaxController {
 
@@ -24,7 +27,7 @@ public class TaxController {
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createTax(
             @PathVariable UUID organisationId,
-            @Valid @RequestBody CreateTaxRequest request) throws ItemNotFoundException {
+            @Valid @RequestBody CreateTaxRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         TaxResponse response = taxService.createTax(organisationId, request);
 
@@ -35,7 +38,7 @@ public class TaxController {
 
     @GetMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllTaxes(
-            @PathVariable UUID organisationId) throws ItemNotFoundException {
+            @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         List<TaxResponse> response = taxService.getAllTaxesByOrganisation(organisationId);
 
@@ -46,7 +49,7 @@ public class TaxController {
 
     @GetMapping("/active")
     public ResponseEntity<GlobeSuccessResponseBuilder> getActiveTaxes(
-            @PathVariable UUID organisationId) throws ItemNotFoundException {
+            @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         List<TaxResponse> response = taxService.getActiveTaxesByOrganisation(organisationId);
 
@@ -58,7 +61,7 @@ public class TaxController {
     @GetMapping("/{taxId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getTaxById(
             @PathVariable UUID organisationId,
-            @PathVariable UUID taxId) throws ItemNotFoundException {
+            @PathVariable UUID taxId) throws ItemNotFoundException, AccessDeniedException {
 
         TaxResponse response = taxService.getTaxById(organisationId, taxId);
 
@@ -71,7 +74,7 @@ public class TaxController {
     public ResponseEntity<GlobeSuccessResponseBuilder> updateTax(
             @PathVariable UUID organisationId,
             @PathVariable UUID taxId,
-            @Valid @RequestBody UpdateTaxRequest request) throws ItemNotFoundException {
+            @Valid @RequestBody UpdateTaxRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         TaxResponse response = taxService.updateTax(organisationId, taxId, request);
 
@@ -83,7 +86,7 @@ public class TaxController {
     @DeleteMapping("/{taxId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> deleteTax(
             @PathVariable UUID organisationId,
-            @PathVariable UUID taxId) throws ItemNotFoundException {
+            @PathVariable UUID taxId) throws ItemNotFoundException, AccessDeniedException {
 
         taxService.deleteTax(organisationId, taxId);
 

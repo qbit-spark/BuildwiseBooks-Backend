@@ -19,6 +19,7 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
@@ -50,7 +51,7 @@ public class OrgDriveServiceImpl implements OrgDriveService {
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
     private final OrganisationRepo organisationRepo;
     private final ProjectRepo projectRepo;
-
+    private final PermissionCheckerService permissionChecker;
 
     @Override
     public void initializeOrganisationDrive(OrganisationEntity organisation) throws ItemNotFoundException {
@@ -109,7 +110,7 @@ public class OrgDriveServiceImpl implements OrgDriveService {
     public BatchUploadSyncResponse uploadFilesBatch(UUID organisationId, UUID projectId,
                                                     SystemFileType type, List<MultipartFile> files) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity uploadedBy = getAuthenticatedAccount();
+        AccountEntity currentUser = getAuthenticatedAccount();
 
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
@@ -119,9 +120,9 @@ public class OrgDriveServiceImpl implements OrgDriveService {
 
         validateProject(project, organisation);
 
-        validateProjectMemberPermissions(uploadedBy, project,
-                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
+        permissionChecker.checkMemberPermission(member, "DRIVE", "uploadFiles");
 
         List<FileUploadResponse> uploadedFiles = new ArrayList<>();
 
@@ -147,7 +148,7 @@ public class OrgDriveServiceImpl implements OrgDriveService {
 
         for (MultipartFile file : files) {
             try {
-                processeSingleFile(file, organisation, project, targetFolder, targetPath, uploadedBy, uploadedFiles);
+                processeSingleFile(file, organisation, project, targetFolder, targetPath, currentUser, uploadedFiles);
             } catch (Exception e) {
                 failures.add(BatchUploadSyncResponse.FailedUpload.builder()
                         .fileName(file.getOriginalFilename())
@@ -166,13 +167,16 @@ public class OrgDriveServiceImpl implements OrgDriveService {
     public List<FileInfoResponse> getFilesPreviewInfo(UUID organisationId, List<UUID> fileIds)
             throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity requestedBy = getAuthenticatedAccount();
+        AccountEntity currentUser = getAuthenticatedAccount();
 
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        // Validate organisation access
-        validateOrganisationMemberAccess(requestedBy, organisation);
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "DRIVE", "viewFiles");
+
 
         if (fileIds == null || fileIds.isEmpty()) {
             throw new IllegalArgumentException("File IDs list cannot be empty");
@@ -186,10 +190,9 @@ public class OrgDriveServiceImpl implements OrgDriveService {
 
         for (UUID fileId : fileIds) {
             try {
-                FileInfoResponse fileInfo = processFilePreview(fileId, organisation, requestedBy);
+                FileInfoResponse fileInfo = processFilePreview(fileId, organisation, currentUser);
                 responses.add(fileInfo);
             } catch (Exception e) {
-                log.warn("Failed to process preview for file ID: {}, reason: {}", fileId, e.getMessage());
                 // Add a basic response indicating failure
                 responses.add(FileInfoResponse.builder()
                         .id(fileId)
@@ -405,19 +408,15 @@ public class OrgDriveServiceImpl implements OrgDriveService {
                 .build();
     }
 
-
-    private void validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException, AccessDeniedException {
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
         OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("Member not found in organisation"));
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
 
         if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new AccessDeniedException("Member is not active");
+            throw new ItemNotFoundException("Member is not active");
         }
 
-        if (member.getRole() != MemberRole.OWNER && member.getRole() != MemberRole.ADMIN) {
-            throw new AccessDeniedException("Insufficient permissions for this operation");
-        }
-
+        return member;
     }
 
     private void validateProject(ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {

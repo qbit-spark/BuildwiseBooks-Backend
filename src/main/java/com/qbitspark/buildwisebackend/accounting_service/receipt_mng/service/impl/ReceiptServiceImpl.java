@@ -21,6 +21,7 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
@@ -53,13 +54,19 @@ public class ReceiptServiceImpl implements ReceiptService {
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
     private final AccountRepo accountRepo;
     private final ReceiptNumberService receiptNumberService;
+    private final PermissionCheckerService permissionChecker;
 
     @Override
     public ReceiptEntity createReceipt(UUID organisationId, CreateReceiptRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS","createReceipt");
 
         InvoiceDocEntity invoice = validateInvoice(request.getInvoiceId(), organisation);
         ProjectEntity project = invoice.getProject();
@@ -100,7 +107,12 @@ public class ReceiptServiceImpl implements ReceiptService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS","viewReceipts");
 
         return receiptRepo.findByOrganisation(organisation, pageable);
     }
@@ -110,7 +122,13 @@ public class ReceiptServiceImpl implements ReceiptService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS","viewReceipts");
+
 
         return receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
@@ -121,7 +139,12 @@ public class ReceiptServiceImpl implements ReceiptService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS","updateReceipt");
 
         ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
@@ -168,7 +191,12 @@ public class ReceiptServiceImpl implements ReceiptService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS","updateReceipt");
 
         ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
@@ -185,7 +213,12 @@ public class ReceiptServiceImpl implements ReceiptService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS","cancelReceipt");
 
         ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
@@ -204,7 +237,12 @@ public class ReceiptServiceImpl implements ReceiptService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS","viewReceipts");
 
         InvoiceDocEntity invoice = validateInvoice(invoiceId, organisation);
         validateProjectMemberPermissions(currentUser, invoice.getProject());
@@ -217,7 +255,12 @@ public class ReceiptServiceImpl implements ReceiptService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS","viewReceipts");
 
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
@@ -233,7 +276,12 @@ public class ReceiptServiceImpl implements ReceiptService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS","viewReceipts");
 
         return receiptRepo.findByOrganisationAndStatus(organisation, ReceiptStatus.APPROVED);
     }
@@ -263,25 +311,6 @@ public class ReceiptServiceImpl implements ReceiptService {
         invoiceDocRepo.save(invoice);
     }
 
-    private OrganisationEntity validateOrganisationAccess(UUID organisationId, AccountEntity currentUser)
-            throws ItemNotFoundException, AccessDeniedException {
-
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-
-        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(currentUser, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("User is not a member of this organisation"));
-
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new AccessDeniedException("User membership is not active");
-        }
-
-        if (member.getRole() != MemberRole.OWNER && member.getRole() != MemberRole.ADMIN && member.getRole() != MemberRole.MEMBER) {
-            throw new AccessDeniedException("Insufficient permissions");
-        }
-
-        return organisation;
-    }
 
     private InvoiceDocEntity validateInvoice(UUID invoiceId, OrganisationEntity organisation)
             throws ItemNotFoundException {
@@ -335,4 +364,16 @@ public class ReceiptServiceImpl implements ReceiptService {
         }
         throw new ItemNotFoundException("User not authenticated");
     }
+
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
+    }
+
 }

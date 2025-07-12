@@ -14,6 +14,7 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,13 +35,19 @@ public class BankAccountServiceImpl implements BankAccountService {
     private final OrganisationRepo organisationRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
     private final AccountRepo accountRepo;
+    private final PermissionCheckerService permissionChecker;
 
     @Override
     public BankAccountEntity createBankAccount(UUID organisationId, CreateBankAccountRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BANK_ACCOUNTS","createBankAccounts");
 
         if (bankAccountRepo.existsByAccountNumberAndOrganisation(request.getAccountNumber(), organisation)) {
             throw new ItemNotFoundException("Account number already exists in this organisation");
@@ -72,9 +79,12 @@ public class BankAccountServiceImpl implements BankAccountService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
 
-        validateOrganisationAccess(organisationId, currentUser);
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BANK_ACCOUNTS","viewBankAccounts");
 
         return bankAccountRepo.findByOrganisationAndIsActiveTrue(organisation);
     }
@@ -84,9 +94,12 @@ public class BankAccountServiceImpl implements BankAccountService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
 
-        validateOrganisationAccess(organisationId, currentUser);
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BANK_ACCOUNTS","viewBankAccounts");
 
         return bankAccountRepo.findByBankAccountIdAndOrganisation(bankAccountId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Bank account not found"));
@@ -97,9 +110,12 @@ public class BankAccountServiceImpl implements BankAccountService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
 
-        validateOrganisationAccess(organisationId, currentUser);
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BANK_ACCOUNTS","updateBankAccounts");
 
         BankAccountEntity bankAccount = bankAccountRepo.findByBankAccountIdAndOrganisation(bankAccountId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Bank account not found"));
@@ -144,9 +160,12 @@ public class BankAccountServiceImpl implements BankAccountService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
 
-        validateOrganisationAccess(organisationId, currentUser);
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BANK_ACCOUNTS","setDefaultBankAccounts");
 
         BankAccountEntity bankAccount = bankAccountRepo.findByBankAccountIdAndOrganisation(bankAccountId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Bank account not found"));
@@ -163,9 +182,12 @@ public class BankAccountServiceImpl implements BankAccountService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = validateOrganisationAccess(organisationId, currentUser);
 
-        validateOrganisationAccess(organisationId, currentUser);
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BANK_ACCOUNTS","deactivateBankAccounts");
 
         BankAccountEntity bankAccount = bankAccountRepo.findByBankAccountIdAndOrganisation(bankAccountId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Bank account not found"));
@@ -176,6 +198,7 @@ public class BankAccountServiceImpl implements BankAccountService {
         bankAccountRepo.save(bankAccount);
     }
 
+
     private void clearExistingDefaultAccount(OrganisationEntity organisation) {
         bankAccountRepo.findByOrganisationAndIsDefaultTrue(organisation)
                 .ifPresent(existingDefault -> {
@@ -184,24 +207,15 @@ public class BankAccountServiceImpl implements BankAccountService {
                 });
     }
 
-    private OrganisationEntity validateOrganisationAccess(UUID organisationId, AccountEntity currentUser)
-            throws ItemNotFoundException, AccessDeniedException {
-
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-
-        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(currentUser, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("User is not a member of this organisation"));
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
 
         if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new AccessDeniedException("User membership is not active");
+            throw new ItemNotFoundException("Member is not active");
         }
 
-        if (member.getRole() != MemberRole.OWNER && member.getRole() != MemberRole.ADMIN) {
-            throw new AccessDeniedException("Insufficient permissions for bank account management");
-        }
-
-        return organisation;
+        return member;
     }
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
@@ -214,4 +228,5 @@ public class BankAccountServiceImpl implements BankAccountService {
         }
         throw new ItemNotFoundException("User not authenticated");
     }
+
 }

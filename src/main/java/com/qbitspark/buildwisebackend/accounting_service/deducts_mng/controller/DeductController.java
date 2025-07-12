@@ -4,6 +4,7 @@ import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.payload.Cre
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.payload.UpdateDeductRequest;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.payload.DeductResponse;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.service.DeductService;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,9 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/organisations/{organisationId}/deducts")
+//@RequestMapping("/api/v1/organisations/{organisationId}/deducts")
+//Todo: changed
+@RequestMapping("/api/v1/deducts/{organisationId}")
 @RequiredArgsConstructor
 public class DeductController {
 
@@ -24,7 +27,7 @@ public class DeductController {
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createDeduct(
             @PathVariable UUID organisationId,
-            @Valid @RequestBody CreateDeductRequest request) throws ItemNotFoundException {
+            @Valid @RequestBody CreateDeductRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         DeductResponse response = deductService.createDeduct(organisationId, request);
 
@@ -34,7 +37,7 @@ public class DeductController {
 
     @GetMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllDeducts(
-            @PathVariable UUID organisationId) throws ItemNotFoundException {
+            @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         List<DeductResponse> response = deductService.getAllDeductsByOrganisation(organisationId);
 
@@ -44,7 +47,7 @@ public class DeductController {
 
     @GetMapping("/active")
     public ResponseEntity<GlobeSuccessResponseBuilder> getActiveDeducts(
-            @PathVariable UUID organisationId) throws ItemNotFoundException {
+            @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         List<DeductResponse> response = deductService.getActiveDeductsByOrganisation(organisationId);
 
@@ -55,7 +58,7 @@ public class DeductController {
     @GetMapping("/{deductId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getDeductById(
             @PathVariable UUID organisationId,
-            @PathVariable UUID deductId) throws ItemNotFoundException {
+            @PathVariable UUID deductId) throws ItemNotFoundException, AccessDeniedException {
 
         DeductResponse response = deductService.getDeductById(organisationId, deductId);
 
@@ -67,7 +70,7 @@ public class DeductController {
     public ResponseEntity<GlobeSuccessResponseBuilder> updateDeduct(
             @PathVariable UUID organisationId,
             @PathVariable UUID deductId,
-            @Valid @RequestBody UpdateDeductRequest request) throws ItemNotFoundException {
+            @Valid @RequestBody UpdateDeductRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         DeductResponse response = deductService.updateDeduct(organisationId, deductId, request);
 
@@ -78,7 +81,7 @@ public class DeductController {
     @DeleteMapping("/{deductId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> deleteDeduct(
             @PathVariable UUID organisationId,
-            @PathVariable UUID deductId) throws ItemNotFoundException {
+            @PathVariable UUID deductId) throws ItemNotFoundException, AccessDeniedException {
 
         deductService.deleteDeduct(organisationId, deductId);
 
