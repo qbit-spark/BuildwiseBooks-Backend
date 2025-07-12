@@ -95,7 +95,6 @@ public class PermissionConfig {
         permissions.put("updateInvoice", false);
         permissions.put("deleteInvoice", false);
         permissions.put("viewInvoices", false);
-        permissions.put("approveInvoice", false);
         permissions.put("sendInvoice", false);
         permissions.put("manageInvoiceAttachments", false);
         return permissions;

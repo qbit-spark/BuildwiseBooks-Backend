@@ -24,9 +24,8 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
-import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
-import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
 import lombok.RequiredArgsConstructor;
@@ -65,22 +64,24 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     private final TaxRepo taxRepo;
     private final OrgFileRepo orgFileRepo;
     private final ReceiptRepo receiptRepo;
+    private final PermissionCheckerService permissionChecker;
 
     @Transactional
     public InvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "INVOICES","createInvoice");
+
         ProjectEntity project = projectRepo.findById(request.getProjectId())
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        validateProject(project, organisation);
-
-        validateProjectMemberPermissions(currentUser, project,
-                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+        validateProjectMemberPermissions(currentUser, project, organisation);
 
         ClientEntity client = project.getClient();
 
@@ -116,8 +117,13 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     public Page<SummaryInvoiceDocResponse> getAllInvoicesForOrganisation(UUID organisationId, int page, int size) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "INVOICES","viewInvoices");
+
 
         validateOrganisationMemberAccess(currentUser, organisation);
 
@@ -133,16 +139,16 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        ProjectEntity project = projectRepo.findById(projectId)
-                .orElseThrow(() -> new ItemNotFoundException("Project not found"));
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
-        validateProject(project, organisation);
+        ProjectEntity project = projectRepo.findById(projectId).orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
-        validateProjectMemberPermissions(currentUser, project,
-                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+        permissionChecker.checkMemberPermission(member, "INVOICES","viewInvoices");
+
+
+        validateProjectMemberPermissions(currentUser, project, organisation);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<InvoiceDocEntity> invoicePage = invoiceDocRepo.findAllByProject(project, pageable);
@@ -155,15 +161,17 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     public InvoiceDocResponse getInvoiceById(UUID organisationId, UUID invoiceId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "INVOICES","viewInvoices");
 
         InvoiceDocEntity invoice = invoiceDocRepo.findByIdAndOrganisation(invoiceId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Invoice not found"));
 
-        // Validate user has access to the project that this invoice belongs to
-        validateProjectMemberPermissions(currentUser, invoice.getProject(),
-                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER, TeamMemberRole.MEMBER));
+        validateProjectMemberPermissions(currentUser, invoice.getProject(), organisation);
 
         return mapToInvoiceResponse(invoice, currentUser, null);
     }
@@ -173,17 +181,18 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     public InvoiceDocResponse updateInvoice(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "INVOICES","updateInvoice");
 
         InvoiceDocEntity invoice = invoiceDocRepo.findByIdAndOrganisation(invoiceId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Invoice not found"));
 
-        // Validate user has access to the project
-        validateProjectMemberPermissions(currentUser, invoice.getProject(),
-                List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER));
+        validateProjectMemberPermissions(currentUser, invoice.getProject(),organisation);
 
-        // Update basic fields (keep existing if null)
         if (request.getDateOfIssue() != null) {
             invoice.setDateOfIssue(request.getDateOfIssue());
         }
@@ -299,15 +308,14 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                 throw new IllegalArgumentException("Tax '" + tax.getTaxName() + "' is not active and cannot be applied");
             }
 
-            MonetaryAmount taxableAmountMoney = subtotalMoney;
-            MonetaryAmount taxAmountMoney = calculateTaxAmountWithMoney(taxableAmountMoney, tax.getTaxPercent());
+            MonetaryAmount taxAmountMoney = calculateTaxAmountWithMoney(subtotalMoney, tax.getTaxPercent());
 
             InvoiceTaxDetail taxDetail = InvoiceTaxDetail.builder()
                     .originalTaxId(tax.getTaxId())
                     .taxName(tax.getTaxName())
                     .taxPercent(tax.getTaxPercent())
                     .taxDescription(tax.getTaxDescription())
-                    .taxableAmount(taxableAmountMoney.getNumber().numberValue(BigDecimal.class))
+                    .taxableAmount(subtotalMoney.getNumber().numberValue(BigDecimal.class))
                     .taxAmount(taxAmountMoney.getNumber().numberValue(BigDecimal.class))
                     .build();
 
@@ -354,13 +362,12 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         return taxableAmount.multiply(taxRate);
     }
 
-    private void validateProject(ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {
+
+    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {
+
         if (!project.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
             throw new ItemNotFoundException("Project does not belong to this organisation");
         }
-    }
-
-    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
 
         OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
                 .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
@@ -369,12 +376,9 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
             throw new ItemNotFoundException("Member is not active");
         }
 
-        ProjectTeamMemberEntity projectTeamMember = projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
+       projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
                 .orElseThrow(() -> new ItemNotFoundException("Project team member not found"));
 
-        if (!allowedRoles.contains(projectTeamMember.getRole())) {
-            throw new AccessDeniedException("Member has insufficient permissions for this operation");
-        }
 
     }
 
@@ -468,20 +472,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         return response;
     }
 
-    private void validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException, AccessDeniedException {
-        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("Member not found in organisation"));
-
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new AccessDeniedException("Member is not active");
-        }
-
-        if (member.getRole() != MemberRole.OWNER && member.getRole() != MemberRole.ADMIN) {
-            throw new AccessDeniedException("Insufficient permissions for this operation");
-        }
-
-    }
-
     private void updateInvoiceAttachments(InvoiceDocEntity invoiceDoc, List<UUID> newAttachmentIds, OrganisationEntity organisation)
             throws ItemNotFoundException, AccessDeniedException {
 
@@ -523,4 +513,17 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
                 .map(ReceiptEntity::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
+
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
+    }
+
 }

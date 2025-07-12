@@ -103,7 +103,7 @@ public class InvoiceDocController {
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Invoice retrieved successfully", response));
     }
 
-    @PutMapping
+    @PutMapping("/{invoiceId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> updateInvoice(
             @PathVariable UUID organisationId,
             @PathVariable UUID invoiceId,
