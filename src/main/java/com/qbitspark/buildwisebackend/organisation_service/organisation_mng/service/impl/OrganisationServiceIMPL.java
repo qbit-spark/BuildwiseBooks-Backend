@@ -123,7 +123,6 @@ public class OrganisationServiceIMPL implements OrganisationService {
             existingOrganisation.setOrganisationDescription(updateOrganisationRequest.getDescription().trim());
         }
 
-
         return organisationRepo.save(existingOrganisation);
     }
 

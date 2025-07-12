@@ -20,7 +20,7 @@ public interface ClientsRepo extends JpaRepository<ClientEntity, UUID> {
     boolean existsByAddressIgnoreCaseAndOrganisationAndIsActiveTrue(String address, OrganisationEntity organisation);
     boolean existsByTinIgnoreCaseAndOrganisationAndIsActiveTrue(String tin, OrganisationEntity organisation);
     boolean existsByEmailIgnoreCaseAndOrganisationAndIsActiveTrue(String email, OrganisationEntity organisation);
-
+    Optional<ClientEntity> findByOrganisationAndClientId(OrganisationEntity organisation, UUID clientId);
     Optional<ClientEntity> findClientEntitiesByClientIdAndOrganisation(UUID clientId, OrganisationEntity organisation);
     Page<ClientEntity> findByIsActiveTrueAndOrganisation(OrganisationEntity organisation, Pageable pageable);
 

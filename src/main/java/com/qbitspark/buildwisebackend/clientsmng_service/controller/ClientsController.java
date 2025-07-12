@@ -5,6 +5,7 @@ import com.qbitspark.buildwisebackend.clientsmng_service.payloads.CreateClientRe
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.ProjectResponseForClient;
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.UpdateClientRequest;
 import com.qbitspark.buildwisebackend.clientsmng_service.service.ClientService;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class ClientsController {
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createClient(
             @PathVariable UUID organisationId,
-            @RequestBody @Validated CreateClientRequest request) throws ItemNotFoundException {
+            @RequestBody @Validated CreateClientRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         ClientResponse client = clientsService.createClientWithinOrganisation(organisationId, request);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Client created successfully", client));
@@ -37,15 +38,15 @@ public class ClientsController {
 
     @GetMapping("/{clientId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getClient(
-            @PathVariable UUID clientId, @PathVariable String organisationId) throws ItemNotFoundException {
+            @PathVariable UUID clientId, @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
-        ClientResponse client = clientsService.getClientByIdWithinOrganisation(clientId);
+        ClientResponse client = clientsService.getClientByIdWithinOrganisation(organisationId, clientId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Client retrieved successfully", client));
     }
 
     @GetMapping("/summary-list")
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllClientsSummaryList(
-            @PathVariable UUID organisationId) throws ItemNotFoundException {
+            @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         List<ClientResponse> clients = clientsService.getAllClientsWithinOrganisation(organisationId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Clients retrieved successfully", clients));
@@ -58,7 +59,7 @@ public class ClientsController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "clientId") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDirection) throws ItemNotFoundException {
+            @RequestParam(defaultValue = "asc") String sortDirection) throws ItemNotFoundException, AccessDeniedException {
 
         Sort sort = sortDirection.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
@@ -75,25 +76,25 @@ public class ClientsController {
     @PutMapping("/{clientId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> updateClient(
             @PathVariable UUID clientId,
-            @RequestBody UpdateClientRequest request, @PathVariable String organisationId) throws ItemNotFoundException {
+            @RequestBody UpdateClientRequest request, @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
-        ClientResponse client = clientsService.updateClientWithinOrganisation(clientId, request);
+        ClientResponse client = clientsService.updateClientWithinOrganisation(organisationId, clientId, request);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Client updated successfully", client));
     }
 
     @DeleteMapping("/{clientId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> deleteClient(
-            @PathVariable UUID clientId, @PathVariable String organisationId) throws ItemNotFoundException {
+            @PathVariable UUID clientId, @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
-        clientsService.deleteClientWithinOrganisation(clientId);
+        clientsService.deleteClientWithinOrganisation(organisationId, clientId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Client deleted successfully"));
     }
 
     @GetMapping("/{clientId}/projects")
     public ResponseEntity<GlobeSuccessResponseBuilder> getClientProjects(
-            @PathVariable UUID clientId, @PathVariable String organisationId) throws ItemNotFoundException {
+            @PathVariable UUID clientId, @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
-        List<ProjectResponseForClient> projects = clientsService.getClientProjectsWithinOrganisation(clientId);
+        List<ProjectResponseForClient> projects = clientsService.getClientProjectsWithinOrganisation(organisationId, clientId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Client projects retrieved successfully", projects));
     }
 }
