@@ -27,7 +27,7 @@ public class PermissionConfig {
     public static List<String> getAllResources() {
         return Arrays.asList(
                 ORGANISATION, PROJECTS, INVOICES, VOUCHERS, CLIENTS, VENDORS,
-                BUDGET, TRANSACTIONS, RECEIPTS, CHART_OF_ACCOUNTS, DRIVE, SYSTEM, BANK_ACCOUNTS, DEDUCTS, TAXES, RECEIPT
+                BUDGET, TRANSACTIONS, RECEIPTS, CHART_OF_ACCOUNTS, DRIVE, SYSTEM, BANK_ACCOUNTS, DEDUCTS, TAXES
         );
     }
 
