@@ -19,19 +19,22 @@ import java.util.Set;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/projects/{projectId}/team")
+//@RequestMapping("/api/v1/projects/{projectId}/team")
+//Todo: changed
+@RequestMapping("/api/v1/{organisationId}/projects/{projectId}/team")
 @RequiredArgsConstructor
 @Slf4j
 public class ProjectTeamMemberController {
 
     private final ProjectTeamMemberService projectTeamMemberService;
 
-    @PostMapping()
+    @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> addTeamMembers(
+            @PathVariable UUID organisationId,
             @PathVariable UUID projectId,
             @Valid @RequestBody Set<BulkAddTeamMemberRequest> requests) throws Exception {
 
-        List<ProjectTeamMemberResponse> responses = projectTeamMemberService.addTeamMembers(projectId, requests);
+        List<ProjectTeamMemberResponse> responses = projectTeamMemberService.addTeamMembers(organisationId, projectId, requests);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
@@ -41,12 +44,13 @@ public class ProjectTeamMemberController {
         );
     }
 
-    @DeleteMapping()
+    @DeleteMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> removeTeamMembers(
+            @PathVariable UUID organisationId,
             @PathVariable UUID projectId,
             @RequestBody Set<UUID> memberIds) throws ItemNotFoundException {
 
-        ProjectTeamRemovalResponse responses = projectTeamMemberService.removeTeamMembers(projectId, memberIds);
+        ProjectTeamRemovalResponse responses = projectTeamMemberService.removeTeamMembers(organisationId, projectId, memberIds);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
@@ -58,6 +62,7 @@ public class ProjectTeamMemberController {
 
     @GetMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectTeamMembers(
+            @PathVariable UUID organisationId,
             @PathVariable UUID projectId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -68,7 +73,7 @@ public class ProjectTeamMemberController {
                 PageRequest.of(page, size, Sort.by(sort)) :
                 PageRequest.of(page, size);
 
-        Page<ProjectTeamMemberResponse> responsePage = projectTeamMemberService.getProjectTeamMembers(projectId, pageable);
+        Page<ProjectTeamMemberResponse> responsePage = projectTeamMemberService.getProjectTeamMembers(organisationId, projectId, pageable);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
@@ -82,11 +87,12 @@ public class ProjectTeamMemberController {
 
     @PutMapping("/member/{memberId}/role")
     public ResponseEntity<GlobeSuccessResponseBuilder> updateTeamMemberRole(
+            @PathVariable UUID organisationId,
             @PathVariable UUID projectId,
             @PathVariable UUID memberId,
             @Valid @RequestBody UpdateTeamMemberRoleRequest request) throws ItemNotFoundException {
 
-        ProjectTeamMemberResponse response = projectTeamMemberService.updateTeamMemberRole(projectId, memberId, request);
+        ProjectTeamMemberResponse response = projectTeamMemberService.updateTeamMemberRole(organisationId, projectId, memberId, request);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
@@ -98,9 +104,10 @@ public class ProjectTeamMemberController {
 
     @GetMapping("/check")
     public ResponseEntity<GlobeSuccessResponseBuilder> checkTeamMembership(
+            @PathVariable UUID organisationId,
             @PathVariable UUID projectId, @RequestParam UUID memberId) throws ItemNotFoundException {
 
-        boolean isTeamMember = projectTeamMemberService.isTeamMember(projectId, memberId);
+        boolean isTeamMember = projectTeamMemberService.isTeamMember(organisationId, projectId, memberId);
 
         TeamMembershipCheck result = new TeamMembershipCheck(memberId, projectId, isTeamMember);
 
@@ -115,11 +122,12 @@ public class ProjectTeamMemberController {
 
     @GetMapping("/available-members")
     public ResponseEntity<GlobeSuccessResponseBuilder>getAvailableTeamMembers(
+            @PathVariable("organisationId") UUID organisationId,
             @PathVariable("projectId") UUID projectId) throws ItemNotFoundException {
 
 
             List<AvailableTeamMemberResponse> availableMembers =
-                    projectTeamMemberService.getAvailableTeamMembers(projectId);
+                    projectTeamMemberService.getAvailableTeamMembers(organisationId, projectId);
 
 
             return ResponseEntity.ok(

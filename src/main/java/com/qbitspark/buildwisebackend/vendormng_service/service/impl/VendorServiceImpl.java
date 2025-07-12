@@ -16,7 +16,6 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
-import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,9 +38,7 @@ public class VendorServiceImpl implements VendorService {
     private final OrganisationRepo organisationRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
     private final AccountRepo accountRepo;
-    private final ProjectRepo projectRepo;
     private final PermissionCheckerService permissionChecker;
-
 
     @Override
     public VendorEntity createVendor(UUID organisationId, CreateVendorRequest request)

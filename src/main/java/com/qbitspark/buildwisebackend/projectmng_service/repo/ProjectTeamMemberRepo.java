@@ -15,8 +15,9 @@ import java.util.UUID;
 @Repository
 public interface ProjectTeamMemberRepo extends JpaRepository<ProjectTeamMemberEntity, UUID> {
     List<ProjectTeamMemberEntity> findByProjectProjectId(UUID projectId);
+    List<ProjectTeamMemberEntity> findByProject(ProjectEntity project);
 
-    Page<ProjectTeamMemberEntity> findByProjectProjectId(UUID projectId, Pageable pageable);
+    Page<ProjectTeamMemberEntity> findByProject(ProjectEntity project, Pageable pageable);
 
     ProjectTeamMemberEntity findProjectTeamMemberEntitiesByOrganisationMember(OrganisationMember organisationMember);
 

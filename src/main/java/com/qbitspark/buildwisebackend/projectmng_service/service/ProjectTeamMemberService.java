@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.projectmng_service.service;
 
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
@@ -13,37 +14,18 @@ import java.util.UUID;
 
 public interface ProjectTeamMemberService {
 
-    /**
-     * Add team members in the bulk - same role for multiple members
-     */
-    List<ProjectTeamMemberResponse> addTeamMembers(UUID projectId, Set<BulkAddTeamMemberRequest> requests) throws Exception;
+    List<ProjectTeamMemberResponse> addTeamMembers(UUID organisationId, UUID projectId, Set<BulkAddTeamMemberRequest> requests) throws Exception;
 
     void addCreatorAndOwnerAsTeamMembers(ProjectEntity project, OrganisationMember creator, OrganisationMember ownerOfOrganisation) throws Exception;
 
-    /**
-     * Remove multiple team members at once
-     */
-    ProjectTeamRemovalResponse removeTeamMembers(UUID projectId, Set<UUID> memberIds) throws ItemNotFoundException;
+    ProjectTeamRemovalResponse removeTeamMembers(UUID organisationId,UUID projectId, Set<UUID> memberIds) throws ItemNotFoundException, AccessDeniedException;
 
-    /**
-     * Get all team members for a project
-     */
-    Page<ProjectTeamMemberResponse> getProjectTeamMembers(UUID projectId, Pageable pageable) throws ItemNotFoundException;
+    Page<ProjectTeamMemberResponse> getProjectTeamMembers(UUID organisationId, UUID projectId, Pageable pageable) throws ItemNotFoundException, AccessDeniedException;
 
-    /**
-     * Update a single team member's role
-     */
-    ProjectTeamMemberResponse updateTeamMemberRole(UUID projectId, UUID memberId, UpdateTeamMemberRoleRequest request) throws ItemNotFoundException;
+    ProjectTeamMemberResponse updateTeamMemberRole(UUID organisationId, UUID projectId, UUID memberId, UpdateTeamMemberRoleRequest request) throws ItemNotFoundException, AccessDeniedException;
 
-    /**
-     * Check if a member is part of a project team
-     */
-    boolean isTeamMember(UUID projectId, UUID memberId) throws ItemNotFoundException;
+    boolean isTeamMember(UUID organisationId, UUID projectId, UUID memberId) throws ItemNotFoundException, AccessDeniedException;
 
-    /**
-     * Get available team members who can be added to the project
-     * Returns organisation members who are not yet part of the project team
-     */
-    List<AvailableTeamMemberResponse> getAvailableTeamMembers(UUID projectId) throws ItemNotFoundException;
+    List<AvailableTeamMemberResponse> getAvailableTeamMembers(UUID organisationId, UUID projectId) throws ItemNotFoundException, AccessDeniedException;
 
 }

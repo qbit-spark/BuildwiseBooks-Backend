@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -25,4 +26,5 @@ public interface ProjectRepo extends JpaRepository<ProjectEntity, UUID> {
     Page<ProjectEntity> findByTeamMembersOrganisationMemberAndStatusNot(OrganisationMember member, ProjectStatus status, Pageable pageable);
     List<ProjectEntity> findByTeamMembersOrganisationMemberAndStatusNot(OrganisationMember member, ProjectStatus status);
 
+    Optional<ProjectEntity> findByOrganisationAndProjectId(OrganisationEntity organisation, UUID projectId);
 }

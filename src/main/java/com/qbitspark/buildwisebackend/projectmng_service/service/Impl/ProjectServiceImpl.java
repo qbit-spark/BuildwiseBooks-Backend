@@ -15,6 +15,7 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.enums.ProjectStatus;
 import com.qbitspark.buildwisebackend.projectmng_service.payloads.*;
@@ -53,18 +54,20 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectCodeSequenceService projectCodeSequenceService;
     private final OrgBudgetRepo orgBudgetRepo;
     private final OrgDriveService orgDriveService;
+    private final PermissionCheckerService permissionChecker;
 
     @Transactional
     @Override
-    public ProjectResponse createProject(ProjectCreateRequest request, UUID organisationId) throws Exception {
+    public ProjectResponse createProject(UUID organisationId, ProjectCreateRequest request) throws Exception {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
 
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
-        OrganisationMember creator = validateMemberPermissions(authenticatedAccount, organisation,
-                Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        permissionChecker.checkMemberPermission(member, "PROJECTS", "createProject");
 
         validateOrgBudget(organisation);
 
@@ -83,7 +86,7 @@ public class ProjectServiceImpl implements ProjectService {
         project.setDescription(request.getDescription());
         project.setOrganisation(organisation);
         organisation.addProject(project);
-        project.setCreatedBy(creator);
+        project.setCreatedBy(member);
         project.setProjectCode(projectCode);
         project.setClient(client);
         project.setContractNumber(request.getContractNumber());
@@ -93,14 +96,13 @@ public class ProjectServiceImpl implements ProjectService {
 
         ProjectEntity savedProject = projectRepo.save(project);
 
-
         OrganisationMember organisationOwner = organisationMemberRepo
-                .findByOrganisationAndRole(organisation, MemberRole.OWNER)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation owner member not found"));
+                .findByOrganisationAndMemberRole_RoleName(organisation, "OWNER")
+                .orElseThrow(() -> new ItemNotFoundException("Organisation owner not found"));
 
         projectTeamMemberService.addCreatorAndOwnerAsTeamMembers(
                 savedProject,
-                creator,
+                member,
                 organisationOwner
         );
 
@@ -110,13 +112,15 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Page<ProjectResponse> getAllProjectsFromOrganisation(UUID organisationId, int page, int size) throws ItemNotFoundException {
+    public Page<ProjectResponse> getAllProjectsFromOrganisation(UUID organisationId, int page, int size) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
-        validateOrganisationMemberAccess(authenticatedAccount, organisation);
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        permissionChecker.checkMemberPermission(member,"PROJECTS","viewProjects");
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
@@ -126,36 +130,39 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public ProjectResponse getProjectById(UUID projectId) throws ItemNotFoundException, AccessDeniedException {
+    public ProjectResponse getProjectById(UUID organisationId, UUID projectId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
         ProjectEntity project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
 
-        OrganisationMember projectTeamMember = validateOrganisationMemberAccess(authenticatedAccount, project.getOrganisation());
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
 
-        if (!validateOrganisationMemberIsTeamMemberInProject(projectTeamMember, project)) {
-            throw new AccessDeniedException("You do not have permission to access this project");
-        }
+        permissionChecker.checkMemberPermission(member,"PROJECTS","viewProject");
 
         return mapToProjectResponse(project);
     }
 
     @Override
-    public ProjectResponse updateProject(UUID projectId, ProjectUpdateRequest request) throws ItemNotFoundException, AccessDeniedException {
+    public ProjectResponse updateProject(UUID organisationId, UUID projectId, ProjectUpdateRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
 
-        ProjectEntity project = projectRepo.findById(projectId)
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
+
+        ProjectEntity project = projectRepo.findByOrganisationAndProjectId(organisation, projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
 
-        OrganisationMember updater = validateMemberPermissions(authenticatedAccount, project.getOrganisation(),
-                Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, project.getOrganisation());
 
-        if (!validateOrganisationMemberIsTeamMemberInProject(updater, project)) {
+        if (!validateOrganisationMemberIsTeamMemberInProject(member, project)) {
             throw new AccessDeniedException("Your not a team member in this project");
         }
+
+        permissionChecker.checkMemberPermission(member, "PROJECTS", "updateProject");
 
 
         if (!project.getName().equals(request.getName()) &&
@@ -181,22 +188,22 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Boolean deleteProject(UUID projectId) throws ItemNotFoundException, AccessDeniedException {
+    public Boolean deleteProject(UUID organisationId, UUID projectId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
 
-        ProjectEntity project = projectRepo.findById(projectId)
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
+
+        ProjectEntity project = projectRepo.findByOrganisationAndProjectId(organisation, projectId)
                 .orElseThrow(() -> new ItemNotFoundException("Project does not exist"));
 
-        OrganisationMember deleter = validateMemberPermissions(
-                authenticatedAccount,
-                project.getOrganisation(),
-                Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN)
-        );
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        permissionChecker.checkMemberPermission(member, "PROJECTS", "deleteProject");
 
         project.setStatus(ProjectStatus.DELETED);
         project.setUpdatedAt(LocalDateTime.now());
-        project.setDeletedByMemberId(deleter.getMemberId());
+        project.setDeletedByMemberId(member.getMemberId());
         ProjectEntity deletedProject = projectRepo.save(project);
 
         if (!deletedProject.getStatus().equals(ProjectStatus.DELETED)) {
@@ -205,6 +212,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         return true;
     }
+
 
     @Override
     public Page<ProjectResponse> getAllProjectsAmBelongingToOrganisation(UUID organisationId, int page, int size) throws ItemNotFoundException {
@@ -257,34 +265,6 @@ public class ProjectServiceImpl implements ProjectService {
                     .orElseThrow(() -> new ItemNotFoundException("User given username does not exist"));
         }
         throw new ItemNotFoundException("User is not authenticated");
-    }
-
-    private OrganisationMember validateMemberPermissions(AccountEntity account, OrganisationEntity organisation, List<MemberRole> allowedRoles) throws ItemNotFoundException {
-
-        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
-
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new ItemNotFoundException("Member is not active");
-        }
-
-        if (!allowedRoles.contains(member.getRole())) {
-            throw new ItemNotFoundException("Member has insufficient permissions");
-        }
-
-
-        return member;
-    }
-
-    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
-        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
-
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new ItemNotFoundException("Member is not active");
-        }
-
-        return member;
     }
 
     private boolean validateOrganisationMemberIsTeamMemberInProject(OrganisationMember organisationMember, ProjectEntity project) {
@@ -344,5 +324,16 @@ public class ProjectServiceImpl implements ProjectService {
                     "Organization budget amount is zero or negative. Please update the budget with a valid amount before creating projects."
             );
         }
+    }
+
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
     }
 }

@@ -7,15 +7,14 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.s
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
 
 import jakarta.validation.Valid;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +35,7 @@ public class OrgBudgetController {
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createBudget(
             @PathVariable UUID organisationId,
-            @Valid @RequestBody CreateBudgetRequest request) throws ItemNotFoundException {
+            @Valid @RequestBody CreateBudgetRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         OrgBudgetEntity createdBudget = orgBudgetService.createBudget(request, organisationId);
         CreateBudgetResponse response = mapToResponse(createdBudget);
@@ -52,7 +51,7 @@ public class OrgBudgetController {
     @PutMapping("/{budgetId}/activate")
     public ResponseEntity<GlobeSuccessResponseBuilder> activateBudget(
             @PathVariable UUID organisationId,
-            @PathVariable UUID budgetId) throws ItemNotFoundException {
+            @PathVariable UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
 
         orgBudgetService.activateBudget(budgetId, organisationId);
 
@@ -65,7 +64,7 @@ public class OrgBudgetController {
 
     @GetMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> getBudgets(
-            @PathVariable UUID organisationId) throws ItemNotFoundException {
+            @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         List<OrgBudgetEntity> budgets = orgBudgetService.getBudgets(organisationId);
 
@@ -85,7 +84,7 @@ public class OrgBudgetController {
     public ResponseEntity<GlobeSuccessResponseBuilder> updateBudget(
             @PathVariable UUID organisationId,
             @PathVariable UUID budgetId,
-            @Valid @RequestBody UpdateBudgetRequest request) throws ItemNotFoundException {
+            @Valid @RequestBody UpdateBudgetRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         OrgBudgetEntity updatedBudget = orgBudgetService.updateBudget(budgetId, request, organisationId);
         CreateBudgetResponse response = mapToResponse(updatedBudget);
@@ -101,7 +100,7 @@ public class OrgBudgetController {
     @GetMapping("/{budgetId}/available-header-accounts")
     public ResponseEntity<GlobeSuccessResponseBuilder> getAvailableHeaderAccounts(
             @PathVariable UUID organisationId,
-            @PathVariable UUID budgetId) throws ItemNotFoundException {
+            @PathVariable UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
 
         orgBudgetService.getBudgetWithAccounts(budgetId, organisationId);
 
@@ -119,7 +118,7 @@ public class OrgBudgetController {
     public ResponseEntity<GlobeSuccessResponseBuilder> distributeBudget(
             @PathVariable UUID organisationId,
             @PathVariable UUID budgetId,
-            @Valid @RequestBody DistributeBudgetRequest request) throws ItemNotFoundException {
+            @Valid @RequestBody DistributeBudgetRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         OrgBudgetEntity updatedBudget = orgBudgetService.distributeBudget(budgetId, request, organisationId);
 
@@ -148,7 +147,7 @@ public class OrgBudgetController {
     @GetMapping("/{budgetId}/summary")
     public ResponseEntity<GlobeSuccessResponseBuilder> getBudgetSummary(
             @PathVariable UUID organisationId,
-            @PathVariable UUID budgetId) throws ItemNotFoundException {
+            @PathVariable UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
 
         OrgBudgetSummaryResponse summary = orgBudgetService.getBudgetSummary(budgetId, organisationId);
 
@@ -163,7 +162,7 @@ public class OrgBudgetController {
     @GetMapping("/{budgetId}/distribute-detailed")
     public ResponseEntity<GlobeSuccessResponseBuilder> getDetailedBudget(
             @PathVariable UUID organisationId,
-            @PathVariable UUID budgetId) throws ItemNotFoundException {
+            @PathVariable UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
 
         OrgBudgetEntity budget = orgBudgetService.getBudgetWithAccounts(budgetId, organisationId);
         OrgBudgetDetailedResponse response = mapToDetailedResponse(budget);
@@ -179,7 +178,7 @@ public class OrgBudgetController {
     @GetMapping("/{budgetId}/accounts")
     public ResponseEntity<GlobeSuccessResponseBuilder> getBudgetAccounts(
             @PathVariable UUID organisationId,
-            @PathVariable UUID budgetId) throws ItemNotFoundException {
+            @PathVariable UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
 
         OrgBudgetEntity budget = orgBudgetService.getBudgetWithAccounts(budgetId, organisationId);
 
@@ -197,7 +196,7 @@ public class OrgBudgetController {
 
     @GetMapping("/detailed")
     public ResponseEntity<GlobeSuccessResponseBuilder> getBudgetHierarchyWithAllocations(
-            @PathVariable UUID organisationId, @RequestParam(required = false) UUID budgetId) throws ItemNotFoundException {
+            @PathVariable UUID organisationId, @RequestParam(required = false) UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
 
         BudgetHierarchyWithAllocationsResponse response = orgBudgetService.getBudgetHierarchyWithAllocations(budgetId, organisationId);
 
@@ -299,7 +298,7 @@ public class OrgBudgetController {
                 .map(groupLineItems -> {
                     var groupResponse = new OrgBudgetDetailedResponse.AccountGroupResponse();
 
-                    if (!groupLineItems.isEmpty() && groupLineItems.get(0).getChartOfAccount().getParentAccountId() != null) {
+                    if (!groupLineItems.isEmpty() && groupLineItems.getFirst().getChartOfAccount().getParentAccountId() != null) {
                         groupResponse.setHeaderAccountCode("Header");
                         groupResponse.setHeaderAccountName("Account Group");
                     } else {

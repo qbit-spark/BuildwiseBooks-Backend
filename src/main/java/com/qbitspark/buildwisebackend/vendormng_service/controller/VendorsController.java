@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/organisation/{organisationId}/vendors")
+@RequestMapping("/api/v1/vendors/{organisationId}")
 @RequiredArgsConstructor
 public class VendorsController {
 

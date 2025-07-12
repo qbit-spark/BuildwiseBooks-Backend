@@ -15,6 +15,8 @@ public interface OrganisationMemberRepo extends JpaRepository<OrganisationMember
 
     Optional<OrganisationMember> findByAccountAndOrganisation(AccountEntity account, OrganisationEntity organisation);
 
+    Optional<OrganisationMember> findByOrganisationAndMemberRole_RoleName(OrganisationEntity organisation, String roleName);
+
     List<OrganisationMember> findAllByOrganisation(OrganisationEntity organisation);
 
     List<OrganisationMember> findAllByOrganisationAndStatus(OrganisationEntity organisation, MemberStatus status);

@@ -18,18 +18,20 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/projects")
+//Todo: Changed
+@RequestMapping("/api/v1/projects/{organisationId}")
 @RequiredArgsConstructor
 public class ProjectController {
 
     private final ProjectService projectService;
 
-    @PostMapping("/{organisationId}/create")
+    //Todo: Changed
+    @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createProject(
             @PathVariable UUID organisationId,
             @Valid @RequestBody ProjectCreateRequest request) throws Exception {
 
-        ProjectResponse projectResponse = projectService.createProject(request, organisationId);
+        ProjectResponse projectResponse = projectService.createProject(organisationId, request);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
@@ -41,8 +43,8 @@ public class ProjectController {
 
     @GetMapping("/{projectId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getProjectById(
-            @PathVariable UUID projectId) throws ItemNotFoundException, AccessDeniedException {
-        ProjectResponse response = projectService.getProjectById(projectId);
+            @PathVariable UUID projectId, @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
+        ProjectResponse response = projectService.getProjectById(organisationId, projectId);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project retrieved successfully", response));
     }
 
@@ -50,16 +52,17 @@ public class ProjectController {
     @PutMapping("/{projectId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> updateProject(
             @PathVariable UUID projectId,
+            @PathVariable UUID organisationId,
             @Valid @RequestBody ProjectUpdateRequest request) throws AccessDeniedException, ItemNotFoundException {
 
-        ProjectResponse response = projectService.updateProject(projectId, request);
+        ProjectResponse response = projectService.updateProject(organisationId, projectId, request);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project updated successfully", response));
     }
 
 
     @DeleteMapping("/{projectId}")
-    public ResponseEntity<GlobeSuccessResponseBuilder> deleteProject(@PathVariable UUID projectId) throws ItemNotFoundException, AccessDeniedException, RandomExceptions {
-        Boolean deleted = projectService.deleteProject(projectId);
+    public ResponseEntity<GlobeSuccessResponseBuilder> deleteProject(@PathVariable UUID projectId, @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException, RandomExceptions {
+        Boolean deleted = projectService.deleteProject(organisationId, projectId);
         if (deleted) {
             return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Project deleted successfully", null));
         } else {
@@ -68,18 +71,19 @@ public class ProjectController {
     }
 
 
-    @GetMapping("/organisation/{organisationId}")
+    //Todo: Changed
+    @GetMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> getOrganisationProjects(
             @PathVariable UUID organisationId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) throws ItemNotFoundException {
+            @RequestParam(defaultValue = "10") int size) throws ItemNotFoundException, AccessDeniedException {
 
         Page<ProjectResponse> response = projectService.getAllProjectsFromOrganisation(organisationId, page, size);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Organisation projects retrieved successfully", response));
     }
 
 
-    @GetMapping("/organisation/{organisationId}/my-projects")
+    @GetMapping("/my-projects")
     public ResponseEntity<GlobeSuccessResponseBuilder> getMyProjectsInOrganisation(
             @PathVariable UUID organisationId,
             @RequestParam(defaultValue = "0") int page,
@@ -90,7 +94,8 @@ public class ProjectController {
     }
 
 
-    @GetMapping("/organisation/{organisationId}/my-projects/unpaginated")
+    //Todo: Changed
+    @GetMapping("/my-projects-summary-list")
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllMyProjectsInOrganisation(
             @PathVariable UUID organisationId) throws ItemNotFoundException {
 

@@ -14,6 +14,7 @@ import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
@@ -21,6 +22,7 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -49,16 +51,20 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
     private final OrgBudgetLineItemRepo orgBudgetLineItemRepo;
     private final ChartOfAccountsRepo chartOfAccountsRepo;
     private final OrgBudgetDetailAllocationRepo allocationRepo;
+    private final PermissionCheckerService permissionChecker;
 
     @Override
-    public OrgBudgetEntity createBudget(CreateBudgetRequest request, UUID organisationId) throws ItemNotFoundException {
+    public OrgBudgetEntity createBudget(CreateBudgetRequest request, UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
         validateNoOverlappingFinancialYear(organisation, request.getFinancialYearStart(), request.getFinancialYearEnd());
-        validateMemberPermissions(authenticatedAccount, organisation, Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
+
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BUDGET","createBudget");
 
         String budgetName = generateBudgetName(request.getFinancialYearStart(), request.getFinancialYearEnd());
 
@@ -77,6 +83,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         budget.setBudgetVersion(1);
 
         OrgBudgetEntity savedBudget = orgBudgetRepo.save(budget);
+
         initializeBudgetWithAccounts(savedBudget.getBudgetId(), organisationId);
 
         return savedBudget;
@@ -119,13 +126,15 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
 
     @Override
     public OrgBudgetEntity distributeBudget(UUID budgetId, DistributeBudgetRequest request, UUID organisationId)
-            throws ItemNotFoundException {
+            throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
-        validateMemberPermissions(authenticatedAccount, organisation, Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BUDGET","distributeBudget");
 
         OrgBudgetEntity budget = orgBudgetRepo.findById(budgetId)
                 .orElseThrow(() -> new ItemNotFoundException("Budget not found"));
@@ -171,14 +180,15 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
     }
 
     @Override
-    public OrgBudgetEntity getBudgetWithAccounts(UUID budgetId, UUID organisationId) throws ItemNotFoundException {
+    public OrgBudgetEntity getBudgetWithAccounts(UUID budgetId, UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
-        validateMemberPermissions(authenticatedAccount, organisation,
-                Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BUDGET", "viewBudget");
 
         OrgBudgetEntity budget = orgBudgetRepo.findById(budgetId)
                 .orElseThrow(() -> new ItemNotFoundException("Budget not found"));
@@ -187,12 +197,12 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
             throw new ItemNotFoundException("Budget does not belong to this organisation");
         }
 
-        budget.getLineItems().size(); // Force lazy loading
+        budget.getLineItems().size();
         return budget;
     }
 
     @Override
-    public OrgBudgetSummaryResponse getBudgetSummary(UUID budgetId, UUID organisationId) throws ItemNotFoundException {
+    public OrgBudgetSummaryResponse getBudgetSummary(UUID budgetId, UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         OrgBudgetEntity budget = getBudgetWithAccounts(budgetId, organisationId);
 
@@ -243,13 +253,15 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
     }
 
     @Override
-    public void activateBudget(UUID budgetId, UUID organisationId) throws ItemNotFoundException {
+    public void activateBudget(UUID budgetId, UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
-        validateMemberPermissions(authenticatedAccount, organisation, Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BUDGET", "activateBudget");
 
         OrgBudgetEntity budgetToActivate = orgBudgetRepo.findById(budgetId)
                 .orElseThrow(() -> new ItemNotFoundException("Budget not found"));
@@ -281,26 +293,30 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
     }
 
     @Override
-    public List<OrgBudgetEntity> getBudgets(UUID organisationId) throws ItemNotFoundException {
+    public List<OrgBudgetEntity> getBudgets(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
-        validateMemberPermissions(authenticatedAccount, organisation,
-                Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        permissionChecker.checkMemberPermission(member,"BUDGET", "viewBudget");
 
         return orgBudgetRepo.findByOrganisation(organisation);
     }
 
     @Override
-    public OrgBudgetEntity updateBudget(UUID budgetId, UpdateBudgetRequest request, UUID organisationId) throws ItemNotFoundException {
+    public OrgBudgetEntity updateBudget(UUID budgetId, UpdateBudgetRequest request, UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
+
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
 
-        validateMemberPermissions(authenticatedAccount, organisation, Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN));
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BUDGET","updateBudget");
 
         OrgBudgetEntity budgetToUpdate = orgBudgetRepo.findById(budgetId)
                 .orElseThrow(() -> new ItemNotFoundException("Budget not found"));
@@ -339,17 +355,17 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         return orgBudgetRepo.save(budgetToUpdate);
     }
 
-
     @Override
     public BudgetHierarchyWithAllocationsResponse getBudgetHierarchyWithAllocations(
-            UUID budgetId, UUID organisationId) throws ItemNotFoundException {
+            UUID budgetId, UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        validateMemberPermissions(authenticatedAccount, organisation,
-                Arrays.asList(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BUDGET", "viewBudget");
 
         OrgBudgetEntity budget;
 
@@ -445,6 +461,8 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
 
         return response;
     }
+
+
 
     // ========== ALLOCATION CALCULATION METHODS ==========
 
@@ -657,20 +675,6 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         return String.format("FY %s%02d-%s%02d", startMonth, startYear, endMonth, endYear);
     }
 
-    private void validateMemberPermissions(AccountEntity account, OrganisationEntity organisation,
-                                           List<MemberRole> allowedRoles) throws ItemNotFoundException {
-
-        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
-
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new ItemNotFoundException("Member is not active");
-        }
-
-        if (!allowedRoles.contains(member.getRole())) {
-            throw new ItemNotFoundException("Member has insufficient permissions");
-        }
-    }
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -747,6 +751,17 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         }
 
         return budget;
+    }
+
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
     }
 
 }
