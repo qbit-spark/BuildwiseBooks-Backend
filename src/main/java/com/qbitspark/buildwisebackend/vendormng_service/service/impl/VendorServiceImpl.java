@@ -3,6 +3,7 @@ package com.qbitspark.buildwisebackend.vendormng_service.service.impl;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.vendormng_service.entity.VendorEntity;
 import com.qbitspark.buildwisebackend.vendormng_service.enums.VendorStatus;
 import com.qbitspark.buildwisebackend.vendormng_service.enums.VendorType;
@@ -39,25 +40,22 @@ public class VendorServiceImpl implements VendorService {
     private final OrganisationMemberRepo organisationMemberRepo;
     private final AccountRepo accountRepo;
     private final ProjectRepo projectRepo;
-
+    private final PermissionCheckerService permissionChecker;
 
 
     @Override
     public VendorEntity createVendor(UUID organisationId, CreateVendorRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
-
         AccountEntity currentUser = getAuthenticatedAccount();
-
 
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
-        validateMemberPermissions(currentUser, organisation,
-                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+        permissionChecker.checkMemberPermission(member, "VENDORS","createVendor");
 
-        // Check for duplicates (only among active vendors)
         if (vendorsRepo.existsByNameIgnoreCaseAndOrganisationAndStatus(
                 request.getName(), organisation, VendorStatus.ACTIVE)) {
             throw new ItemNotFoundException("Vendor with this name already exists");
@@ -86,52 +84,41 @@ public class VendorServiceImpl implements VendorService {
         vendor.setAttachmentIds(request.getAttachmentIds() != null ?
                 request.getAttachmentIds() : new ArrayList<>());
 
-        VendorEntity savedVendor = vendorsRepo.save(vendor);
-
-        log.info("Vendor {} created in organisation {}",
-                savedVendor.getName(), organisation.getOrganisationName());
-
-        return savedVendor;
+        return vendorsRepo.save(vendor);
     }
 
     @Override
     public VendorEntity getVendorById(UUID organisationId, UUID vendorId)
             throws ItemNotFoundException, AccessDeniedException {
 
-        // Get authenticated user
+
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Validate organisation
+
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        // Validate user permissions
-        validateMemberPermissions(currentUser, organisation,
-                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
-        // Get vendor
-        VendorEntity vendor = vendorsRepo.findByVendorIdAndOrganisation(vendorId, organisation)
+        permissionChecker.checkMemberPermission(member, "VENDORS","viewVendors");
+
+        return vendorsRepo.findByVendorIdAndOrganisation(vendorId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Vendor not found"));
-
-        return vendor;
     }
 
     @Override
     public Page<VendorEntity> getAllVendors(UUID organisationId, VendorStatus status, Pageable pageable)
             throws ItemNotFoundException, AccessDeniedException {
 
-        // Get authenticated user
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Validate organisation
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        // Validate user permissions
-        validateMemberPermissions(currentUser, organisation,
-                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
-        // Get vendors based on status filter with pagination
+        permissionChecker.checkMemberPermission(member, "VENDORS","viewVendors");
+
         if (status != null) {
             return vendorsRepo.findAllByOrganisationAndStatus(organisation, status, pageable);
         } else {
@@ -143,17 +130,16 @@ public class VendorServiceImpl implements VendorService {
     public List<VendorEntity> getVendorSummaries(UUID organisationId, VendorType vendorType)
             throws ItemNotFoundException, AccessDeniedException {
 
-
         AccountEntity currentUser = getAuthenticatedAccount();
 
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
 
-        validateMemberPermissions(currentUser, organisation,
-                List.of(MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER));
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
-        // Get active vendors only, optionally filtered by type, ordered by name
+        permissionChecker.checkMemberPermission(member, "VENDORS","viewVendors");
+
         if (vendorType != null) {
             return vendorsRepo.findAllByOrganisationAndStatusAndVendorTypeOrderByName(
                     organisation, VendorStatus.ACTIVE, vendorType);
@@ -167,21 +153,18 @@ public class VendorServiceImpl implements VendorService {
     public VendorEntity updateVendor(UUID organisationId, UUID vendorId, UpdateVendorRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
-
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = validateOrganisationExists(organisationId);
-        validateMemberPermissions(currentUser, organisation, List.of(MemberRole.OWNER, MemberRole.ADMIN));
-        VendorEntity vendor = validateVendorExists(vendorId, organisation);
 
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "VENDORS","updateVendor");
+
+        VendorEntity vendor = validateVendorExists(vendorId, organisation);
 
         updateVendorFields(vendor, request, organisation, vendorId);
 
-
-        VendorEntity updatedVendor = vendorsRepo.save(vendor);
-        log.info("Vendor {} updated in organisation {}",
-                updatedVendor.getName(), organisation.getOrganisationName());
-
-        return updatedVendor;
+        return vendorsRepo.save(vendor);
     }
 
 
@@ -191,24 +174,19 @@ public class VendorServiceImpl implements VendorService {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
-
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
-        validateMemberPermissions(currentUser, organisation,
-                List.of(MemberRole.OWNER, MemberRole.ADMIN));
-
+        permissionChecker.checkMemberPermission(member, "VENDORS","deleteVendor");
 
         VendorEntity vendor = vendorsRepo.findByVendorIdAndOrganisation(vendorId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Vendor not found"));
 
-
         vendor.setStatus(VendorStatus.INACTIVE);
         vendorsRepo.save(vendor);
 
-        log.info("Vendor {} deleted (set to INACTIVE) in organisation {}",
-                vendor.getName(), organisation.getOrganisationName());
     }
 
 
@@ -308,21 +286,6 @@ public class VendorServiceImpl implements VendorService {
         throw new ItemNotFoundException("User is not authenticated");
     }
 
-    private OrganisationMember validateMemberPermissions(AccountEntity account, OrganisationEntity organisation, List<MemberRole> allowedRoles) throws ItemNotFoundException {
-
-        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
-
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new ItemNotFoundException("Member is not active");
-        }
-
-        if (!allowedRoles.contains(member.getRole())) {
-            throw new ItemNotFoundException("Member has insufficient permissions");
-        }
-
-        return member;
-    }
 
     private OrganisationEntity validateOrganisationExists(UUID organisationId)
             throws ItemNotFoundException {
@@ -355,12 +318,14 @@ public class VendorServiceImpl implements VendorService {
         }
     }
 
-    private boolean isFieldMatch(VendorEntity vendor, String fieldName, String value) {
-        return switch (fieldName.toLowerCase()) {
-            case "name" -> vendor.getName().equalsIgnoreCase(value);
-            case "email" -> vendor.getEmail().equalsIgnoreCase(value);
-            case "tin" -> vendor.getTin().equalsIgnoreCase(value);
-            default -> false;
-        };
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
     }
 }
