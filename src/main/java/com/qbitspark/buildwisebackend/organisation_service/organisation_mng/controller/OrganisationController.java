@@ -63,7 +63,7 @@ public class OrganisationController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<GlobeSuccessResponseBuilder> updateOrganisation(@PathVariable UUID id, @Valid @RequestBody UpdateOrganisationRequest request) throws ItemNotFoundException {
+    public ResponseEntity<GlobeSuccessResponseBuilder> updateOrganisation(@PathVariable UUID id, @Valid @RequestBody UpdateOrganisationRequest request) throws ItemNotFoundException, AccessDeniedException {
         OrganisationEntity organisation = organisationService.updateOrganisation(id, request);
         OrganisationResponse response = mapToResponse(organisation);
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Organisation updated successfully", response));

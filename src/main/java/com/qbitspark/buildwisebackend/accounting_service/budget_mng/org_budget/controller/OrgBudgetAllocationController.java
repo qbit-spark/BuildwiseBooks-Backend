@@ -6,6 +6,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.s
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
@@ -28,15 +29,12 @@ import java.util.stream.Collectors;
 public class OrgBudgetAllocationController {
 
     private final OrgBudgetAllocationService allocationService;
-    private final ChartOfAccountsRepo chartOfAccountsRepo;
-    private final OrganisationRepo organisationRepo;
-
 
     @PostMapping("/allocate")
     public ResponseEntity<GlobeSuccessResponseBuilder> allocateMoneyToDetailAccounts(
             @PathVariable UUID organisationId,
             @PathVariable UUID budgetId,
-            @Valid @RequestBody AllocateMoneyRequest request) throws ItemNotFoundException {
+            @Valid @RequestBody AllocateMoneyRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         List<OrgBudgetDetailAllocationEntity> allocations = allocationService.allocateMoneyToDetailAccounts(
                 organisationId, budgetId, request);
@@ -54,7 +52,7 @@ public class OrgBudgetAllocationController {
     public ResponseEntity<GlobeSuccessResponseBuilder> getHeaderAllocations(
             @PathVariable UUID organisationId,
             @PathVariable UUID budgetId,
-            @PathVariable UUID headerLineItemId) throws ItemNotFoundException {
+            @PathVariable UUID headerLineItemId) throws ItemNotFoundException, AccessDeniedException {
 
         List<OrgBudgetDetailAllocationEntity> allocations = allocationService.getHeaderAllocations(
                 organisationId, budgetId, headerLineItemId);
@@ -71,7 +69,7 @@ public class OrgBudgetAllocationController {
     public ResponseEntity<GlobeSuccessResponseBuilder> getHeaderAllocationSummary(
             @PathVariable UUID organisationId,
             @PathVariable UUID budgetId,
-            @PathVariable UUID headerLineItemId) throws ItemNotFoundException {
+            @PathVariable UUID headerLineItemId) throws ItemNotFoundException, AccessDeniedException {
 
         AllocationSummaryResponse summary = allocationService.getAllocationSummary(
                 organisationId, budgetId, headerLineItemId);
@@ -83,7 +81,7 @@ public class OrgBudgetAllocationController {
     @GetMapping("/all")
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllBudgetAllocations(
             @PathVariable UUID organisationId,
-            @PathVariable UUID budgetId) throws ItemNotFoundException {
+            @PathVariable UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
 
         List<OrgBudgetDetailAllocationEntity> allocations = allocationService.getAllBudgetAllocations(
                 organisationId, budgetId);
@@ -99,7 +97,7 @@ public class OrgBudgetAllocationController {
     @GetMapping("/summary-list")
     public ResponseEntity<GlobeSuccessResponseBuilder> getAvailableDetailAllocationsForVouchers(
             @PathVariable UUID organisationId,
-            @PathVariable UUID budgetId) throws ItemNotFoundException {
+            @PathVariable UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
 
         List<AvailableDetailAllocationResponse> availableAllocations =
                 allocationService.getDetailAccountsForVouchers(organisationId, budgetId);

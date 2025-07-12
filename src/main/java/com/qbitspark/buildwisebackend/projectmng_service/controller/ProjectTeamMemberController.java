@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.projectmng_service.controller;
 
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.projectmng_service.payloads.*;
@@ -48,7 +49,7 @@ public class ProjectTeamMemberController {
     public ResponseEntity<GlobeSuccessResponseBuilder> removeTeamMembers(
             @PathVariable UUID organisationId,
             @PathVariable UUID projectId,
-            @RequestBody Set<UUID> memberIds) throws ItemNotFoundException {
+            @RequestBody Set<UUID> memberIds) throws ItemNotFoundException, AccessDeniedException {
 
         ProjectTeamRemovalResponse responses = projectTeamMemberService.removeTeamMembers(organisationId, projectId, memberIds);
 
@@ -66,7 +67,7 @@ public class ProjectTeamMemberController {
             @PathVariable UUID projectId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String sort) throws ItemNotFoundException {
+            @RequestParam(required = false) String sort) throws ItemNotFoundException, AccessDeniedException {
 
 
         Pageable pageable = sort != null ?
@@ -90,7 +91,7 @@ public class ProjectTeamMemberController {
             @PathVariable UUID organisationId,
             @PathVariable UUID projectId,
             @PathVariable UUID memberId,
-            @Valid @RequestBody UpdateTeamMemberRoleRequest request) throws ItemNotFoundException {
+            @Valid @RequestBody UpdateTeamMemberRoleRequest request) throws ItemNotFoundException, AccessDeniedException {
 
         ProjectTeamMemberResponse response = projectTeamMemberService.updateTeamMemberRole(organisationId, projectId, memberId, request);
 
@@ -105,7 +106,7 @@ public class ProjectTeamMemberController {
     @GetMapping("/check")
     public ResponseEntity<GlobeSuccessResponseBuilder> checkTeamMembership(
             @PathVariable UUID organisationId,
-            @PathVariable UUID projectId, @RequestParam UUID memberId) throws ItemNotFoundException {
+            @PathVariable UUID projectId, @RequestParam UUID memberId) throws ItemNotFoundException, AccessDeniedException {
 
         boolean isTeamMember = projectTeamMemberService.isTeamMember(organisationId, projectId, memberId);
 
@@ -123,7 +124,7 @@ public class ProjectTeamMemberController {
     @GetMapping("/available-members")
     public ResponseEntity<GlobeSuccessResponseBuilder>getAvailableTeamMembers(
             @PathVariable("organisationId") UUID organisationId,
-            @PathVariable("projectId") UUID projectId) throws ItemNotFoundException {
+            @PathVariable("projectId") UUID projectId) throws ItemNotFoundException, AccessDeniedException {
 
 
             List<AvailableTeamMemberResponse> availableMembers =

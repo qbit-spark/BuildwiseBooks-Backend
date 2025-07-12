@@ -27,7 +27,6 @@ import java.util.UUID;
                 @Index(name = "idx_member_account_email_org", columnList = "account_id, organisation_id"),
                 @Index(name = "idx_member_organisation", columnList = "organisation_id"),
                 @Index(name = "idx_member_account", columnList = "account_id"),
-                @Index(name = "idx_member_role", columnList = "role"),
                 @Index(name = "idx_member_status", columnList = "status"),
                 @Index(name = "idx_member_joined_at", columnList = "joinedAt"),
                 @Index(name = "idx_member_invited_by", columnList = "invitedBy")
@@ -58,6 +57,4 @@ public class OrganisationMember {
 
     @OneToMany(mappedBy = "organisationMember", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectTeamMemberEntity> projectMemberships = new HashSet<>();
-
-
 }
