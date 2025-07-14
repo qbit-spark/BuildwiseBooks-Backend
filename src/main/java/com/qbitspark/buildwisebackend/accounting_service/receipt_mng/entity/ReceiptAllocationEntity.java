@@ -38,8 +38,9 @@ public class ReceiptAllocationEntity {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    @Column(columnDefinition = "TEXT")
-    private String justification;
+    // NEW: Relationship to allocation details
+    @OneToMany(mappedBy = "allocation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ReceiptAllocationDetailEntity> allocationDetails = new ArrayList<>();
 
     // Workflow tracking
     @Column(name = "requested_by", nullable = false)
@@ -69,11 +70,9 @@ public class ReceiptAllocationEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-
     // ==========================================
     // BUSINESS LOGIC METHODS
     // ==========================================
-
 
     public boolean canEdit() {
         return status == AllocationStatus.DRAFT;
@@ -104,7 +103,51 @@ public class ReceiptAllocationEntity {
     }
 
     // ==========================================
-    // WORKFLOW ACTIONS
+    // NEW: ALLOCATION DETAIL METHODS
+    // ==========================================
+
+    public BigDecimal getTotalAllocatedAmount() {
+        return allocationDetails.stream()
+                .map(ReceiptAllocationDetailEntity::getAllocatedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public boolean isFullyAllocated() {
+        BigDecimal receiptAmount = receipt != null ? receipt.getTotalAmount() : BigDecimal.ZERO;
+        return getTotalAllocatedAmount().compareTo(receiptAmount) == 0;
+    }
+
+    public boolean isOverAllocated() {
+        BigDecimal receiptAmount = receipt != null ? receipt.getTotalAmount() : BigDecimal.ZERO;
+        return getTotalAllocatedAmount().compareTo(receiptAmount) > 0;
+    }
+
+    public BigDecimal getRemainingAmount() {
+        BigDecimal receiptAmount = receipt != null ? receipt.getTotalAmount() : BigDecimal.ZERO;
+        return receiptAmount.subtract(getTotalAllocatedAmount());
+    }
+
+    public int getAllocationDetailCount() {
+        return allocationDetails != null ? allocationDetails.size() : 0;
+    }
+
+    public void addAllocationDetail(ReceiptAllocationDetailEntity detail) {
+        if (allocationDetails == null) {
+            allocationDetails = new ArrayList<>();
+        }
+        allocationDetails.add(detail);
+        detail.setAllocation(this);
+    }
+
+    public void removeAllocationDetail(ReceiptAllocationDetailEntity detail) {
+        if (allocationDetails != null) {
+            allocationDetails.remove(detail);
+            detail.setAllocation(null);
+        }
+    }
+
+    // ==========================================
+    // WORKFLOW ACTIONS (Simplified for now)
     // ==========================================
 
     public void approve(UUID approvedByUserId, String notes) {
@@ -151,6 +194,11 @@ public class ReceiptAllocationEntity {
         };
     }
 
+    public boolean isValidForApproval() {
+        return isFullyAllocated() &&
+                !allocationDetails.isEmpty() &&
+                allocationDetails.stream().allMatch(ReceiptAllocationDetailEntity::isValidAmount);
+    }
 
     public long getDaysSinceCreation() {
         return java.time.Duration.between(createdAt, LocalDateTime.now()).toDays();
