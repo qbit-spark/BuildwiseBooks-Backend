@@ -169,31 +169,6 @@ public class ReceiptController {
         );
     }
 
-    @GetMapping("/{receiptId}/funding-summary")
-    public ResponseEntity<GlobeSuccessResponseBuilder> getReceiptFundingSummary(
-            @PathVariable UUID organisationId,
-            @PathVariable UUID receiptId)
-            throws ItemNotFoundException, AccessDeniedException {
-
-        ReceiptEntity receipt = receiptService.getReceiptById(organisationId, receiptId);
-
-        List<ReceiptAllocationFundingEntity> fundings = fundingRepo.findByReceiptReceiptId(receiptId);
-        BigDecimal allocatedAmount = ReceiptEntity.calculateTotalFunded(fundings);
-        BigDecimal remainingAmount = receipt.getTotalAmount().subtract(allocatedAmount);
-
-        ReceiptFundingSummaryResponse summary = new ReceiptFundingSummaryResponse();
-        summary.setReceiptId(receipt.getReceiptId());
-        summary.setReceiptNumber(receipt.getReceiptNumber());
-        summary.setTotalAmount(receipt.getTotalAmount());
-        summary.setAllocatedAmount(allocatedAmount);
-        summary.setRemainingAmount(remainingAmount);
-        summary.setProjectName(receipt.getProject() != null ? receipt.getProject().getName() : null);
-        summary.setClientName(receipt.getClient().getName());
-
-        return ResponseEntity.ok(
-                GlobeSuccessResponseBuilder.success("Receipt funding summary retrieved successfully", summary)
-        );
-    }
 
     private ReceiptResponse mapToResponse(ReceiptEntity entity) {
         ReceiptResponse response = new ReceiptResponse();

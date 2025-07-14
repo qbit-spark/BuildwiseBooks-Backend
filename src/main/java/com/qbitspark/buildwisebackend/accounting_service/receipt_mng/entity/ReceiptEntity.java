@@ -94,59 +94,5 @@ public class ReceiptEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    // NEW: Clean relationship to funding allocations
-    @OneToMany(mappedBy = "receipt", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ReceiptAllocationEntity> fundingAllocations = new ArrayList<>();
 
-    // ==========================================
-    // CLEAN BUSINESS LOGIC METHODS
-    // ==========================================
-
-    public BigDecimal getTotalAllocatedToFunding() {
-        return fundingAllocations.stream()
-                .flatMap(allocation -> allocation.getDetails().stream())
-                .map(detail -> detail.getAmount())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    public BigDecimal getTotalApprovedFunding() {
-        return fundingAllocations.stream()
-                .filter(allocation -> allocation.getStatus() == AllocationStatus.APPROVED)
-                .flatMap(allocation -> allocation.getDetails().stream())
-                .map(detail -> detail.getAmount())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    public BigDecimal getPendingFunding() {
-        return fundingAllocations.stream()
-                .filter(allocation -> allocation.getStatus() == AllocationStatus.PENDING_APPROVAL)
-                .flatMap(allocation -> allocation.getDetails().stream())
-                .map(ReceiptAllocationDetailEntity::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    public BigDecimal getRemainingToAllocate() {
-        return totalAmount.subtract(getTotalAllocatedToFunding());
-    }
-
-    public boolean canAllocate(BigDecimal amount) {
-        return getRemainingToAllocate().compareTo(amount) >= 0;
-    }
-
-    public boolean canCreateNewAllocation() {
-        return status == ReceiptStatus.APPROVED &&
-                getRemainingToAllocate().compareTo(BigDecimal.ZERO) > 0;
-    }
-
-    public boolean hasApprovedAllocations() {
-        return getTotalApprovedFunding().compareTo(BigDecimal.ZERO) > 0;
-    }
-
-    public boolean hasPendingAllocations() {
-        return getPendingFunding().compareTo(BigDecimal.ZERO) > 0;
-    }
-
-    public int getAllocationCount() {
-        return fundingAllocations.size();
-    }
 }

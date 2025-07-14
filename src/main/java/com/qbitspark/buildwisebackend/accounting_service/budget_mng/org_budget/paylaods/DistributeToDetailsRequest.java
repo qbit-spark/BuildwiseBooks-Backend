@@ -17,27 +17,25 @@ import java.util.UUID;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class DistributeBudgetRequest {
+public class DistributeToDetailsRequest {
 
-    @NotEmpty(message = "Account distributions cannot be empty")
+    @NotEmpty(message = "Distributions cannot be empty")
     @Valid
-    private List<AccountDistribution> accountDistributions;
-
-    private String notes;
+    private List<DetailDistribution> distributions;
 
     @Getter
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class AccountDistribution {
+    public static class DetailDistribution {
 
-        @NotNull(message = "Account ID is required")
-        private UUID accountId;
+        @NotNull(message = "Detail account ID is required")
+        private UUID detailAccountId;
 
         @NotNull(message = "Amount is required")
         @Positive(message = "Amount must be positive")
         private BigDecimal amount;
-
         private String description;
+
     }
 }

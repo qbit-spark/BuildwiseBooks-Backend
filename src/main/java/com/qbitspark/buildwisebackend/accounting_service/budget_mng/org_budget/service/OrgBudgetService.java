@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service;
 
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetDetailDistributionEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.*;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
@@ -10,27 +11,21 @@ import java.util.UUID;
 
 public interface OrgBudgetService {
 
-    OrgBudgetEntity createBudget(CreateBudgetRequest request, UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
+    OrgBudgetEntity createBudget(CreateBudgetRequest request, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException;
 
-    void activateBudget(UUID budgetId, UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
+    List<OrgBudgetDetailDistributionEntity> distributeToDetails(UUID budgetId, DistributeToDetailsRequest request, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException;
 
-    List<OrgBudgetEntity> getBudgets(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
+    List<OrgBudgetEntity> getBudgets(UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException;
 
-    OrgBudgetEntity updateBudget(UUID budgetId, UpdateBudgetRequest request, UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
+    OrgBudgetEntity updateBudget(UUID budgetId, UpdateBudgetRequest request, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException;
 
+    BudgetDistributionDetailResponse getBudgetDistributionDetails(UUID budgetId, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException;
 
-    OrgBudgetEntity distributeBudget(UUID budgetId, DistributeBudgetRequest request, UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
-
-
-    void initializeBudgetWithAccounts(UUID budgetId, UUID organisationId) throws ItemNotFoundException;
-
-
-    OrgBudgetSummaryResponse getBudgetSummary(UUID budgetId, UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
-
-
-    OrgBudgetEntity getBudgetWithAccounts(UUID budgetId, UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
-
-    BudgetHierarchyWithAllocationsResponse getBudgetHierarchyWithAllocations(
-            UUID budgetId, UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
-
+    void activateBudget(UUID budgetId, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException;
 }

@@ -57,6 +57,6 @@ public class OrgBudgetDetailedResponse {
         private BigDecimal groupTotalRemaining;
         private int totalAccounts;
         private int accountsWithBudget;
-        private List<OrgBudgetLineItemResponse> lineItems;
+       // private List<OrgBudgetLineItemResponse> lineItems;
     }
 }

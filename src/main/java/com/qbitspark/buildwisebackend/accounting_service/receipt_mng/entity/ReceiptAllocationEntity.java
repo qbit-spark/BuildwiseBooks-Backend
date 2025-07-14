@@ -1,7 +1,5 @@
 package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity;
 
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationDetailEntity;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.AllocationStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -16,8 +14,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
-import static com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.AllocationStatus.*;
 
 @Entity
 @Table(name = "receipt_allocations")
@@ -73,30 +69,14 @@ public class ReceiptAllocationEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "allocation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<ReceiptAllocationDetailEntity> details = new ArrayList<>();
 
     // ==========================================
     // BUSINESS LOGIC METHODS
     // ==========================================
 
-    public BigDecimal getTotalAllocatedAmount() {
-        return details.stream()
-                .map(ReceiptAllocationDetailEntity::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    public int getDetailCount() {
-        return details.size();
-    }
 
     public boolean canEdit() {
         return status == AllocationStatus.DRAFT;
-    }
-
-    public boolean canSubmitForApproval() {
-        return status == AllocationStatus.DRAFT && !details.isEmpty() &&
-                getTotalAllocatedAmount().compareTo(BigDecimal.ZERO) > 0;
     }
 
     public boolean canApprove() {
@@ -126,14 +106,6 @@ public class ReceiptAllocationEntity {
     // ==========================================
     // WORKFLOW ACTIONS
     // ==========================================
-
-    public void submitForApproval() {
-        if (!canSubmitForApproval()) {
-            throw new IllegalStateException("Cannot submit allocation for approval in status: " + status);
-        }
-
-        this.status = AllocationStatus.PENDING_APPROVAL;
-    }
 
     public void approve(UUID approvedByUserId, String notes) {
         if (!canApprove()) {
@@ -169,37 +141,6 @@ public class ReceiptAllocationEntity {
     // VALIDATION METHODS
     // ==========================================
 
-    /**
-     * Validates that total allocation doesn't exceed receipt amount.
-     * This is a critical business rule validation.
-     */
-    public void validateAllocationAmount() {
-        BigDecimal receiptAmount = receipt.getTotalAmount();
-        BigDecimal totalAllocated = getTotalAllocatedAmount();
-
-        if (totalAllocated.compareTo(receiptAmount) > 0) {
-            throw new IllegalArgumentException(String.format(
-                    "Total allocation (%s) cannot exceed receipt amount (%s)",
-                    totalAllocated, receiptAmount
-            ));
-        }
-    }
-
-    /**
-     * Validates that receipt can accommodate new allocation considering existing allocations.
-     */
-    public boolean canAllocateAmount(BigDecimal amount) {
-        // Get other allocations for same receipt (excluding this one)
-        BigDecimal otherAllocations = receipt.getFundingAllocations().stream()
-                .filter(alloc -> !alloc.getAllocationId().equals(this.allocationId))
-                .flatMap(alloc -> alloc.getDetails().stream())
-                .map(ReceiptAllocationDetailEntity::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalWithNewAmount = otherAllocations.add(amount);
-        return totalWithNewAmount.compareTo(receipt.getTotalAmount()) <= 0;
-    }
-
     public String getStatusDescription() {
         return switch (status) {
             case DRAFT -> "Draft - Being prepared";
@@ -210,15 +151,6 @@ public class ReceiptAllocationEntity {
         };
     }
 
-    public String getAllocationSummary() {
-        return String.format(
-                "Allocation %s: %s details totaling %s (%s)",
-                allocationId.toString().substring(0, 8),
-                details.size(),
-                getTotalAllocatedAmount(),
-                status
-        );
-    }
 
     public long getDaysSinceCreation() {
         return java.time.Duration.between(createdAt, LocalDateTime.now()).toDays();

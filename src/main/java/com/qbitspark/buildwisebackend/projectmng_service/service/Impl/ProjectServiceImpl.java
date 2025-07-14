@@ -318,12 +318,12 @@ public class ProjectServiceImpl implements ProjectService {
 
         OrgBudgetEntity activeBudget = activeBudgetOpt.get();
 
-        if (activeBudget.getTotalBudgetAmount() == null ||
-                activeBudget.getTotalBudgetAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ItemNotFoundException(
-                    "Organization budget amount is zero or negative. Please update the budget with a valid amount before creating projects."
-            );
-        }
+//        if (activeBudget.getTotalBudgetAmount() == null ||
+//                activeBudget.getTotalBudgetAmount().compareTo(BigDecimal.ZERO) <= 0) {
+//            throw new ItemNotFoundException(
+//                    "Organization budget amount is zero or negative. Please update the budget with a valid amount before creating projects."
+//            );
+//        }
     }
 
     private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {

@@ -1,8 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.impl;
 
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetDetailAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetDetailAllocationRepo;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.entity.DeductsEntity;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.repo.DeductRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherBeneficiaryEntity;
@@ -66,7 +64,6 @@ public class VoucherServiceImpl implements VoucherService {
     private final DeductRepo deductRepo;
     private final VoucherBeneficiaryRepo voucherBeneficiaryRepo;
     private final OrgFileRepo orgFileRepo;
-    private final OrgBudgetDetailAllocationRepo allocationRepo;
     private final PermissionCheckerService permissionChecker;
 
     @Override
@@ -84,8 +81,8 @@ public class VoucherServiceImpl implements VoucherService {
 
         permissionChecker.checkMemberPermission(member, "VOUCHERS","createVoucher");
 
-        OrgBudgetDetailAllocationEntity detailAllocation = validateAndGetDetailAllocation(
-                request.getDetailAllocationId(), organisationId);
+//        OrgBudgetDetailAllocationEntity detailAllocation = validateAndGetDetailAllocation(
+//                request.getDetailAllocationId(), organisationId);
 
         String voucherNumber = voucherNumberService.generateVoucherNumber(project, organisation);
 
@@ -136,7 +133,7 @@ public class VoucherServiceImpl implements VoucherService {
             totalDeductions = totalDeductions.add(beneficiaryDeductionTotal);
         }
 
-        validateBudgetAvailability(detailAllocation, totalAmount);
+       // validateBudgetAvailability(detailAllocation, totalAmount);
 
         VoucherEntity voucher = new VoucherEntity();
         voucher.setVoucherNumber(voucherNumber);
@@ -145,7 +142,7 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setCreatedBy(member);
         voucher.setOrganisation(organisation);
         voucher.setProject(project);
-        voucher.setDetailAllocation(detailAllocation);
+       // voucher.setDetailAllocation(detailAllocation);
         voucher.setStatus(VoucherStatus.DRAFT);
         voucher.setCurrency("TSh");
         voucher.setAttachments(request.getAttachments());
@@ -194,7 +191,7 @@ public class VoucherServiceImpl implements VoucherService {
         updateVoucherBasicFields(existingVoucher, request);
 
         if (request.getDetailAllocationId() != null) {
-            updateVoucherDetailAllocation(existingVoucher, request.getDetailAllocationId(), organisationId);
+            //updateVoucherDetailAllocation(existingVoucher, request.getDetailAllocationId(), organisationId);
         }
 
         if (request.getBeneficiaries() != null && !request.getBeneficiaries().isEmpty()) {
@@ -272,21 +269,21 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
 
-    private void validateBudgetAvailability(OrgBudgetDetailAllocationEntity allocation,
-                                            BigDecimal requestedAmount) throws ItemNotFoundException {
-
-        BigDecimal availableBudget = allocation.getRemainingAmount();
-
-        if (availableBudget.compareTo(requestedAmount) < 0) {
-            throw new ItemNotFoundException(String.format(
-                    "Insufficient budget for %s - %s. Available: TSh %s, Requested: TSh %s",
-                    allocation.getDetailAccountCode(),
-                    allocation.getDetailAccountName(),
-                    availableBudget,
-                    requestedAmount
-            ));
-        }
-    }
+//    private void validateBudgetAvailability(OrgBudgetDetailAllocationEntity allocation,
+//                                            BigDecimal requestedAmount) throws ItemNotFoundException {
+//
+//        BigDecimal availableBudget = allocation.getRemainingAmount();
+//
+//        if (availableBudget.compareTo(requestedAmount) < 0) {
+//            throw new ItemNotFoundException(String.format(
+//                    "Insufficient budget for %s - %s. Available: TSh %s, Requested: TSh %s",
+//                    allocation.getDetailAccountCode(),
+//                    allocation.getDetailAccountName(),
+//                    availableBudget,
+//                    requestedAmount
+//            ));
+//        }
+//    }
     private OrganisationEntity validateOrganisationExists(UUID organisationId)
             throws ItemNotFoundException {
         return organisationRepo.findById(organisationId)
@@ -313,14 +310,14 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setUpdatedAt(LocalDateTime.now());
     }
 
-    private void updateVoucherDetailAllocation(VoucherEntity voucher, UUID newDetailAllocationId, UUID organisationId)
-            throws ItemNotFoundException {
-
-        OrgBudgetDetailAllocationEntity newDetailAllocation = validateAndGetDetailAllocation(
-                newDetailAllocationId, organisationId);
-
-        voucher.setDetailAllocation(newDetailAllocation);
-    }
+//    private void updateVoucherDetailAllocation(VoucherEntity voucher, UUID newDetailAllocationId, UUID organisationId)
+//            throws ItemNotFoundException {
+//
+//        OrgBudgetDetailAllocationEntity newDetailAllocation = validateAndGetDetailAllocation(
+//                newDetailAllocationId, organisationId);
+//
+//        voucher.setDetailAllocation(newDetailAllocation);
+//    }
 
     private void updateVoucherBeneficiaries(VoucherEntity voucher, List<VoucherBeneficiaryRequest> newBeneficiaries,
                                             UUID organisationId) throws ItemNotFoundException {
@@ -329,7 +326,7 @@ public class VoucherServiceImpl implements VoucherService {
                 .map(VoucherBeneficiaryRequest::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        validateBudgetAvailability(voucher.getDetailAllocation(), newTotalAmount);
+     //   validateBudgetAvailability(voucher.getDetailAllocation(), newTotalAmount);
 
         // First, explicitly delete existing beneficiaries from database
         // This ensures cascading deletion of deductions as well
@@ -476,27 +473,6 @@ public class VoucherServiceImpl implements VoucherService {
         }
     }
 
-    private OrgBudgetDetailAllocationEntity validateAndGetDetailAllocation(
-            UUID detailAllocationId, UUID organisationId) throws ItemNotFoundException {
-
-        OrgBudgetDetailAllocationEntity allocation = allocationRepo.findById(detailAllocationId)
-                .orElseThrow(() -> new ItemNotFoundException("Detail allocation not found"));
-
-        if (!allocation.getHeaderLineItem().getOrgBudget().getOrganisation()
-                .getOrganisationId().equals(organisationId)) {
-            throw new ItemNotFoundException("Detail allocation does not belong to this organisation");
-        }
-
-        if (!allocation.hasAllocation()) {
-            throw new ItemNotFoundException("No budget allocated to this detail account");
-        }
-
-        if (allocation.getHeaderLineItem().getOrgBudget().getStatus() != OrgBudgetStatus.ACTIVE) {
-            throw new ItemNotFoundException("Organisation budget is not active");
-        }
-
-        return allocation;
-    }
 
 
     private OrganisationMember validateProjectAndOrganisationAccess(AccountEntity account, ProjectEntity project, OrganisationEntity organisation) throws ItemNotFoundException {

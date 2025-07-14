@@ -1,7 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetDetailAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.PaymentMode;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.utils.UUIDListConverter;
@@ -49,10 +48,10 @@ public class VoucherEntity {
     private LocalDateTime voucherDate;
 
     //Todo: ON production this should not be null
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "detail_allocation_id", nullable = true)
-    private OrgBudgetDetailAllocationEntity detailAllocation;
+//    @JsonIgnore
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "detail_allocation_id", nullable = true)
+//    private OrgBudgetDetailAllocationEntity detailAllocation;
 
     @Column(name = "overall_description", columnDefinition = "TEXT")
     private String overallDescription;
