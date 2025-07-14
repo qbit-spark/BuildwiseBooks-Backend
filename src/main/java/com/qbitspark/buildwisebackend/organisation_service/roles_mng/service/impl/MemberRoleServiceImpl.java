@@ -164,7 +164,6 @@ public class MemberRoleServiceImpl implements MemberRoleService {
         MemberRoleEntity role = memberRoleRepository.findByOrganisationAndRoleName(member.getOrganisation(), roleName)
                 .orElseThrow(() -> new RuntimeException("Role '" + roleName + "' not found"));
 
-
         member.setMemberRole(role);
         organisationMemberRepo.save(member);
 

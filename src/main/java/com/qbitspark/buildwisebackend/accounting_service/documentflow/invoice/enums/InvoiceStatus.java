@@ -2,18 +2,13 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.e
 
 import lombok.Getter;
 
-@Getter
 public enum InvoiceStatus {
     DRAFT,
     PENDING_APPROVAL,
+    REJECTED,
+    CANCELLED,
     APPROVED,
-    SENT,
-    VIEWED,
     PAID,
     PARTIALLY_PAID,
-    OVERDUE,
-    ARCHIVE;
-    public boolean canBeSent() {
-        return this == APPROVED || this == DRAFT;
-    }
+    OVERDUE;
 }

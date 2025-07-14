@@ -76,7 +76,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         budget.setBudgetVersion(1);
 
         OrgBudgetEntity savedBudget = orgBudgetRepo.save(budget);
-        initializeBudgetDistribution(savedBudget, organisation,currentAccount );
+        initializeBudgetDistribution(savedBudget, organisation, currentAccount);
         return savedBudget;
     }
 
@@ -94,34 +94,19 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         OrgBudgetEntity budget = orgBudgetRepo.findById(budgetId)
                 .orElseThrow(() -> new ItemNotFoundException("Budget not found"));
 
+        if (budget.getStatus() != OrgBudgetStatus.DRAFT) {
+            throw new ItemNotFoundException("Only draft budgets can be distributed");
+        }
+
         if (!budget.getOrganisation().getOrganisationId().equals(organisationId)) {
             throw new ItemNotFoundException("Budget does not belong to this organisation");
         }
 
-        List<OrgBudgetDetailDistributionEntity> savedDistributions = new ArrayList<>();
 
-        for (DistributeToDetailsRequest.DetailDistribution dist : request.getDistributions()) {
-
-            ChartOfAccounts detailAccount = chartOfAccountsRepo.findById(dist.getDetailAccountId())
-                    .orElseThrow(() -> new ItemNotFoundException("Detail account not found"));
-
-            if (!detailAccount.getOrganisation().getOrganisationId().equals(organisationId)) {
-                throw new ItemNotFoundException("Detail account does not belong to this organisation");
-            }
-
-            OrgBudgetDetailDistributionEntity distribution = new OrgBudgetDetailDistributionEntity();
-            distribution.setBudget(budget);
-            distribution.setDetailAccount(detailAccount);
-            distribution.setDistributedAmount(dist.getAmount());
-            distribution.setDescription(dist.getDescription());
-            distribution.setCreatedDate(LocalDateTime.now());
-            distribution.setCreatedBy(authenticatedAccount.getAccountId());
-
-            savedDistributions.add(detailDistributionRepo.save(distribution));
-        }
-
-        return savedDistributions;
+        validateNoDuplicateAccounts(request);
+        return processDistributions(request, budget, organisationId, authenticatedAccount);
     }
+
 
     @Override
     public List<OrgBudgetEntity> getBudgets(UUID organisationId)
@@ -254,7 +239,32 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
                 .filter(account -> !account.getIsHeader())
                 .toList();
 
-        // Create map of existing distributions by detail account ID
+        // Pre-validate for duplicates before creating map
+        Map<UUID, Long> accountCounts = existingDistributions.stream()
+                .collect(Collectors.groupingBy(
+                        dist -> dist.getDetailAccount().getId(),
+                        Collectors.counting()
+                ));
+
+        Optional<UUID> duplicateAccount = accountCounts.entrySet().stream()
+                .filter(entry -> entry.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .findFirst();
+
+        if (duplicateAccount.isPresent()) {
+            OrgBudgetDetailDistributionEntity duplicate = existingDistributions.stream()
+                    .filter(dist -> dist.getDetailAccount().getId().equals(duplicateAccount.get()))
+                    .findFirst()
+                    .orElseThrow();
+
+            throw new ItemNotFoundException(String.format(
+                    "Data integrity issue: Multiple distributions found for account %s (%s). " +
+                            "Please contact system administrator to resolve duplicate distributions.",
+                    duplicate.getDetailAccount().getAccountCode(),
+                    duplicate.getDetailAccount().getName()
+            ));
+        }
+
         Map<UUID, OrgBudgetDetailDistributionEntity> distributionMap = existingDistributions.stream()
                 .collect(Collectors.toMap(
                         dist -> dist.getDetailAccount().getId(),
@@ -486,6 +496,140 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         }
 
         return detail;
+    }
+
+// ========================================
+// EXTRACTED METHODS (from budget ownership check onward)
+// ========================================
+
+    private void validateNoDuplicateAccounts(DistributeToDetailsRequest request)
+            throws ItemNotFoundException {
+
+        Set<UUID> accountIds = new HashSet<>();
+
+        for (DistributeToDetailsRequest.DetailDistribution dist : request.getDistributions()) {
+            UUID accountId = dist.getDetailAccountId();
+
+            if (accountIds.contains(accountId)) {
+                ChartOfAccounts account = chartOfAccountsRepo.findById(accountId).orElse(null);
+                String accountInfo = account != null ?
+                        String.format("%s (%s)", account.getAccountCode(), account.getName()) :
+                        accountId.toString();
+
+                throw new ItemNotFoundException(String.format(
+                        "Duplicate account in distribution request: %s. " +
+                                "Each account can only appear once in a distribution request.",
+                        accountInfo
+                ));
+            }
+            accountIds.add(accountId);
+        }
+    }
+
+    private List<OrgBudgetDetailDistributionEntity> processDistributions(
+            DistributeToDetailsRequest request,
+            OrgBudgetEntity budget,
+            UUID organisationId,
+            AccountEntity authenticatedAccount) throws ItemNotFoundException {
+
+        List<OrgBudgetDetailDistributionEntity> savedDistributions = new ArrayList<>();
+
+        for (DistributeToDetailsRequest.DetailDistribution dist : request.getDistributions()) {
+            OrgBudgetDetailDistributionEntity distribution = processSingleDistribution(
+                    dist, budget, organisationId, authenticatedAccount);
+            savedDistributions.add(distribution);
+        }
+
+        return savedDistributions;
+    }
+
+    private OrgBudgetDetailDistributionEntity processSingleDistribution(
+            DistributeToDetailsRequest.DetailDistribution dist,
+            OrgBudgetEntity budget,
+            UUID organisationId,
+            AccountEntity authenticatedAccount) throws ItemNotFoundException {
+
+        // Validate account
+        ChartOfAccounts detailAccount = validateDistributionAccount(dist.getDetailAccountId(), organisationId);
+
+        // Handle existing vs new distribution
+        OrgBudgetDetailDistributionEntity distribution = createOrUpdateDistribution(
+                dist, budget, detailAccount, authenticatedAccount);
+
+        return detailDistributionRepo.save(distribution);
+    }
+
+    private ChartOfAccounts validateDistributionAccount(UUID accountId, UUID organisationId)
+            throws ItemNotFoundException {
+
+        ChartOfAccounts detailAccount = chartOfAccountsRepo.findById(accountId)
+                .orElseThrow(() -> new ItemNotFoundException("Detail account not found " + accountId));
+
+        if (!detailAccount.getOrganisation().getOrganisationId().equals(organisationId)) {
+            throw new ItemNotFoundException("Detail account does not belong to this organisation");
+        }
+
+        if (detailAccount.getIsHeader()) {
+            throw new ItemNotFoundException(String.format(
+                    "You cannot distribute on header account %s (%s) %s",
+                    detailAccount.getName(), detailAccount.getAccountCode(), detailAccount.getId()
+            ));
+        }
+
+        return detailAccount;
+    }
+
+    private OrgBudgetDetailDistributionEntity createOrUpdateDistribution(
+            DistributeToDetailsRequest.DetailDistribution dist,
+            OrgBudgetEntity budget,
+            ChartOfAccounts detailAccount,
+            AccountEntity authenticatedAccount) throws ItemNotFoundException {
+
+        List<OrgBudgetDetailDistributionEntity> existingDistributions = detailDistributionRepo
+                .findByBudgetAndDetailAccount(budget, detailAccount);
+
+        if (existingDistributions.isEmpty()) {
+            return createNewDistribution(dist, budget, detailAccount, authenticatedAccount);
+
+        } else if (existingDistributions.size() == 1) {
+            return updateExistingDistribution(existingDistributions.get(0), dist);
+
+        } else {
+            throw new ItemNotFoundException(String.format(
+                    "Data integrity issue: Multiple distributions found for account %s (%s) in budget %s. " +
+                            "Please contact system administrator to resolve duplicate distributions.",
+                    detailAccount.getAccountCode(),
+                    detailAccount.getName(),
+                    budget.getBudgetName()
+            ));
+        }
+    }
+
+    private OrgBudgetDetailDistributionEntity createNewDistribution(
+            DistributeToDetailsRequest.DetailDistribution dist,
+            OrgBudgetEntity budget,
+            ChartOfAccounts detailAccount,
+            AccountEntity authenticatedAccount) {
+
+        OrgBudgetDetailDistributionEntity distribution = new OrgBudgetDetailDistributionEntity();
+        distribution.setBudget(budget);
+        distribution.setDetailAccount(detailAccount);
+        distribution.setDistributedAmount(dist.getAmount());
+        distribution.setDescription(dist.getDescription());
+        distribution.setCreatedDate(LocalDateTime.now());
+        distribution.setCreatedBy(authenticatedAccount.getAccountId());
+
+        return distribution;
+    }
+
+    private OrgBudgetDetailDistributionEntity updateExistingDistribution(
+            OrgBudgetDetailDistributionEntity existing,
+            DistributeToDetailsRequest.DetailDistribution dist) {
+
+        existing.setDistributedAmount(dist.getAmount());
+        existing.setDescription(dist.getDescription());
+
+        return existing;
     }
 
 }

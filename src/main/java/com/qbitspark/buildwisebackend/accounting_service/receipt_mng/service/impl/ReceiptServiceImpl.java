@@ -69,6 +69,9 @@ public class ReceiptServiceImpl implements ReceiptService {
         permissionChecker.checkMemberPermission(member, "RECEIPTS","createReceipt");
 
         InvoiceDocEntity invoice = validateInvoice(request.getInvoiceId(), organisation);
+
+        validateInvoiceForReceipt(invoice);
+
         ProjectEntity project = invoice.getProject();
         ClientEntity client = invoice.getClient();
 
@@ -303,8 +306,6 @@ public class ReceiptServiceImpl implements ReceiptService {
             invoice.setInvoiceStatus(InvoiceStatus.PAID);
         } else if (totalPaid.compareTo(BigDecimal.ZERO) > 0) {
             invoice.setInvoiceStatus(InvoiceStatus.PARTIALLY_PAID);
-        } else {
-            invoice.setInvoiceStatus(InvoiceStatus.SENT);
         }
 
         invoiceDocRepo.save(invoice);
@@ -316,7 +317,57 @@ public class ReceiptServiceImpl implements ReceiptService {
 
         return invoiceDocRepo.findByIdAndOrganisation(invoiceId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Invoice not found"));
+
     }
+
+    private void validateInvoiceForReceipt(InvoiceDocEntity invoice) throws ItemNotFoundException {
+        InvoiceStatus status = invoice.getInvoiceStatus();
+
+        switch (status) {
+            case DRAFT:
+                throw new ItemNotFoundException(String.format(
+                        "Cannot create receipt for draft invoice %s. Please approve the invoice first.",
+                        invoice.getInvoiceNumber()
+                ));
+
+            case PENDING_APPROVAL:
+                throw new ItemNotFoundException(String.format(
+                        "Cannot create receipt for invoice %s. Invoice is pending approval.",
+                        invoice.getInvoiceNumber()
+                ));
+
+            case REJECTED:
+                throw new ItemNotFoundException(String.format(
+                        "Cannot create receipt for rejected invoice %s.",
+                        invoice.getInvoiceNumber()
+                ));
+
+            case CANCELLED:
+                throw new ItemNotFoundException(String.format(
+                        "Cannot create receipt for cancelled invoice %s.",
+                        invoice.getInvoiceNumber()
+                ));
+
+            case PAID:
+                throw new ItemNotFoundException(String.format(
+                        "Cannot create receipt for invoice %s. Invoice is already fully paid.",
+                        invoice.getInvoiceNumber()
+                ));
+
+            case APPROVED:
+            case PARTIALLY_PAID:
+            case OVERDUE:
+                // These are valid - allow receipt creation
+                break;
+
+            default:
+                throw new ItemNotFoundException(String.format(
+                        "Cannot create receipt for invoice %s. Invalid invoice status: %s",
+                        invoice.getInvoiceNumber(), status
+                ));
+        }
+    }
+
 
     private BankAccountEntity validateBankAccount(UUID bankAccountId, OrganisationEntity organisation)
             throws ItemNotFoundException {

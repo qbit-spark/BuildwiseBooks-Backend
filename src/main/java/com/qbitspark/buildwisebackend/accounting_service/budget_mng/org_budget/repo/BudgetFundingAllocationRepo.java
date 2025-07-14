@@ -9,14 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.UUID;
 
-@Repository
 public interface BudgetFundingAllocationRepo extends JpaRepository<BudgetFundingAllocationEntity, UUID> {
-
-    List<BudgetFundingAllocationEntity> findByBudget(OrgBudgetEntity budget);
-
-    List<BudgetFundingAllocationEntity> findByAccount(ChartOfAccounts account);
-
     List<BudgetFundingAllocationEntity> findByBudgetAndAccount(OrgBudgetEntity budget, ChartOfAccounts account);
 
-    List<BudgetFundingAllocationEntity> findBySourceReceiptId(UUID sourceReceiptId);
 }

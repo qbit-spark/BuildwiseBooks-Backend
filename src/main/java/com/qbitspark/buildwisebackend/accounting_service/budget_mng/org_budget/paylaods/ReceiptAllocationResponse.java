@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload;
+package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods;
 
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.AllocationStatus;
 import lombok.AllArgsConstructor;
@@ -32,6 +32,7 @@ public class ReceiptAllocationResponse {
     private LocalDateTime createdAt;
     private UUID approvedBy;
     private LocalDateTime approvedAt;
+
 
     private List<AllocationDetailResponse> allocationDetails;
 

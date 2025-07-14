@@ -13,10 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface InvoiceDocRepo extends JpaRepository<InvoiceDocEntity, UUID> {
- Optional<InvoiceDocEntity> findByInvoiceNumber(String invoiceNumber);
  Optional<InvoiceDocEntity> findByIdAndOrganisation(UUID invoiceId, OrganisationEntity organisation);
- Optional<InvoiceDocEntity> findByInvoiceNumberAndOrganisation(String invoiceNumber, OrganisationEntity organisation);
  Page<InvoiceDocEntity> findAllByProject(ProjectEntity project, Pageable pageable);
- List<InvoiceDocEntity> findAllByClient(ClientEntity client);
  Page<InvoiceDocEntity> findAllByOrganisation(OrganisationEntity organisation, Pageable pageable);
 }

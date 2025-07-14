@@ -11,10 +11,6 @@ import java.util.UUID;
 
 public interface BudgetFundingService {
 
-    BigDecimal getAvailableBudget(UUID organisationId, UUID budgetId, UUID accountId) throws ItemNotFoundException, AccessDeniedException;
-
     List<BudgetFundingAllocationEntity> fundAccountsFromAllocation(UUID organisationId, ReceiptAllocationEntity allocation) throws ItemNotFoundException, AccessDeniedException;
-
-    List<BudgetFundingAllocationEntity> getAccountFundingHistory(UUID organisationId, UUID budgetId, UUID accountId) throws ItemNotFoundException, AccessDeniedException;
 
 }

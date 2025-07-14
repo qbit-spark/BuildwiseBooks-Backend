@@ -43,11 +43,9 @@ public class BudgetFundingAllocationEntity {
     @Column(nullable = false)
     private FundingType fundingType = FundingType.RECEIPT_ALLOCATION;
 
-    // Link back to the source receipt allocation detail
     @Column(name = "source_receipt_allocation_detail_id")
     private UUID sourceReceiptAllocationDetailId;
 
-    // Link to the receipt that provided the funding
     @Column(name = "source_receipt_id")
     private UUID sourceReceiptId;
 
@@ -62,15 +60,11 @@ public class BudgetFundingAllocationEntity {
     private String referenceNumber;
 
     // ==========================================
-    // BUSINESS LOGIC METHODS
+    // ESSENTIAL BUSINESS LOGIC METHODS (KEEP)
     // ==========================================
 
     public boolean isReceiptFunding() {
         return FundingType.RECEIPT_ALLOCATION.equals(fundingType);
-    }
-
-    public boolean isManualAdjustment() {
-        return FundingType.MANUAL_ADJUSTMENT.equals(fundingType);
     }
 
     public String getAccountCode() {
@@ -81,12 +75,8 @@ public class BudgetFundingAllocationEntity {
         return account != null ? account.getName() : null;
     }
 
-    public String getBudgetName() {
-        return budget != null ? budget.getBudgetName() : null;
-    }
-
     // ==========================================
-    // VALIDATION METHODS
+    // VALIDATION METHODS (KEEP)
     // ==========================================
 
     public boolean isValidFunding() {
@@ -94,24 +84,5 @@ public class BudgetFundingAllocationEntity {
                 fundedAmount.compareTo(BigDecimal.ZERO) > 0 &&
                 account != null &&
                 budget != null;
-    }
-
-    public boolean belongsToSameBudget(OrgBudgetEntity targetBudget) {
-        return budget != null &&
-                targetBudget != null &&
-                budget.getBudgetId().equals(targetBudget.getBudgetId());
-    }
-
-    // ==========================================
-    // HELPER METHODS
-    // ==========================================
-
-    public String getFundingDescription() {
-        return switch (fundingType) {
-            case RECEIPT_ALLOCATION -> "Funding from receipt allocation";
-            case MANUAL_ADJUSTMENT -> "Manual budget adjustment";
-            case BUDGET_TRANSFER -> "Transfer from another budget account";
-            case CORRECTION -> "Correction entry";
-        };
     }
 }

@@ -90,7 +90,6 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
     }
     @Override
     public void addOwnerAsMember(OrganisationEntity organisation, AccountEntity owner) {
-
         Optional<OrganisationMember> existingMember = organisationMemberRepo
                 .findByAccountAndOrganisation(owner, organisation);
 
@@ -98,10 +97,11 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
             OrganisationMember ownerMember = new OrganisationMember();
             ownerMember.setOrganisation(organisation);
             ownerMember.setAccount(owner);
-            ownerMember.setMemberRole(memberRoleService.assignRoleToMember(existingMember.get(), "OWNER"));
             ownerMember.setStatus(MemberStatus.ACTIVE);
             ownerMember.setJoinedAt(LocalDateTime.now());
             ownerMember.setInvitedBy(owner.getId());
+
+            ownerMember.setMemberRole(memberRoleService.assignRoleToMember(ownerMember, "OWNER"));
 
             organisationMemberRepo.save(ownerMember);
         }

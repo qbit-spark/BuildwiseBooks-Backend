@@ -1,9 +1,7 @@
 package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,7 +22,8 @@ public class CreateReceiptAllocationRequest {
 
     private String notes;
 
-    @NotEmpty(message = "Allocation details cannot be empty")
+    @Size(min = 1, max = 50, message = "Must have 1-50 allocation details")
+    @DecimalMax(value = "999999.99", message = "Amount too large")
     @Valid
     private List<AllocationDetailRequest> allocationDetails;
 
