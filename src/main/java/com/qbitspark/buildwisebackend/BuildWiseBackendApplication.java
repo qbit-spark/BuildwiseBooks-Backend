@@ -27,7 +27,6 @@ public class BuildWiseBackendApplication implements CommandLineRunner {
     @Autowired
     private RolesRepository roleRepository;
 
-
     @Bean
     public WebClient webClient(WebClient.Builder builder) {return builder.build();}
 

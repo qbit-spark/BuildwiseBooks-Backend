@@ -286,7 +286,6 @@ public class ReceiptServiceImpl implements ReceiptService {
         return receiptRepo.findByOrganisationAndStatus(organisation, ReceiptStatus.APPROVED);
     }
 
-
     private void updateInvoicePaymentStatus(InvoiceDocEntity invoice) {
         List<ReceiptEntity> confirmedReceipts = receiptRepo.findByInvoiceOrderByReceiptDateDesc(invoice)
                 .stream()
