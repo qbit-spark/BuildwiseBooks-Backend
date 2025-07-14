@@ -3,6 +3,7 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.s
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceDocEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceLineItemEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.embedings.InvoiceTaxDetail;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.InvoiceStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.paylaod.*;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.repo.InvoiceDocRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceDocService;
@@ -280,7 +281,6 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         MonetaryAmount creditMoney = Money.of(creditApplied != null ? creditApplied : BigDecimal.ZERO, "TZS");
         MonetaryAmount amountDueMoney = totalMoney.subtract(creditMoney);
-        invoice.setAmountDueMoney(amountDueMoney);
     }
 
     private TaxCalculationResult calculateTaxesWithMoney(List<UUID> taxIds, MonetaryAmount subtotalMoney, OrganisationEntity organisation) throws ItemNotFoundException {
@@ -381,21 +381,33 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         response.setTaxAmount(invoice.getTotalTaxAmount());
         response.setTotalAmount(invoice.getTotalAmount());
 
+        // Calculate payment amounts
+        BigDecimal paidAmount = calculateAmountPaid(invoice.getId());
+        BigDecimal amountDue = calculateAmountDue(invoice);
 
-        response.setPaidAmount(calculatePaidAmount(invoice.getId()));
+        response.setPaidAmount(paidAmount);
         response.setCreditApplied(creditApplied != null ? creditApplied : BigDecimal.ZERO);
-        response.setAmountDue(invoice.getAmountDue());
+        response.setAmountDue(amountDue);
+
+
+        response.setFullyPaid(isFullyPaid(invoice));
+        response.setOverdue(invoice.isOverdue());
+        response.setCanReceivePayment(invoice.getInvoiceStatus().canReceivePayment());
+        response.setCalculatedStatus(calculateInvoiceStatus(invoice));
+        response.setRemainingAmount(amountDue);
+        response.setPaymentStatusDescription(buildPaymentStatusDescription(invoice, paidAmount, amountDue));
+
         response.setCreatedAt(invoice.getCreatedAt());
         response.setUpdatedAt(invoice.getUpdatedAt());
         response.setCreatedByUserName(currentUser.getUserName());
 
-        // Map line items sorted by order
+        // Map line items
         List<InvoiceLineItemResponse> lineItemResponses = invoice.getLineItems().stream()
                 .map(this::mapToLineItemResponse)
                 .collect(Collectors.toList());
         response.setLineItems(lineItemResponses);
 
-        // Map tax details for transparency
+        // Map tax details
         List<InvoiceTaxDetailResponse> taxDetailResponses = invoice.getTaxDetails().stream()
                 .map(this::mapToTaxDetailResponse)
                 .collect(Collectors.toList());
@@ -403,6 +415,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         return response;
     }
+
 
     private InvoiceLineItemResponse mapToLineItemResponse(InvoiceLineItemEntity lineItem) {
         InvoiceLineItemResponse response = new InvoiceLineItemResponse();
@@ -512,6 +525,53 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         }
 
         return member;
+    }
+
+    public BigDecimal calculateAmountPaid(UUID invoiceId) {
+        return receiptRepo.findByInvoiceIdAndStatus(invoiceId, ReceiptStatus.APPROVED)
+                .stream()
+                .map(ReceiptEntity::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public BigDecimal calculateAmountDue(InvoiceDocEntity invoice) {
+        BigDecimal amountPaid = calculateAmountPaid(invoice.getId());
+        return invoice.getTotalAmount().subtract(amountPaid);
+    }
+
+    public boolean isFullyPaid(InvoiceDocEntity invoice) {
+        return calculateAmountDue(invoice).compareTo(BigDecimal.ZERO) <= 0;
+    }
+
+    public InvoiceStatus calculateInvoiceStatus(InvoiceDocEntity invoice) {
+        // Don't auto-calculate status if it's in workflow states
+        if (invoice.getInvoiceStatus() == InvoiceStatus.DRAFT ||
+                invoice.getInvoiceStatus() == InvoiceStatus.PENDING_APPROVAL ||
+                invoice.getInvoiceStatus() == InvoiceStatus.REJECTED ||
+                invoice.getInvoiceStatus() == InvoiceStatus.CANCELLED) {
+            return invoice.getInvoiceStatus(); // Keep current status
+        }
+
+        BigDecimal paid = calculateAmountPaid(invoice.getId());
+        BigDecimal total = invoice.getTotalAmount();
+
+        if (paid.compareTo(BigDecimal.ZERO) == 0) {
+            return InvoiceStatus.APPROVED; // No payments yet
+        } else if (paid.compareTo(total) >= 0) {
+            return InvoiceStatus.PAID; // Fully paid
+        } else {
+            return InvoiceStatus.PARTIALLY_PAID; // Partial payment
+        }
+    }
+
+    private String buildPaymentStatusDescription(InvoiceDocEntity invoice, BigDecimal paidAmount, BigDecimal amountDue) {
+        if (isFullyPaid(invoice)) {
+            return "Invoice is fully paid";
+        } else if (paidAmount.compareTo(BigDecimal.ZERO) == 0) {
+            return "No payments received";
+        } else {
+            return String.format("Partially paid - %s remaining", amountDue);
+        }
     }
 
 }

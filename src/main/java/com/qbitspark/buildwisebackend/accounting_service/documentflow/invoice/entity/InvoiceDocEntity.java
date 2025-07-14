@@ -77,14 +77,6 @@ public class InvoiceDocEntity {
     @Builder.Default
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
-    @Column(name = "amount_paid", precision = 19, scale = 4)
-    @Builder.Default
-    private BigDecimal amountPaid = BigDecimal.ZERO;
-
-    @Column(name = "amount_due", precision = 19, scale = 4)
-    @Builder.Default
-    private BigDecimal amountDue = BigDecimal.ZERO;
-
     @ElementCollection
     @CollectionTable(name = "invoice_tax_details", joinColumns = @JoinColumn(name = "invoice_id"))
     @Column(name = "tax_details", columnDefinition = "jsonb")
@@ -114,7 +106,6 @@ public class InvoiceDocEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    
     public void setSubtotalMoney(MonetaryAmount amount) {
         this.subtotal = amount.getNumber().numberValue(BigDecimal.class);
     }
@@ -123,7 +114,8 @@ public class InvoiceDocEntity {
         this.totalAmount = amount.getNumber().numberValue(BigDecimal.class);
     }
 
-    public void setAmountDueMoney(MonetaryAmount amount) {
-        this.amountDue = amount.getNumber().numberValue(BigDecimal.class);
+    @Transient
+    public boolean isOverdue() {
+        return dueDate != null && dueDate.isBefore(LocalDate.now());
     }
 }

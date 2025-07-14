@@ -99,10 +99,7 @@ public class ReceiptServiceImpl implements ReceiptService {
         receipt.setAttachments(request.getAttachments());
         receipt.setCreatedBy(currentUser.getAccountId());
 
-        ReceiptEntity savedReceipt = receiptRepo.save(receipt);
-        updateInvoicePaymentStatus(invoice);
-
-        return savedReceipt;
+        return receiptRepo.save(receipt);
     }
 
     @Override
@@ -183,10 +180,7 @@ public class ReceiptServiceImpl implements ReceiptService {
 
         receipt.setUpdatedBy(currentUser.getAccountId());
 
-        ReceiptEntity savedReceipt = receiptRepo.save(receipt);
-        updateInvoicePaymentStatus(receipt.getInvoice());
-
-        return savedReceipt;
+        return receiptRepo.save(receipt);
     }
 
     @Override
@@ -232,7 +226,6 @@ public class ReceiptServiceImpl implements ReceiptService {
         receipt.setUpdatedBy(currentUser.getAccountId());
 
         ReceiptEntity savedReceipt = receiptRepo.save(receipt);
-        updateInvoicePaymentStatus(savedReceipt.getInvoice());
     }
 
     @Override
@@ -287,28 +280,6 @@ public class ReceiptServiceImpl implements ReceiptService {
         permissionChecker.checkMemberPermission(member, "RECEIPTS","viewReceipts");
 
         return receiptRepo.findByOrganisationAndStatus(organisation, ReceiptStatus.APPROVED);
-    }
-
-    private void updateInvoicePaymentStatus(InvoiceDocEntity invoice) {
-        List<ReceiptEntity> confirmedReceipts = receiptRepo.findByInvoiceOrderByReceiptDateDesc(invoice)
-                .stream()
-                .filter(receipt -> receipt.getStatus() == ReceiptStatus.APPROVED)
-                .toList();
-
-        BigDecimal totalPaid = confirmedReceipts.stream()
-                .map(ReceiptEntity::getTotalAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        invoice.setAmountPaid(totalPaid);
-        invoice.setAmountDue(invoice.getTotalAmount().subtract(totalPaid));
-
-        if (totalPaid.compareTo(invoice.getTotalAmount()) >= 0) {
-            invoice.setInvoiceStatus(InvoiceStatus.PAID);
-        } else if (totalPaid.compareTo(BigDecimal.ZERO) > 0) {
-            invoice.setInvoiceStatus(InvoiceStatus.PARTIALLY_PAID);
-        }
-
-        invoiceDocRepo.save(invoice);
     }
 
 

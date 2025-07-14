@@ -2,6 +2,7 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.e
 
 import lombok.Getter;
 
+@Getter
 public enum InvoiceStatus {
     DRAFT,
     PENDING_APPROVAL,
@@ -11,4 +12,8 @@ public enum InvoiceStatus {
     PAID,
     PARTIALLY_PAID,
     OVERDUE;
+
+    public boolean canReceivePayment() {
+        return this == APPROVED || this == PARTIALLY_PAID || this == OVERDUE;
+    }
 }

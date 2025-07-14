@@ -22,8 +22,8 @@ public class CreateReceiptAllocationRequest {
 
     private String notes;
 
+    @NotEmpty(message = "Allocation details cannot be empty")
     @Size(min = 1, max = 50, message = "Must have 1-50 allocation details")
-    @DecimalMax(value = "999999.99", message = "Amount too large")
     @Valid
     private List<AllocationDetailRequest> allocationDetails;
 
@@ -38,6 +38,7 @@ public class CreateReceiptAllocationRequest {
 
         @NotNull(message = "Amount is required")
         @Positive(message = "Amount must be positive")
+        @DecimalMax(value = "999999.99", message = "Amount too large")
         private BigDecimal amount;
 
         private String description;

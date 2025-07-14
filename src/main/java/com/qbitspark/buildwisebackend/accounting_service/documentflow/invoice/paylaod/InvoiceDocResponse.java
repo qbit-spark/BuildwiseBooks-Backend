@@ -30,6 +30,15 @@ public class InvoiceDocResponse {
     private BigDecimal paidAmount;
     private BigDecimal creditApplied;
     private BigDecimal amountDue;
+
+
+    private boolean isFullyPaid;
+    private boolean isOverdue;
+    private boolean canReceivePayment;
+    private InvoiceStatus calculatedStatus;
+    private BigDecimal remainingAmount;
+    private String paymentStatusDescription;
+
     private List<InvoiceLineItemResponse> lineItems;
     private List<InvoiceTaxDetailResponse> taxDetails;
     private List<InvoiceAttachmentResponse> attachments;
