@@ -3,7 +3,6 @@ package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetDetailAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetLineItemEntity;
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AllocateMoneyRequest;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AllocationSummaryResponse;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AvailableDetailAllocationResponse;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetDetailAllocationRepo;
@@ -13,10 +12,6 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.s
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationFundingEntity;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptAllocationFundingRepo;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptRepo;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
@@ -26,7 +21,6 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
-
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -52,110 +46,71 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
     private final OrganisationRepo organisationRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
     private final AccountRepo accountRepo;
-    private final ReceiptRepo receiptRepo;
-    private final ReceiptAllocationFundingRepo fundingRepo;
     private final PermissionCheckerService permissionChecker;
 
     @Override
-    public List<OrgBudgetDetailAllocationEntity> allocateMoneyToDetailAccounts(
-            UUID organisationId, UUID budgetId, AllocateMoneyRequest request)
+    public List<OrgBudgetDetailAllocationEntity> createBudgetAllocations(
+            UUID organisationId, UUID budgetId, CreateBudgetAllocationRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity authenticatedAccount = getAuthenticatedAccount();
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
-
-
-        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
-
-        permissionChecker.checkMemberPermission(member, "BUDGET","allocateBudget");
+        AccountEntity user = getAuthenticatedAccount();
+        OrganisationEntity organisation = getOrganisation(organisationId);
+        OrganisationMember member = validateMemberAccess(user, organisation);
+        permissionChecker.checkMemberPermission(member, "BUDGET", "allocateBudget");
 
         OrgBudgetEntity budget = validateBudget(budgetId, organisationId);
 
-        ReceiptEntity receipt = validateReceipt(request.getReceiptId(), organisationId);
-
-        BigDecimal totalRequestAmount = request.getDetailAllocations().stream()
-                .map(AllocateMoneyRequest.DetailAllocation::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal receiptRemainingAmount = getReceiptRemainingAmount(receipt);
-        if (totalRequestAmount.compareTo(receiptRemainingAmount) > 0) {
-            throw new ItemNotFoundException(
-                    String.format("Receipt has insufficient balance. Available: %s, Requested: %s",
-                            receiptRemainingAmount, totalRequestAmount));
-        }
-
-        Map<UUID, List<AllocateMoneyRequest.DetailAllocation>> allocationsByHeader =
+        Map<UUID, List<CreateBudgetAllocationRequest.DetailAllocation>> groupedByHeader =
                 groupAllocationsByHeader(request.getDetailAllocations(), organisationId);
 
         List<OrgBudgetDetailAllocationEntity> allNewAllocations = new ArrayList<>();
 
-        for (Map.Entry<UUID, List<AllocateMoneyRequest.DetailAllocation>> entry : allocationsByHeader.entrySet()) {
+        for (Map.Entry<UUID, List<CreateBudgetAllocationRequest.DetailAllocation>> entry : groupedByHeader.entrySet()) {
             List<OrgBudgetDetailAllocationEntity> headerAllocations = processHeaderAllocations(
-                    entry.getKey(), entry.getValue(), budget, authenticatedAccount);
+                    entry.getKey(), entry.getValue(), budget, user);
             allNewAllocations.addAll(headerAllocations);
-        }
-
-
-        for (int i = 0; i < allNewAllocations.size(); i++) {
-            OrgBudgetDetailAllocationEntity allocation = allNewAllocations.get(i);
-            BigDecimal amount = request.getDetailAllocations().get(i).getAmount();
-
-            createFundingLink(receipt, allocation, amount, authenticatedAccount);
         }
 
         return allNewAllocations;
     }
 
-
     @Override
     public List<OrgBudgetDetailAllocationEntity> getHeaderAllocations(
-            UUID organisationId, UUID budgetId, UUID headerLineItemId) throws ItemNotFoundException, AccessDeniedException {
+            UUID organisationId, UUID budgetId, UUID headerLineItemId)
+            throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity authenticatedAccount = getAuthenticatedAccount();
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
-
-
-        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
-
-        permissionChecker.checkMemberPermission(member, "BUDGET","allocateBudget");
+        AccountEntity user = getAuthenticatedAccount();
+        OrganisationEntity organisation = getOrganisation(organisationId);
+        OrganisationMember member = validateMemberAccess(user, organisation);
+        permissionChecker.checkMemberPermission(member, "BUDGET", "viewBudget");
 
         OrgBudgetLineItemEntity headerLineItem = validateHeaderLineItem(headerLineItemId, organisationId);
         return allocationRepo.findByHeaderLineItemOrderByDetailAccountAccountCode(headerLineItem);
     }
 
-
     @Override
     public AllocationSummaryResponse getAllocationSummary(
-            UUID organisationId, UUID budgetId, UUID headerLineItemId) throws ItemNotFoundException, AccessDeniedException {
+            UUID organisationId, UUID budgetId, UUID headerLineItemId)
+            throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity authenticatedAccount = getAuthenticatedAccount();
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
-
-
-        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
-
-        permissionChecker.checkMemberPermission(member, "BUDGET","allocateBudget");
+        AccountEntity user = getAuthenticatedAccount();
+        OrganisationEntity organisation = getOrganisation(organisationId);
+        OrganisationMember member = validateMemberAccess(user, organisation);
+        permissionChecker.checkMemberPermission(member, "BUDGET", "viewBudget");
 
         List<OrgBudgetDetailAllocationEntity> allocations = getHeaderAllocations(organisationId, budgetId, headerLineItemId);
         OrgBudgetLineItemEntity headerLineItem = validateHeaderLineItem(headerLineItemId, organisationId);
         return buildAllocationSummary(headerLineItem, allocations);
     }
 
-
     @Override
     public List<OrgBudgetDetailAllocationEntity> getAllBudgetAllocations(UUID organisationId, UUID budgetId)
             throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity authenticatedAccount = getAuthenticatedAccount();
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
-
-        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
-
-        permissionChecker.checkMemberPermission(member, "BUDGET","allocateBudget");
+        AccountEntity user = getAuthenticatedAccount();
+        OrganisationEntity organisation = getOrganisation(organisationId);
+        OrganisationMember member = validateMemberAccess(user, organisation);
+        permissionChecker.checkMemberPermission(member, "BUDGET", "viewBudget");
 
         OrgBudgetEntity budget = validateBudget(budgetId, organisationId);
 
@@ -169,14 +124,10 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
     public List<AvailableDetailAllocationResponse> getDetailAccountsForVouchers(
             UUID organisationId, UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
 
-        AccountEntity authenticatedAccount = getAuthenticatedAccount();
-        OrganisationEntity organisation = organisationRepo.findById(organisationId)
-                .orElseThrow(() -> new ItemNotFoundException("Organisation does not exist"));
-
-
-        OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
-
-        permissionChecker.checkMemberPermission(member, "BUDGET","allocateBudget");
+        AccountEntity user = getAuthenticatedAccount();
+        OrganisationEntity organisation = getOrganisation(organisationId);
+        OrganisationMember member = validateMemberAccess(user, organisation);
+        permissionChecker.checkMemberPermission(member, "BUDGET", "viewBudget");
 
         OrgBudgetEntity budget = validateBudget(budgetId, organisationId);
 
@@ -202,25 +153,21 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
                 .collect(Collectors.toList());
     }
 
-
-    // ========== BUSINESS LOGIC METHODS ==========
-
     private List<OrgBudgetDetailAllocationEntity> processHeaderAllocations(
-            UUID headerAccountId, List<AllocateMoneyRequest.DetailAllocation> allocations,
-            OrgBudgetEntity budget, AccountEntity authenticatedAccount) throws ItemNotFoundException {
+            UUID headerAccountId, List<CreateBudgetAllocationRequest.DetailAllocation> allocations,
+            OrgBudgetEntity budget, AccountEntity user) throws ItemNotFoundException {
 
         OrgBudgetLineItemEntity headerLineItem = getAndValidateHeaderLineItem(headerAccountId, budget);
 
         BigDecimal totalAllocationAmount = allocations.stream()
-                .map(AllocateMoneyRequest.DetailAllocation::getAmount)
+                .map(CreateBudgetAllocationRequest.DetailAllocation::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         validateBudgetAvailability(headerLineItem, totalAllocationAmount);
 
         List<OrgBudgetDetailAllocationEntity> newAllocations = new ArrayList<>();
-        for (AllocateMoneyRequest.DetailAllocation allocation : allocations) {
-            OrgBudgetDetailAllocationEntity newAllocation = createAllocation(
-                    headerLineItem, allocation, authenticatedAccount);
+        for (CreateBudgetAllocationRequest.DetailAllocation allocation : allocations) {
+            OrgBudgetDetailAllocationEntity newAllocation = createAllocation(headerLineItem, allocation, user);
             newAllocations.add(allocationRepo.save(newAllocation));
         }
 
@@ -234,7 +181,7 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
                 .orElseThrow(() -> new ItemNotFoundException("Header account not found"));
 
         if (!headerAccount.getIsHeader()) {
-            throw new ItemNotFoundException("Account '" + headerAccount.getName() + "' is not a header account");
+            throw new ItemNotFoundException("Account is not a header account");
         }
 
         if (headerAccount.getAccountType() != AccountType.EXPENSE) {
@@ -243,16 +190,10 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
 
         OrgBudgetLineItemEntity headerLineItem = orgBudgetLineItemRepo
                 .findByOrgBudgetAndChartOfAccount(budget, headerAccount)
-                .orElseThrow(() -> new ItemNotFoundException(
-                        "Header account '" + headerAccount.getName() + "' not found in budget. " +
-                                "Please distribute budget to this header account first."
-                ));
+                .orElseThrow(() -> new ItemNotFoundException("Header account not found in budget"));
 
         if (headerLineItem.getBudgetAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ItemNotFoundException(
-                    "Header account '" + headerAccount.getName() + "' has no budget allocated. " +
-                            "Please distribute budget to this header account first."
-            );
+            throw new ItemNotFoundException("Header account has no budget allocated");
         }
 
         return headerLineItem;
@@ -266,16 +207,7 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         BigDecimal availableForAllocation = headerBudgetAmount.subtract(currentlyAllocated);
 
         if (requestedAmount.compareTo(availableForAllocation) > 0) {
-            throw new ItemNotFoundException(String.format(
-                    "Allocation amount (%s) exceeds available budget for '%s' (%s). " +
-                            "Total Budget: %s, Already Allocated: %s, Available: %s",
-                    requestedAmount,
-                    headerLineItem.getChartOfAccount().getName(),
-                    availableForAllocation,
-                    headerBudgetAmount,
-                    currentlyAllocated,
-                    availableForAllocation
-            ));
+            throw new ItemNotFoundException("Allocation amount exceeds available budget");
         }
     }
 
@@ -285,21 +217,21 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private Map<UUID, List<AllocateMoneyRequest.DetailAllocation>> groupAllocationsByHeader(
-            List<AllocateMoneyRequest.DetailAllocation> detailAllocations, UUID organisationId)
+    private Map<UUID, List<CreateBudgetAllocationRequest.DetailAllocation>> groupAllocationsByHeader(
+            List<CreateBudgetAllocationRequest.DetailAllocation> detailAllocations, UUID organisationId)
             throws ItemNotFoundException {
 
-        Map<UUID, List<AllocateMoneyRequest.DetailAllocation>> groupedAllocations = new HashMap<>();
+        Map<UUID, List<CreateBudgetAllocationRequest.DetailAllocation>> groupedAllocations = new HashMap<>();
 
-        for (AllocateMoneyRequest.DetailAllocation allocation : detailAllocations) {
+        for (CreateBudgetAllocationRequest.DetailAllocation allocation : detailAllocations) {
             ChartOfAccounts detailAccount = chartOfAccountsRepo.findById(allocation.getDetailAccountId())
-                    .orElseThrow(() -> new ItemNotFoundException("Detail account not found: " + allocation.getDetailAccountId()));
+                    .orElseThrow(() -> new ItemNotFoundException("Detail account not found"));
 
             validateDetailAccount(detailAccount, organisationId);
 
             UUID headerAccountId = detailAccount.getParentAccountId();
             if (headerAccountId == null) {
-                throw new ItemNotFoundException("Detail account '" + detailAccount.getName() + "' has no parent header account");
+                throw new ItemNotFoundException("Detail account has no parent header account");
             }
 
             groupedAllocations.computeIfAbsent(headerAccountId, k -> new ArrayList<>()).add(allocation);
@@ -309,9 +241,8 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
     }
 
     private OrgBudgetDetailAllocationEntity createAllocation(OrgBudgetLineItemEntity headerLineItem,
-                                                             AllocateMoneyRequest.DetailAllocation detailAllocation,
-                                                             AccountEntity authenticatedAccount)
-            throws ItemNotFoundException {
+                                                             CreateBudgetAllocationRequest.DetailAllocation detailAllocation,
+                                                             AccountEntity user) throws ItemNotFoundException {
 
         ChartOfAccounts detailAccount = chartOfAccountsRepo.findById(detailAllocation.getDetailAccountId())
                 .orElseThrow(() -> new ItemNotFoundException("Detail account not found"));
@@ -324,7 +255,7 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         allocation.setCommittedAmount(BigDecimal.ZERO);
         allocation.setAllocationNotes(detailAllocation.getDescription());
         allocation.setCreatedDate(LocalDateTime.now());
-        allocation.setCreatedBy(authenticatedAccount.getAccountId());
+        allocation.setCreatedBy(user.getAccountId());
 
         return allocation;
     }
@@ -350,11 +281,17 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
                 .map(OrgBudgetDetailAllocationEntity::getCommittedAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        BigDecimal totalReceiptFunding = allocations.stream()
+                .map(OrgBudgetDetailAllocationEntity::getTotalApprovedReceiptAllocations)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         summary.setTotalAllocatedAmount(totalAllocated);
         summary.setTotalSpentAmount(totalSpent);
         summary.setTotalCommittedAmount(totalCommitted);
+        summary.setTotalReceiptFunding(totalReceiptFunding);
         summary.setAvailableForAllocation(headerLineItem.getBudgetAmount().subtract(totalAllocated));
         summary.setTotalRemainingAmount(totalAllocated.subtract(totalSpent).subtract(totalCommitted));
+        summary.setUnfundedAmount(totalAllocated.subtract(totalReceiptFunding));
 
         summary.setTotalDetailAccounts(allocations.size());
         summary.setAccountsWithAllocation((int) allocations.stream().filter(OrgBudgetDetailAllocationEntity::hasAllocation).count());
@@ -362,30 +299,6 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
 
         return summary;
     }
-
-
-    private BigDecimal getReceiptRemainingAmount(ReceiptEntity receipt) {
-        List<ReceiptAllocationFundingEntity> fundings = fundingRepo.findByReceiptReceiptId(receipt.getReceiptId());
-        BigDecimal totalAllocated = ReceiptEntity.calculateTotalFunded(fundings);
-        return receipt.getTotalAmount().subtract(totalAllocated);
-    }
-
-
-    private void createFundingLink(ReceiptEntity receipt, OrgBudgetDetailAllocationEntity allocation,
-                                   BigDecimal amount, AccountEntity authenticatedAccount) {
-
-        ReceiptAllocationFundingEntity funding = new ReceiptAllocationFundingEntity();
-        funding.setReceipt(receipt);
-        funding.setAllocation(allocation);
-        funding.setFundedAmount(amount);
-        funding.setFundingDate(LocalDateTime.now());
-        funding.setAuthorizedBy(authenticatedAccount.getAccountId());
-        funding.setCreatedDate(LocalDateTime.now());
-
-        fundingRepo.save(funding);
-    }
-
-    // ========== VALIDATION METHODS ==========
 
     private OrgBudgetEntity validateBudget(UUID budgetId, UUID organisationId) throws ItemNotFoundException {
         OrgBudgetEntity budget = orgBudgetRepo.findById(budgetId)
@@ -419,36 +332,18 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         }
 
         if (detailAccount.getIsHeader()) {
-            throw new ItemNotFoundException("Cannot allocate to header account: " + detailAccount.getName());
+            throw new ItemNotFoundException("Cannot allocate to header account");
         }
 
         if (detailAccount.getAccountType() != AccountType.EXPENSE) {
-            throw new ItemNotFoundException("Can only allocate to expense accounts: " + detailAccount.getName());
+            throw new ItemNotFoundException("Can only allocate to expense accounts");
         }
 
         if (!detailAccount.getIsPostable()) {
-            throw new ItemNotFoundException("Cannot allocate to non-postable account: " + detailAccount.getName());
+            throw new ItemNotFoundException("Cannot allocate to non-postable account");
         }
     }
 
-    private ReceiptEntity validateReceipt(UUID receiptId, UUID organisationId) throws ItemNotFoundException {
-        ReceiptEntity receipt = receiptRepo.findById(receiptId)
-                .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
-
-        if (!receipt.getOrganisation().getOrganisationId().equals(organisationId)) {
-            throw new ItemNotFoundException("Receipt does not belong to this organisation");
-        }
-
-        if (!receipt.isEligibleForFunding()) {
-            throw new ItemNotFoundException("Only approved receipts can fund allocations");
-        }
-
-        return receipt;
-    }
-
-
-
-    // =================== UTILS METHODS =======================
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -460,27 +355,43 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
                 .orElseThrow(() -> new ItemNotFoundException("User not found"));
     }
 
+    private OrganisationEntity getOrganisation(UUID organisationId) throws ItemNotFoundException {
+        return organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+    }
+
+    private OrganisationMember validateMemberAccess(AccountEntity account, OrganisationEntity organisation)
+            throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member not found in organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
+    }
+
     private AvailableDetailAllocationResponse createAggregatedAllocationResponse(
-            ChartOfAccounts detailAccount,
-            List<OrgBudgetDetailAllocationEntity> allocations) {
+            ChartOfAccounts detailAccount, List<OrgBudgetDetailAllocationEntity> allocations) {
 
         AvailableDetailAllocationResponse response = new AvailableDetailAllocationResponse();
 
         response.setDetailAccountId(detailAccount.getId());
         response.setAccountCode(detailAccount.getAccountCode());
         response.setAccountName(detailAccount.getName());
-
-        String parentName = getParentHeaderAccountName(detailAccount);
-        response.setHeadingParent(parentName);
+        response.setHeadingParent(getParentHeaderAccountName(detailAccount));
 
         if (allocations == null || allocations.isEmpty()) {
-            response.setAllocationId(null); // No specific allocation
+            response.setAllocationId(null);
             response.setHeaderLineItemId(null);
             response.setAllocatedAmount(BigDecimal.ZERO);
             response.setSpentAmount(BigDecimal.ZERO);
             response.setCommittedAmount(BigDecimal.ZERO);
             response.setBudgetRemaining(BigDecimal.ZERO);
             response.setAvailableBalance(BigDecimal.ZERO);
+            response.setReceiptFunding(BigDecimal.ZERO);
+            response.setUnfundedAmount(BigDecimal.ZERO);
             response.setHasAllocation(false);
             response.setAllocationStatus("No Allocation");
             response.setNotes("No budget allocated to this account");
@@ -497,39 +408,42 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
                     .map(OrgBudgetDetailAllocationEntity::getCommittedAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            BigDecimal totalReceiptFunding = allocations.stream()
+                    .map(OrgBudgetDetailAllocationEntity::getTotalApprovedReceiptAllocations)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             BigDecimal budgetRemaining = totalAllocated.subtract(totalSpent).subtract(totalCommitted);
+            BigDecimal unfundedAmount = totalAllocated.subtract(totalReceiptFunding);
 
             OrgBudgetDetailAllocationEntity firstAllocation = allocations.getFirst();
 
             response.setAllocationId(firstAllocation.getAllocationId());
             response.setHeaderLineItemId(firstAllocation.getHeaderLineItem().getLineItemId());
             response.setDetailAccountId(detailAccount.getId());
-
             response.setAllocatedAmount(totalAllocated);
             response.setSpentAmount(totalSpent);
             response.setCommittedAmount(totalCommitted);
             response.setBudgetRemaining(budgetRemaining);
             response.setAvailableBalance(budgetRemaining);
+            response.setReceiptFunding(totalReceiptFunding);
+            response.setUnfundedAmount(unfundedAmount);
             response.setHasAllocation(true);
 
             if (budgetRemaining.compareTo(BigDecimal.ZERO) <= 0) {
                 response.setAllocationStatus("Fully Used");
+            } else if (unfundedAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                response.setAllocationStatus("Fully Funded");
             } else {
                 response.setAllocationStatus("Available");
             }
 
-            if (allocations.size() == 1) {
-                response.setNotes(firstAllocation.getAllocationNotes() != null ?
-                        firstAllocation.getAllocationNotes() : "Available for vouchers");
-            } else {
-                response.setNotes(String.format("Aggregated from %d allocations - Total available",
-                        allocations.size()));
-            }
+            response.setNotes(allocations.size() == 1 ?
+                    firstAllocation.getAllocationNotes() :
+                    "Aggregated from " + allocations.size() + " allocations");
         }
 
         return response;
     }
-
 
     private String getParentHeaderAccountName(ChartOfAccounts detailAccount) {
         if (detailAccount.getParentAccountId() == null) {
@@ -539,17 +453,5 @@ public class OrgBudgetAllocationServiceImpl implements OrgBudgetAllocationServic
         return chartOfAccountsRepo.findById(detailAccount.getParentAccountId())
                 .map(ChartOfAccounts::getName)
                 .orElse("Unknown Parent");
-    }
-
-
-    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
-        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
-                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
-
-        if (member.getStatus() != MemberStatus.ACTIVE) {
-            throw new ItemNotFoundException("Member is not active");
-        }
-
-        return member;
     }
 }

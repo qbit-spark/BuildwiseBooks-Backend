@@ -1,9 +1,7 @@
 package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.controller;
 
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationFundingEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.*;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptAllocationFundingRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.ReceiptService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
@@ -29,7 +27,6 @@ import java.util.stream.Collectors;
 public class ReceiptController {
 
     private final ReceiptService receiptService;
-    private final ReceiptAllocationFundingRepo fundingRepo;
 
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createReceipt(
