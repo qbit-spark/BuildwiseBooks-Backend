@@ -5,7 +5,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.r
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationDetailEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
-import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.CreateReceiptAllocationRequest;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.CreateAllocationRequest;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptAllocationDetailRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptAllocationRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptRepo;
@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,141 +37,101 @@ import java.util.UUID;
 @Transactional
 public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
 
-    private final ReceiptAllocationRepo receiptAllocationRepo;
-    private final ReceiptAllocationDetailRepo allocationDetailRepo;
+    private final ReceiptAllocationRepo allocationRepo;
+    private final ReceiptAllocationDetailRepo detailRepo;
     private final ReceiptRepo receiptRepo;
-    private final OrgBudgetDetailAllocationRepo budgetDetailAllocationRepo;
+    private final OrgBudgetDetailAllocationRepo budgetDetailRepo;
     private final OrganisationRepo organisationRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
     private final AccountRepo accountRepo;
     private final PermissionCheckerService permissionChecker;
 
     @Override
-    public ReceiptAllocationEntity createAllocation(UUID organisationId, CreateReceiptAllocationRequest request)
+    public ReceiptAllocationEntity createAllocation(UUID organisationId, CreateAllocationRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = getOrganisation(organisationId);
-        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
-
+        OrganisationMember member = validateMemberAccess(currentUser, organisation);
 
         permissionChecker.checkMemberPermission(member, "RECEIPTS", "createReceipt");
-
 
         ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(request.getReceiptId(), organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
 
-        BigDecimal totalAllocationAmount = request.getDetailAllocations().stream()
-                .map(CreateReceiptAllocationRequest.DetailAllocationRequest::getAmount)
+        BigDecimal totalAmount = request.getDetails().stream()
+                .map(CreateAllocationRequest.AllocationDetail::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal availableAmount = receipt.getRemainingAmountForAllocation();
-        if (totalAllocationAmount.compareTo(availableAmount) > 0) {
-            throw new IllegalArgumentException("Total allocation amount cannot exceed available receipt amount");
+        if (!receipt.canAllocate(totalAmount)) {
+            throw new ItemNotFoundException("Cannot allocate more than receipt amount");
         }
 
         ReceiptAllocationEntity allocation = new ReceiptAllocationEntity();
         allocation.setReceipt(receipt);
         allocation.setNotes(request.getNotes());
-        allocation.setRequestedBy(currentUser.getAccountId());
 
-        ReceiptAllocationEntity savedAllocation = receiptAllocationRepo.save(allocation);
+        ReceiptAllocationEntity savedAllocation = allocationRepo.save(allocation);
 
-        for (CreateReceiptAllocationRequest.DetailAllocationRequest detailRequest : request.getDetailAllocations()) {
-            OrgBudgetDetailAllocationEntity budgetDetail = budgetDetailAllocationRepo
-                    .findById(detailRequest.getDetailAccountId())
+        List<ReceiptAllocationDetailEntity> details = new ArrayList<>();
+        for (CreateAllocationRequest.AllocationDetail detailRequest : request.getDetails()) {
+
+            OrgBudgetDetailAllocationEntity budgetDetail = budgetDetailRepo.findById(detailRequest.getBudgetDetailAllocationId())
                     .orElseThrow(() -> new ItemNotFoundException("Budget detail allocation not found"));
+
+            validateBudgetDetail(budgetDetail, organisation);
 
             ReceiptAllocationDetailEntity detail = new ReceiptAllocationDetailEntity();
             detail.setAllocation(savedAllocation);
-            detail.setDetailAccount(budgetDetail);
+            detail.setBudgetDetailAllocation(budgetDetail);
             detail.setAmount(detailRequest.getAmount());
-            detail.setDescription(detailRequest.getDescription());
-            detail.setCreatedBy(currentUser.getAccountId());
 
-            allocationDetailRepo.save(detail);
+            details.add(detailRepo.save(detail));
         }
 
-        return receiptAllocationRepo.findById(savedAllocation.getAllocationId()).orElse(savedAllocation);
+        savedAllocation.setDetails(details);
+        return savedAllocation;
     }
 
     @Override
-    public ReceiptAllocationEntity updateAllocation(UUID organisationId, UUID allocationId,
-                                                    CreateReceiptAllocationRequest request) throws ItemNotFoundException, AccessDeniedException {
+    public ReceiptAllocationEntity updateAllocation(UUID organisationId, UUID allocationId, CreateAllocationRequest request)
+            throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = getOrganisation(organisationId);
-        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+        OrganisationMember member = validateMemberAccess(currentUser, organisation);
 
         permissionChecker.checkMemberPermission(member, "RECEIPTS", "updateReceipt");
 
-        ReceiptAllocationEntity allocation = receiptAllocationRepo.findById(allocationId)
+        ReceiptAllocationEntity allocation = allocationRepo.findById(allocationId)
                 .orElseThrow(() -> new ItemNotFoundException("Allocation not found"));
 
-        if (!allocation.getReceipt().getOrganisation().getOrganisationId().equals(organisationId)) {
-            throw new ItemNotFoundException("Allocation not found in this organisation");
+        validateAllocationAccess(allocation, organisation);
+
+        if (!allocation.canEdit()) {
+            throw new ItemNotFoundException("Cannot edit allocation in status: " + allocation.getStatus());
         }
 
-        allocationDetailRepo.deleteByAllocation(allocation);
+        detailRepo.deleteByAllocation(allocation);
 
         allocation.setNotes(request.getNotes());
 
-        for (CreateReceiptAllocationRequest.DetailAllocationRequest detailRequest : request.getDetailAllocations()) {
-            OrgBudgetDetailAllocationEntity budgetDetail = budgetDetailAllocationRepo
-                    .findById(detailRequest.getDetailAccountId())
+        List<ReceiptAllocationDetailEntity> details = new ArrayList<>();
+        for (CreateAllocationRequest.AllocationDetail detailRequest : request.getDetails()) {
+
+            OrgBudgetDetailAllocationEntity budgetDetail = budgetDetailRepo.findById(detailRequest.getBudgetDetailAllocationId())
                     .orElseThrow(() -> new ItemNotFoundException("Budget detail allocation not found"));
 
             ReceiptAllocationDetailEntity detail = new ReceiptAllocationDetailEntity();
             detail.setAllocation(allocation);
-            detail.setDetailAccount(budgetDetail);
+            detail.setBudgetDetailAllocation(budgetDetail);
             detail.setAmount(detailRequest.getAmount());
-            detail.setDescription(detailRequest.getDescription());
-            detail.setCreatedBy(currentUser.getAccountId());
 
-            allocationDetailRepo.save(detail);
+            details.add(detailRepo.save(detail));
         }
 
-        return receiptAllocationRepo.save(allocation);
-    }
-
-    @Override
-    public void deleteAllocation(UUID organisationId, UUID allocationId)
-            throws ItemNotFoundException, AccessDeniedException {
-
-        AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = getOrganisation(organisationId);
-        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
-
-        permissionChecker.checkMemberPermission(member, "RECEIPTS", "deleteReceipt");
-
-        ReceiptAllocationEntity allocation = receiptAllocationRepo.findById(allocationId)
-                .orElseThrow(() -> new ItemNotFoundException("Allocation not found"));
-
-        if (!allocation.getReceipt().getOrganisation().getOrganisationId().equals(organisationId)) {
-            throw new ItemNotFoundException("Allocation not found in this organisation");
-        }
-
-        receiptAllocationRepo.delete(allocation);
-    }
-
-    @Override
-    public ReceiptAllocationEntity getAllocationById(UUID organisationId, UUID allocationId)
-            throws ItemNotFoundException, AccessDeniedException {
-
-        AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = getOrganisation(organisationId);
-        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
-
-        permissionChecker.checkMemberPermission(member, "RECEIPTS", "viewReceipts");
-
-        ReceiptAllocationEntity allocation = receiptAllocationRepo.findById(allocationId)
-                .orElseThrow(() -> new ItemNotFoundException("Allocation not found"));
-
-        if (!allocation.getReceipt().getOrganisation().getOrganisationId().equals(organisationId)) {
-            throw new ItemNotFoundException("Allocation not found in this organisation");
-        }
-
-        return allocation;
+        allocation.setDetails(details);
+        return allocationRepo.save(allocation);
     }
 
     @Override
@@ -179,33 +140,54 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
 
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = getOrganisation(organisationId);
-        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+        OrganisationMember member = validateMemberAccess(currentUser, organisation);
 
         permissionChecker.checkMemberPermission(member, "RECEIPTS", "viewReceipts");
 
         ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
 
-        return receiptAllocationRepo.findByReceipt(receipt);
+        return allocationRepo.findByReceipt(receipt);
     }
 
     @Override
-    public ReceiptAllocationEntity activateAllocation(UUID organisationId, UUID allocationId)
+    public ReceiptAllocationEntity getAllocationById(UUID organisationId, UUID allocationId)
             throws ItemNotFoundException, AccessDeniedException {
 
-        ReceiptAllocationEntity allocation = getAllocationById(organisationId, allocationId);
-        return receiptAllocationRepo.save(allocation);
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = getOrganisation(organisationId);
+        OrganisationMember member = validateMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS", "viewReceipts");
+
+        ReceiptAllocationEntity allocation = allocationRepo.findById(allocationId)
+                .orElseThrow(() -> new ItemNotFoundException("Allocation not found"));
+
+        validateAllocationAccess(allocation, organisation);
+        return allocation;
     }
+
 
     @Override
-    public ReceiptAllocationEntity deactivateAllocation(UUID organisationId, UUID allocationId)
+    public void cancelAllocation(UUID organisationId, UUID allocationId)
             throws ItemNotFoundException, AccessDeniedException {
 
-        ReceiptAllocationEntity allocation = getAllocationById(organisationId, allocationId);
-        return receiptAllocationRepo.save(allocation);
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = getOrganisation(organisationId);
+        OrganisationMember member = validateMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS", "updateReceipt");
+
+        ReceiptAllocationEntity allocation = allocationRepo.findById(allocationId)
+                .orElseThrow(() -> new ItemNotFoundException("Allocation not found"));
+
+        validateAllocationAccess(allocation, organisation);
+
+        allocation.cancel();
+        allocationRepo.save(allocation);
     }
 
-
+    // Helper methods
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
@@ -222,7 +204,7 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
     }
 
-    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation)
+    private OrganisationMember validateMemberAccess(AccountEntity account, OrganisationEntity organisation)
             throws ItemNotFoundException {
         OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Member not found in organisation"));
@@ -230,7 +212,21 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
         if (member.getStatus() != MemberStatus.ACTIVE) {
             throw new ItemNotFoundException("Member is not active");
         }
-
         return member;
+    }
+
+    private void validateAllocationAccess(ReceiptAllocationEntity allocation, OrganisationEntity organisation)
+            throws ItemNotFoundException {
+        if (!allocation.getReceipt().getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
+            throw new ItemNotFoundException("Allocation not found in this organisation");
+        }
+    }
+
+    private void validateBudgetDetail(OrgBudgetDetailAllocationEntity budgetDetail, OrganisationEntity organisation)
+            throws ItemNotFoundException {
+        if (!budgetDetail.getHeaderLineItem().getOrgBudget().getOrganisation()
+                .getOrganisationId().equals(organisation.getOrganisationId())) {
+            throw new ItemNotFoundException("Budget detail allocation does not belong to this organisation");
+        }
     }
 }

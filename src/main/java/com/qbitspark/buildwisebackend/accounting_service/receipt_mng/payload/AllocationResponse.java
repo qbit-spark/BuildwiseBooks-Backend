@@ -9,38 +9,42 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class ReceiptAllocationResponse {
+public class AllocationResponse {
+
     private UUID allocationId;
     private UUID receiptId;
     private String receiptNumber;
-    private String notes;
+    private BigDecimal receiptAmount;
     private AllocationStatus status;
+    private String notes;
+    private List<UUID> attachments;
+
+
     private UUID requestedBy;
     private String requestedByName;
+    private LocalDateTime requestedAt;
+
     private UUID approvedBy;
     private String approvedByName;
     private LocalDateTime approvedAt;
     private String approvalNotes;
     private String rejectionReason;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     private BigDecimal totalAllocatedAmount;
-    private int totalDetailAllocations;
-    private boolean canApprove;
-    private boolean canReject;
-    private boolean canEdit;
+    private int detailCount;
 
-    private List<DetailAllocationResponse> detailAllocations;
+
+    private List<AllocationDetailResponse> details;
 
     @Data
-    public static class DetailAllocationResponse {
+    public static class AllocationDetailResponse {
         private UUID detailId;
-        private UUID detailAccountId;
+        private UUID budgetDetailAllocationId;
+        private String headerAccountName;
+        private String headerAccountCode;
         private String detailAccountName;
         private String detailAccountCode;
         private BigDecimal amount;
-        private String description;
-        private LocalDateTime createdAt;
+
     }
 }

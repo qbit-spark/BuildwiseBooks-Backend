@@ -11,26 +11,27 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class CreateReceiptAllocationRequest {
+public class CreateAllocationRequest {
 
     @NotNull(message = "Receipt ID is required")
     private UUID receiptId;
 
-    @NotEmpty(message = "At least one detail allocation is required")
+    @NotEmpty(message = "At least one allocation detail is required")
     @Valid
-    private List<DetailAllocationRequest> detailAllocations;
+    private List<AllocationDetail> details;
 
     private String notes;
 
+    private List<UUID> attachments;
+
     @Data
-    public static class DetailAllocationRequest {
-        @NotNull(message = "Detail account ID is required")
-        private UUID detailAccountId;
+    public static class AllocationDetail {
+        @NotNull(message = "Budget detail allocation ID is required")
+        private UUID budgetDetailAllocationId;
 
         @NotNull(message = "Amount is required")
         @Positive(message = "Amount must be positive")
         private BigDecimal amount;
 
-        private String description;
     }
 }

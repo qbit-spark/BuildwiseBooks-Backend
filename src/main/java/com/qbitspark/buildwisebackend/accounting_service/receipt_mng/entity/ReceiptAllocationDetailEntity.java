@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -31,149 +30,180 @@ public class ReceiptAllocationDetailEntity {
     private ReceiptAllocationEntity allocation;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "detail_account_id", nullable = false)
-    private OrgBudgetDetailAllocationEntity detailAccount;
+    @JoinColumn(name = "budget_detail_allocation_id", nullable = false)
+    private OrgBudgetDetailAllocationEntity budgetDetailAllocation;
 
     @Column(precision = 18, scale = 2, nullable = false)
     private BigDecimal amount;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AllocationStatus status = AllocationStatus.DRAFT;
-
-    @Column(name = "created_by")
-    private UUID createdBy;
-
-    @Column(name = "approved_by")
-    private UUID approvedBy;
-
-    @Column(name = "approved_at")
-    private LocalDateTime approvedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 
     // ==========================================
     // BUSINESS LOGIC METHODS
     // ==========================================
 
     /**
-     * Check if this allocation detail counts in budget calculations
-     * Only approved allocations count
+     * Check if this detail line affects budget calculations.
+     * Only approved allocations impact budget funding.
      */
-    public boolean countsInCalculations() {
-        return status == AllocationStatus.APPROVED;
+    public boolean affectsBudget() {
+        return allocation != null && allocation.getStatus() == AllocationStatus.APPROVED;
     }
 
-    /**
-     * Check if this allocation detail is still pending approval
-     */
     public boolean isPending() {
-        return status == AllocationStatus.DRAFT;
+        return allocation != null && allocation.getStatus() == AllocationStatus.PENDING_APPROVAL;
     }
 
-    /**
-     * Check if this allocation detail is approved
-     */
+    public boolean isDraft() {
+        return allocation != null && allocation.getStatus() == AllocationStatus.DRAFT;
+    }
+
     public boolean isApproved() {
-        return status == AllocationStatus.APPROVED;
+        return allocation != null && allocation.getStatus() == AllocationStatus.APPROVED;
     }
 
+    public boolean isRejected() {
+        return allocation != null && allocation.getStatus() == AllocationStatus.REJECTED;
+    }
+
+    // ==========================================
+    // ACCOUNT INFORMATION METHODS
+    // ==========================================
+
+    public String getHeaderAccountName() {
+        return budgetDetailAllocation != null ?
+                budgetDetailAllocation.getHeaderAccountName() : "Unknown";
+    }
+
+    public String getHeaderAccountCode() {
+        return budgetDetailAllocation != null ?
+                budgetDetailAllocation.getHeaderAccountCode() : "N/A";
+    }
+
+    public String getDetailAccountName() {
+        return budgetDetailAllocation != null ?
+                budgetDetailAllocation.getDetailAccountName() : "Unknown";
+    }
+
+    public String getDetailAccountCode() {
+        return budgetDetailAllocation != null ?
+                budgetDetailAllocation.getDetailAccountCode() : "N/A";
+    }
+
+    // ==========================================
+    // RECEIPT INFORMATION METHODS
+    // ==========================================
+
+    public String getReceiptNumber() {
+        return allocation != null && allocation.getReceipt() != null ?
+                allocation.getReceipt().getReceiptNumber() : "Unknown";
+    }
+
+    public BigDecimal getReceiptTotalAmount() {
+        return allocation != null && allocation.getReceipt() != null ?
+                allocation.getReceipt().getTotalAmount() : BigDecimal.ZERO;
+    }
+
+    public String getProjectName() {
+        return allocation != null && allocation.getReceipt() != null &&
+                allocation.getReceipt().getProject() != null ?
+                allocation.getReceipt().getProject().getName() : "Unknown";
+    }
+
+    public String getClientName() {
+        return allocation != null && allocation.getReceipt() != null &&
+                allocation.getReceipt().getClient() != null ?
+                allocation.getReceipt().getClient().getName() : "Unknown";
+    }
+
+    // ==========================================
+    // VALIDATION AND STATUS METHODS
+    // ==========================================
+
     /**
-     * Check if this allocation detail is cancelled
+     * Validates that this allocation detail doesn't exceed the budget's unfunded amount.
+     * Critical business rule: can't over-fund a budget line.
      */
-    public boolean isCancelled() {
-        return status == AllocationStatus.CANCELLED;
+    public void validateAgainstBudget() {
+        if (budgetDetailAllocation == null) {
+            throw new IllegalStateException("Budget detail allocation is required");
+        }
+
+        BigDecimal unfundedBudget = budgetDetailAllocation.getUnfundedBudget();
+        if (amount.compareTo(unfundedBudget) > 0) {
+            throw new IllegalArgumentException(String.format(
+                    "Allocation amount (%s) exceeds unfunded budget (%s) for account %s - %s",
+                    amount, unfundedBudget,
+                    getDetailAccountCode(), getDetailAccountName()
+            ));
+        }
+    }
+
+    public String getStatusDescription() {
+        if (allocation == null) {
+            return "Invalid - No allocation";
+        }
+
+        return switch (allocation.getStatus()) {
+            case DRAFT -> "Draft allocation";
+            case PENDING_APPROVAL -> "Pending approval";
+            case APPROVED -> "Approved - Budget funded";
+            case REJECTED -> "Rejected";
+            case CANCELLED -> "Cancelled";
+        };
+    }
+
+    public String getAllocationSummary() {
+        return String.format(
+                "%s: %s → %s - %s (%s)",
+                getReceiptNumber(),
+                amount,
+                getDetailAccountCode(),
+                getDetailAccountName(),
+                allocation != null ? allocation.getStatus() : "No Status"
+        );
     }
 
     /**
-     * Check if this allocation detail can be edited
-     * Only draft allocations can be edited
+     * Check if this allocation can be edited.
+     * Only draft allocations can be modified.
      */
     public boolean canEdit() {
-        return status == AllocationStatus.DRAFT;
+        return allocation != null && allocation.canEdit();
     }
 
-    /**
-     * Check if this allocation detail can be approved
-     * Only draft allocations can be approved
-     */
-    public boolean canApprove() {
-        return status == AllocationStatus.DRAFT;
-    }
-
-    /**
-     * Approve this allocation detail
-     */
-    public void approve(UUID approvedByUserId) {
-        if (!canApprove()) {
-            throw new IllegalStateException("Cannot approve allocation detail with status: " + status);
-        }
-        this.status = AllocationStatus.APPROVED;
-        this.approvedBy = approvedByUserId;
-        this.approvedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Cancel this allocation detail
-     */
-    public void cancel() {
-        this.status = AllocationStatus.CANCELLED;
-    }
-
-    /**
-     * Reset this allocation detail back to draft
-     * Can only be done if currently approved and not yet processed in budget
-     */
-    public void resetToDraft() {
-        if (status != AllocationStatus.APPROVED) {
-            throw new IllegalStateException("Cannot reset allocation detail with status: " + status);
-        }
-        this.status = AllocationStatus.DRAFT;
-        this.approvedBy = null;
-        this.approvedAt = null;
-    }
-
-    /**
-     * Get the receipt this allocation detail belongs to
-     */
-    public ReceiptEntity getReceipt() {
-        return allocation != null ? allocation.getReceipt() : null;
-    }
-
-    /**
-     * Get the organization this allocation detail belongs to
-     */
     public UUID getOrganisationId() {
-        ReceiptEntity receipt = getReceipt();
-        return receipt != null && receipt.getOrganisation() != null ?
-                receipt.getOrganisation().getOrganisationId() : null;
+        return allocation != null && allocation.getReceipt() != null &&
+                allocation.getReceipt().getOrganisation() != null ?
+                allocation.getReceipt().getOrganisation().getOrganisationId() : null;
     }
 
+    public UUID getProjectId() {
+        return allocation != null && allocation.getReceipt() != null &&
+                allocation.getReceipt().getProject() != null ?
+                allocation.getReceipt().getProject().getProjectId() : null;
+    }
 
-
-    /**
-     * Get days since creation
-     */
     public long getDaysSinceCreation() {
         return java.time.Duration.between(createdAt, LocalDateTime.now()).toDays();
     }
 
     /**
-     * Get days since approval (if approved)
+     * Get the current funded status of the target budget account.
+     * Useful for validation and display purposes.
      */
-    public Long getDaysSinceApproval() {
-        if (approvedAt == null) {
-            return null;
-        }
-        return java.time.Duration.between(approvedAt, LocalDateTime.now()).toDays();
+    public String getBudgetFundingStatus() {
+        return budgetDetailAllocation != null ?
+                budgetDetailAllocation.getFundingStatus() : "Unknown";
+    }
+
+    public BigDecimal getBudgetAvailableToSpend() {
+        return budgetDetailAllocation != null ?
+                budgetDetailAllocation.getAvailableToSpend() : BigDecimal.ZERO;
     }
 }
