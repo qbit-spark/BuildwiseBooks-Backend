@@ -1,30 +1,6 @@
 version: '3.8'
 
 services:
-  # HashiCorp Vault for credential management
-  vault:
-    image: hashicorp/vault:latest
-    container_name: buildwise-vault
-    cap_add:
-      - IPC_LOCK
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: myroot
-      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
-      VAULT_API_ADDR: http://0.0.0.0:8200
-    ports:
-      - "8200:8200"
-    volumes:
-      - vault_data:/vault/data
-      - ./vault/init:/vault/init
-    command: vault server -dev -dev-root-token-id="myroot"
-    networks:
-      - buildwise-network
-    healthcheck:
-      test: ["CMD", "vault", "status"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # PostgreSQL Database
   postgres:
     image: postgres:15
@@ -35,11 +11,8 @@ services:
       POSTGRES_PASSWORD: BuilWised@123
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
-    networks:
-      - buildwise-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -59,81 +32,32 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
-    networks:
-      - buildwise-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
 
-  # Vault Initializer (runs once to setup secrets)
-  vault-init:
-    image: hashicorp/vault:latest
-    container_name: buildwise-vault-init
-    depends_on:
-      vault:
-        condition: service_healthy
-    environment:
-      VAULT_ADDR: http://vault:8200
-      VAULT_TOKEN: myroot
-    volumes:
-      - ./vault/init-secrets.sh:/init-secrets.sh
-    command: sh /init-secrets.sh
-    networks:
-      - buildwise-network
-    restart: "no"
-
-  # Spring Boot Backend
+  # Your Spring Boot Backend (NEW!)
   backend:
     build:
       context: .
       dockerfile: docker/backend.Dockerfile
     container_name: buildwise-backend
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      VAULT_URI: http://vault:8200
-      VAULT_TOKEN: myroot
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: buildwise_db
+      # Database connection - use container names
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/buildwise_db?stringtype=unspecified
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: BuilWised@123
+      # MinIO connection
       MINIO_ENDPOINT: http://minio:9000
     depends_on:
       postgres:
         condition: service_healthy
-      vault:
-        condition: service_healthy
-      vault-init:
-        condition: service_completed_successfully
     ports:
       - "8082:8082"
     networks:
-      - buildwise-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  # React Frontend
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: ../docker/frontend.Dockerfile
-    container_name: buildwise-frontend
-    depends_on:
-      backend:
-        condition: service_healthy
-    ports:
-      - "3000:80"
-    networks:
-      - buildwise-network
+      - app-network
 
 volumes:
   postgres_data:
   minio_data:
-  vault_data:
 
 networks:
-  buildwise-network:
+  app-network:
     driver: bridge
