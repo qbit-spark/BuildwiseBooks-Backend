@@ -54,8 +54,6 @@ public class ReceiptAllocationController {
     }
 
 
-
-
     @GetMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllocations(
             @PathVariable UUID organisationId,
@@ -71,7 +69,6 @@ public class ReceiptAllocationController {
                 GlobeSuccessResponseBuilder.success("Allocations retrieved successfully", response)
         );
     }
-
 
     @GetMapping("/{allocationId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllocationDetails(

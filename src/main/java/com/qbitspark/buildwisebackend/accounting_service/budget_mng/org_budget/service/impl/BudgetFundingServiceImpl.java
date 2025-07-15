@@ -55,12 +55,10 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
         OrganisationEntity organisation = getOrganisation(organisationId);
         OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
-        // Validate allocation is approved
         if (allocation.getStatus() != AllocationStatus.APPROVED) {
             throw new ItemNotFoundException("Only approved allocations can be funded to budget");
         }
 
-        // Validate allocation belongs to this organisation
         if (!allocation.getReceipt().getOrganisation().getOrganisationId().equals(organisationId)) {
             throw new ItemNotFoundException("Allocation does not belong to this organisation");
         }
