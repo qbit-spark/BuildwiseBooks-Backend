@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,7 +45,6 @@ public class ReceiptAllocationController {
     }
 
 
-    // Simple response mapping
     private ReceiptAllocationResponse mapToResponse(ReceiptAllocationEntity allocation) {
         ReceiptAllocationResponse response = new ReceiptAllocationResponse();
         response.setAllocationId(allocation.getAllocationId());
@@ -53,29 +53,39 @@ public class ReceiptAllocationController {
         response.setReceiptAmount(allocation.getReceipt().getTotalAmount());
         response.setStatus(allocation.getStatus());
         response.setNotes(allocation.getNotes());
+
+        // Use the calculated methods from entity
         response.setTotalAllocatedAmount(allocation.getTotalAllocatedAmount());
         response.setRemainingAmount(allocation.getRemainingAmount());
         response.setFullyAllocated(allocation.isFullyAllocated());
+
         response.setRequestedBy(allocation.getRequestedBy());
         response.setCreatedAt(allocation.getCreatedAt());
+        response.setApprovedBy(allocation.getApprovedBy());
+        response.setApprovedAt(allocation.getApprovedAt());
 
-        // Map allocation details
-        List<ReceiptAllocationResponse.AllocationDetailResponse> detailResponses =
-                allocation.getAllocationDetails().stream()
-                        .map(detail -> {
-                            ReceiptAllocationResponse.AllocationDetailResponse detailResponse =
-                                    new ReceiptAllocationResponse.AllocationDetailResponse();
-                            detailResponse.setDetailId(detail.getDetailId());
-                            detailResponse.setAccountId(detail.getAccount().getId());
-                            detailResponse.setAccountCode(detail.getAccount().getAccountCode());
-                            detailResponse.setAccountName(detail.getAccount().getName());
-                            detailResponse.setAllocatedAmount(detail.getAllocatedAmount());
-                            detailResponse.setDescription(detail.getDescription());
-                            return detailResponse;
-                        })
-                        .collect(Collectors.toList());
+        // Map allocation details - check for null to avoid NPE
+        if (allocation.getAllocationDetails() != null) {
+            List<ReceiptAllocationResponse.AllocationDetailResponse> detailResponses =
+                    allocation.getAllocationDetails().stream()
+                            .map(detail -> {
+                                ReceiptAllocationResponse.AllocationDetailResponse detailResponse =
+                                        new ReceiptAllocationResponse.AllocationDetailResponse();
+                                detailResponse.setDetailId(detail.getDetailId());
+                                detailResponse.setAccountId(detail.getAccount().getId());
+                                detailResponse.setAccountCode(detail.getAccount().getAccountCode());
+                                detailResponse.setAccountName(detail.getAccount().getName());
+                                detailResponse.setAllocatedAmount(detail.getAllocatedAmount());
+                                detailResponse.setDescription(detail.getDescription());
+                                return detailResponse;
+                            })
+                            .collect(Collectors.toList());
 
-        response.setAllocationDetails(detailResponses);
+            response.setAllocationDetails(detailResponses);
+        } else {
+            response.setAllocationDetails(new ArrayList<>());
+        }
+
         return response;
     }
 

@@ -33,20 +33,14 @@ public class ReceiptAllocationEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AllocationStatus status = AllocationStatus.DRAFT;
+    private AllocationStatus status;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    // NEW: Relationship to allocation details
-    @OneToMany(mappedBy = "allocation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ReceiptAllocationDetailEntity> allocationDetails = new ArrayList<>();
-
-    // Workflow tracking
     @Column(name = "requested_by", nullable = false)
     private UUID requestedBy;
 
-    @CreationTimestamp
     @Column(name = "requested_at", nullable = false)
     private LocalDateTime requestedAt;
 
@@ -56,12 +50,6 @@ public class ReceiptAllocationEntity {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
-    @Column(name = "approval_notes", columnDefinition = "TEXT")
-    private String approvalNotes;
-
-    @Column(name = "rejection_reason", columnDefinition = "TEXT")
-    private String rejectionReason;
-
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -70,79 +58,42 @@ public class ReceiptAllocationEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // ==========================================
-    // BUSINESS LOGIC METHODS
-    // ==========================================
+    // IMPORTANT: Use EAGER fetching to ensure details are loaded
+    @OneToMany(mappedBy = "allocation", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<ReceiptAllocationDetailEntity> allocationDetails = new ArrayList<>();
 
-    public boolean canEdit() {
-        return status == AllocationStatus.DRAFT;
-    }
-
-    public boolean canApprove() {
-        return status == AllocationStatus.PENDING_APPROVAL;
-    }
-
-    public boolean canReject() {
-        return status == AllocationStatus.PENDING_APPROVAL;
-    }
-
-    public boolean canCancel() {
-        return status == AllocationStatus.DRAFT || status == AllocationStatus.PENDING_APPROVAL;
-    }
-
-    public boolean isApproved() {
-        return status == AllocationStatus.APPROVED;
-    }
-
-    public boolean isPending() {
-        return status == AllocationStatus.PENDING_APPROVAL;
-    }
-
-    public boolean isDraft() {
-        return status == AllocationStatus.DRAFT;
-    }
-
-    // ==========================================
-    // NEW: ALLOCATION DETAIL METHODS
-    // ==========================================
-
+    // Calculate total allocated amount from details
     public BigDecimal getTotalAllocatedAmount() {
+        if (allocationDetails == null || allocationDetails.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
         return allocationDetails.stream()
                 .map(ReceiptAllocationDetailEntity::getAllocatedAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public boolean isFullyAllocated() {
-        BigDecimal receiptAmount = receipt != null ? receipt.getTotalAmount() : BigDecimal.ZERO;
-        return getTotalAllocatedAmount().compareTo(receiptAmount) == 0;
-    }
-
-    public boolean isOverAllocated() {
-        BigDecimal receiptAmount = receipt != null ? receipt.getTotalAmount() : BigDecimal.ZERO;
-        return getTotalAllocatedAmount().compareTo(receiptAmount) > 0;
-    }
-
+    // Calculate remaining amount
     public BigDecimal getRemainingAmount() {
-        BigDecimal receiptAmount = receipt != null ? receipt.getTotalAmount() : BigDecimal.ZERO;
-        return receiptAmount.subtract(getTotalAllocatedAmount());
+        if (receipt == null) {
+            return BigDecimal.ZERO;
+        }
+        return receipt.getTotalAmount().subtract(getTotalAllocatedAmount());
     }
 
-    public int getAllocationDetailCount() {
-        return allocationDetails != null ? allocationDetails.size() : 0;
+    // Check if fully allocated
+    public boolean isFullyAllocated() {
+        if (receipt == null) {
+            return false;
+        }
+        return getTotalAllocatedAmount().compareTo(receipt.getTotalAmount()) == 0;
     }
 
+    // Helper method to add allocation detail
     public void addAllocationDetail(ReceiptAllocationDetailEntity detail) {
         if (allocationDetails == null) {
             allocationDetails = new ArrayList<>();
         }
         allocationDetails.add(detail);
         detail.setAllocation(this);
-    }
-
-    public void removeAllocationDetail(ReceiptAllocationDetailEntity detail) {
-        if (allocationDetails != null) {
-            allocationDetails.remove(detail);
-            detail.setAllocation(null);
-        }
     }
 }

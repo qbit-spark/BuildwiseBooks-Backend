@@ -38,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -66,9 +67,7 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
         OrganisationEntity organisation = getOrganisation(organisationId);
         OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
-
         permissionChecker.checkMemberPermission(member, "RECEIPTS", "createAllocation");
-
 
         ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(request.getReceiptId(), organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
@@ -113,28 +112,32 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
         allocation.setRequestedBy(currentUser.getAccountId());
         allocation.setRequestedAt(LocalDateTime.now());
 
-        ReceiptAllocationEntity savedAllocation = receiptAllocationRepo.save(allocation);
-
-        // Create allocation details
+        // Create allocation details BEFORE saving the main allocation
+        List<ReceiptAllocationDetailEntity> detailEntities = new ArrayList<>();
         for (CreateReceiptAllocationRequest.AllocationDetailRequest detailRequest : request.getAllocationDetails()) {
             ChartOfAccounts account = chartOfAccountsRepo.findById(detailRequest.getAccountId())
                     .orElseThrow(() -> new ItemNotFoundException("Account not found"));
 
             ReceiptAllocationDetailEntity detail = new ReceiptAllocationDetailEntity();
-            detail.setAllocation(savedAllocation);
+            detail.setAllocation(allocation);
             detail.setAccount(account);
             detail.setAllocatedAmount(detailRequest.getAmount());
             detail.setDescription(detailRequest.getDescription());
             detail.setCreatedBy(currentUser.getAccountId());
 
-            receiptAllocationDetailRepo.save(detail);
+            detailEntities.add(detail);
+            allocation.addAllocationDetail(detail); // This sets the bidirectional relationship
         }
 
-        // Reload to get details
-        return receiptAllocationRepo.findById(savedAllocation.getAllocationId())
-                .orElseThrow(() -> new ItemNotFoundException("Allocation not found"));
-    }
+        // Save the allocation with details (cascade will save details)
+        ReceiptAllocationEntity savedAllocation = receiptAllocationRepo.save(allocation);
 
+        // Explicitly flush to ensure data is persisted
+        receiptAllocationRepo.flush();
+
+        // Return the saved allocation (should now have all details)
+        return savedAllocation;
+    }
 
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {
