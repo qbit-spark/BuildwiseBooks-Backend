@@ -1,0 +1,58 @@
+# Development Profile - Your exact current setup
+spring:
+  cloud:
+    vault:
+      enabled: false  # Vault is OFF for development
+
+  datasource:
+    url: jdbc:postgresql://192.168.1.2:5042/buildwise_db?stringtype=unspecified
+    username: postgres
+    password: BuilWised@123
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  mail:
+    host: mail.privateemail.com
+    port: 465
+    username: office@kibuti.co
+    password: Office@2030
+    protocol: smtps
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: false
+          ssl:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        debug: false
+
+app:
+  jwt-secret: b79943ecd429541f7960138c5a8d53c926f8fe27c41354e8ced0d73fb5269353
+
+api:
+  sms-url: https://messaging-service.co.tz/api/sms/v1/text/single
+  sms-password: "@Jesus2020"
+  sms-username: edwingudfriend
+  sms-sender: "KIBUTI BOT"
+
+frontend:
+  base-url: http://localhost:5175
+
+minio:
+  endpoint: http://192.168.1.8:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-prefix: org-
+  secure: false
+
+logging:
+  level:
+    com.buildwise: DEBUG

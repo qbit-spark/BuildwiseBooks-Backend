@@ -1,0 +1,42 @@
+
+spring:
+  application:
+    name: BuildWise-BACKEND
+
+  profiles:
+    active: dev
+    application:
+
+
+server:
+  port: 8082
+  compression:
+    enabled: true
+    min-response-size: 1024
+    mime-types: text/html, text/plain, application/json, application/xml, text/javascript, application/javascript, application/x-javascript, text/css
+
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  threads:
+    virtual:
+      enabled: true
+
+  jackson:
+    generator:
+      write-bigdecimal-as-plain: true
+
+app:
+  jwt-expiration-milliseconds: 604800000
+  jwt-refresh-token:
+    expiration-days: 365
+
+otp:
+  expire_time:
+    minutes: 10
