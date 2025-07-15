@@ -9,6 +9,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.p
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.BudgetFundingAllocationRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetDetailDistributionRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.BudgetFundingService;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationDetailEntity;
@@ -65,6 +66,7 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
     private final OrgBudgetDetailDistributionRepo detailDistributionRepo;
     private final BudgetFundingAllocationRepo budgetFundingAllocationRepo;
     private final OrgBudgetRepo orgBudgetRepo;
+    private final BudgetFundingService budgetFundingService;
 
     @Override
     public ReceiptAllocationEntity createReceiptAllocation(UUID organisationId, CreateReceiptAllocationRequest request)
@@ -193,6 +195,23 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
                 .orElseThrow(() -> new ItemNotFoundException("Allocation not found"));
 
         return mapToDetailedResponse(allocation);
+    }
+
+    @Override
+    public void fundBudget(UUID organisationId, UUID allocationId) throws ItemNotFoundException, AccessDeniedException {
+
+        ReceiptAllocationEntity receiptAllocationEntity = receiptAllocationRepo.findById(allocationId).orElseThrow(
+                () -> new ItemNotFoundException("Receipt allocation not found")
+        );
+
+        if (receiptAllocationEntity.getStatus() != AllocationStatus.APPROVED) {
+            throw new ItemNotFoundException("Receipt allocation is not approved");
+        }
+
+        List<BudgetFundingAllocationEntity> fundingAllocation = budgetFundingService.fundAccountsFromAllocation(organisationId, receiptAllocationEntity);
+
+        System.out.println("Funded allocations: " + fundingAllocation.size());
+
     }
 
 

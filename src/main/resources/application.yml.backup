@@ -2,6 +2,7 @@ spring:
   application:
     name: BuildWise-BACKEND
 
+    
   
   # Database Configuration
   datasource:

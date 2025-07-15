@@ -108,6 +108,7 @@ public class OrgBudgetController {
                 "Budget activated successfully. Previous active budget has been closed."));
     }
 
+
     // Simple mapping methods
     private CreateBudgetResponse mapToResponse(OrgBudgetEntity budget) {
         CreateBudgetResponse response = new CreateBudgetResponse();
