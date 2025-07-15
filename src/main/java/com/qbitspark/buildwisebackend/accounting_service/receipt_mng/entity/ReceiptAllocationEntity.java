@@ -44,11 +44,6 @@ public class ReceiptAllocationEntity {
     @Column(name = "requested_at", nullable = false)
     private LocalDateTime requestedAt;
 
-    @Column(name = "approved_by")
-    private UUID approvedBy;
-
-    @Column(name = "approved_at")
-    private LocalDateTime approvedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

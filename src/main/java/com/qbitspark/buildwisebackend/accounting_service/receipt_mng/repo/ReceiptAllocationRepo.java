@@ -3,6 +3,9 @@ package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.AllocationStatus;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,21 +13,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-
+@Repository
 public interface ReceiptAllocationRepo extends JpaRepository<ReceiptAllocationEntity, UUID> {
 
     List<ReceiptAllocationEntity> findByReceipt(ReceiptEntity receipt);
 
-    List<ReceiptAllocationEntity> findByStatus(AllocationStatus status);
+    Page<ReceiptAllocationEntity> findAllByReceiptOrganisation(OrganisationEntity organisation, Pageable pageable);
 
-    List<ReceiptAllocationEntity> findByRequestedBy(UUID requestedBy);
+    Page<ReceiptAllocationEntity> findAllByReceiptOrganisationAndStatus(OrganisationEntity organisation, AllocationStatus status, Pageable pageable);
 
-    Optional<ReceiptAllocationEntity> findByReceiptAndStatus(ReceiptEntity receipt, AllocationStatus status);
-
-    boolean existsByReceipt(ReceiptEntity receipt);
-
-    List<ReceiptAllocationEntity> findByStatusOrderByCreatedAtAsc(AllocationStatus status);
-
-    List<ReceiptAllocationEntity> findByStatusIn(List<AllocationStatus> statuses);
-
+    Optional<ReceiptAllocationEntity> findByAllocationIdAndReceiptOrganisation(UUID allocationId, OrganisationEntity organisation);
 }

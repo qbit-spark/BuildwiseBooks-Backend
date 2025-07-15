@@ -5,6 +5,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.e
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.CreateReceiptAllocationRequest;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.ReceiptAllocationResponse;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.BudgetFundingAllocationRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetDetailDistributionRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
@@ -15,6 +16,7 @@ import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.Rece
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.AllocationStatus;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.ReceiptStatus;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.ReceiptAllocationSummaryResponse;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptAllocationDetailRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptAllocationRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptRepo;
@@ -30,6 +32,10 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -41,6 +47,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -137,6 +144,98 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
 
         // Return the saved allocation (should now have all details)
         return savedAllocation;
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ReceiptAllocationSummaryResponse> getAllocations(UUID organisationId, AllocationStatus status,
+                                                                 int page, int size) throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS", "viewAllocations");
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<ReceiptAllocationEntity> allocationsPage;
+        if (status != null) {
+            allocationsPage = receiptAllocationRepo.findAllByReceiptOrganisationAndStatus(organisation, status, pageable);
+        } else {
+            allocationsPage = receiptAllocationRepo.findAllByReceiptOrganisation(organisation, pageable);
+        }
+
+        return allocationsPage.map(this::mapToSummaryResponse);
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public ReceiptAllocationResponse getAllocationDetails(UUID organisationId, UUID allocationId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "RECEIPTS", "viewAllocations");
+
+        ReceiptAllocationEntity allocation = receiptAllocationRepo
+                .findByAllocationIdAndReceiptOrganisation(allocationId, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Allocation not found"));
+
+        return mapToDetailedResponse(allocation);
+    }
+
+
+    private ReceiptAllocationResponse mapToResponse(ReceiptAllocationEntity allocation) {
+        ReceiptAllocationResponse response = new ReceiptAllocationResponse();
+        response.setAllocationId(allocation.getAllocationId());
+        response.setReceiptId(allocation.getReceipt().getReceiptId());
+        response.setReceiptNumber(allocation.getReceipt().getReceiptNumber());
+        response.setReceiptAmount(allocation.getReceipt().getTotalAmount());
+        response.setStatus(allocation.getStatus());
+        response.setNotes(allocation.getNotes());
+
+        // Use the calculated methods from entity
+        response.setTotalAllocatedAmount(allocation.getTotalAllocatedAmount());
+        response.setRemainingAmount(allocation.getRemainingAmount());
+        response.setFullyAllocated(allocation.isFullyAllocated());
+
+        response.setRequestedBy(allocation.getRequestedBy());
+        response.setCreatedAt(allocation.getCreatedAt());
+
+        // Map allocation details - check for null to avoid NPE
+        if (allocation.getAllocationDetails() != null) {
+            List<ReceiptAllocationResponse.AllocationDetailResponse> detailResponses =
+                    allocation.getAllocationDetails().stream()
+                            .map(detail -> {
+                                ReceiptAllocationResponse.AllocationDetailResponse detailResponse =
+                                        new ReceiptAllocationResponse.AllocationDetailResponse();
+                                detailResponse.setDetailId(detail.getDetailId());
+                                detailResponse.setAccountId(detail.getAccount().getId());
+                                detailResponse.setAccountCode(detail.getAccount().getAccountCode());
+                                detailResponse.setAccountName(detail.getAccount().getName());
+                                detailResponse.setAllocatedAmount(detail.getAllocatedAmount());
+                                detailResponse.setDescription(detail.getDescription());
+                                return detailResponse;
+                            })
+                            .collect(Collectors.toList());
+
+            response.setAllocationDetails(detailResponses);
+        } else {
+            response.setAllocationDetails(new ArrayList<>());
+        }
+
+        return response;
     }
 
 
@@ -253,5 +352,67 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
                 ));
             }
         }
+    }
+
+    private ReceiptAllocationSummaryResponse mapToSummaryResponse(ReceiptAllocationEntity allocation) {
+        ReceiptAllocationSummaryResponse response = new ReceiptAllocationSummaryResponse();
+        response.setAllocationId(allocation.getAllocationId());
+        response.setReceiptId(allocation.getReceipt().getReceiptId());
+        response.setReceiptNumber(allocation.getReceipt().getReceiptNumber());
+        response.setReceiptAmount(allocation.getReceipt().getTotalAmount());
+        response.setStatus(allocation.getStatus());
+        response.setNotes(allocation.getNotes());
+        response.setTotalAllocatedAmount(allocation.getTotalAllocatedAmount());
+        response.setFullyAllocated(allocation.isFullyAllocated());
+        response.setRequestedBy(allocation.getRequestedBy());
+        response.setRequestedAt(allocation.getRequestedAt());
+        response.setCreatedAt(allocation.getCreatedAt());
+
+
+        response.setTotalAllocationDetails(
+                allocation.getAllocationDetails() != null ?
+                        allocation.getAllocationDetails().size() : 0
+        );
+
+        return response;
+    }
+
+
+    private ReceiptAllocationResponse mapToDetailedResponse(ReceiptAllocationEntity allocation) {
+        ReceiptAllocationResponse response = new ReceiptAllocationResponse();
+        response.setAllocationId(allocation.getAllocationId());
+        response.setReceiptId(allocation.getReceipt().getReceiptId());
+        response.setReceiptNumber(allocation.getReceipt().getReceiptNumber());
+        response.setReceiptAmount(allocation.getReceipt().getTotalAmount());
+        response.setStatus(allocation.getStatus());
+        response.setNotes(allocation.getNotes());
+        response.setTotalAllocatedAmount(allocation.getTotalAllocatedAmount());
+        response.setRemainingAmount(allocation.getRemainingAmount());
+        response.setFullyAllocated(allocation.isFullyAllocated());
+        response.setRequestedBy(allocation.getRequestedBy());
+        response.setCreatedAt(allocation.getCreatedAt());
+
+
+        // Map allocation details
+        if (allocation.getAllocationDetails() != null) {
+            List<ReceiptAllocationResponse.AllocationDetailResponse> detailResponses =
+                    allocation.getAllocationDetails().stream()
+                            .map(detail -> {
+                                ReceiptAllocationResponse.AllocationDetailResponse detailResponse =
+                                        new ReceiptAllocationResponse.AllocationDetailResponse();
+                                detailResponse.setDetailId(detail.getDetailId());
+                                detailResponse.setAccountId(detail.getAccount().getId());
+                                detailResponse.setAccountCode(detail.getAccount().getAccountCode());
+                                detailResponse.setAccountName(detail.getAccount().getName());
+                                detailResponse.setAllocatedAmount(detail.getAllocatedAmount());
+                                detailResponse.setDescription(detail.getDescription());
+                                return detailResponse;
+                            })
+                            .collect(Collectors.toList());
+
+            response.setAllocationDetails(detailResponses);
+        }
+
+        return response;
     }
 }

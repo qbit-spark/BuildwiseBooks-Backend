@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods;
+package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload;
 
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.AllocationStatus;
 import lombok.AllArgsConstructor;
@@ -8,14 +8,13 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ReceiptAllocationResponse {
+public class ReceiptAllocationSummaryResponse {
 
     private UUID allocationId;
     private UUID receiptId;
@@ -23,28 +22,10 @@ public class ReceiptAllocationResponse {
     private BigDecimal receiptAmount;
     private AllocationStatus status;
     private String notes;
-
     private BigDecimal totalAllocatedAmount;
-    private BigDecimal remainingAmount;
-    private boolean isFullyAllocated;
-
+    private boolean fullyAllocated;
     private UUID requestedBy;
+    private LocalDateTime requestedAt;
     private LocalDateTime createdAt;
-
-
-    private List<AllocationDetailResponse> allocationDetails;
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class AllocationDetailResponse {
-
-        private UUID detailId;
-        private UUID accountId;
-        private String accountCode;
-        private String accountName;
-        private BigDecimal allocatedAmount;
-        private String description;
-    }
+    private int totalAllocationDetails;
 }

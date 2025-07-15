@@ -162,6 +162,7 @@ public class PermissionConfig {
         permissions.put("cancelReceipt", false);
         permissions.put("viewPaymentHistory", false);
         permissions.put("createAllocation", false);
+        permissions.put("viewAllocations", false);
         return permissions;
     }
 

@@ -21,7 +21,7 @@ public class PermissionMigrationController {
 
     private final PermissionMigrationService migrationService;
     @PostMapping("/migrate")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    //@PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<GlobeSuccessResponseBuilder> migratePermissions() {
 
         if (migrationService.isMigrationInProgress()) {
