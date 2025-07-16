@@ -14,4 +14,6 @@ public interface BudgetFundingAllocationRepo extends JpaRepository<BudgetFunding
 
     List<BudgetFundingAllocationEntity> findByAccount(ChartOfAccounts account);
 
+    List<BudgetFundingAllocationEntity> findByBudget(OrgBudgetEntity budget);
+
 }

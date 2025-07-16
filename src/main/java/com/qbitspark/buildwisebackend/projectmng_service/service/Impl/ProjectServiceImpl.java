@@ -141,7 +141,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
 
-        permissionChecker.checkMemberPermission(member,"PROJECTS","viewProject");
+        permissionChecker.checkMemberPermission(member,"PROJECTS","viewProjects");
 
         return mapToProjectResponse(project);
     }

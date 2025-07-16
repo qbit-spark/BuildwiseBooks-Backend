@@ -48,8 +48,7 @@ public class VoucherController {
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
-                        "Voucher created successfully",null
-                        //mapToVoucherResponse(voucher)
+                        "Voucher created successfully", mapToVoucherResponse(voucher)
                 )
         );
     }
@@ -93,12 +92,11 @@ public class VoucherController {
             throws ItemNotFoundException, AccessDeniedException {
 
         VoucherEntity voucherEntity = voucherService.updateVoucher(organisationId, voucherId, request);
-      //  VoucherResponse response = mapToVoucherResponse(voucherEntity);
+       VoucherResponse response = mapToVoucherResponse(voucherEntity);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
-                        "Voucher updated successfully",null
-                       // response
+                        "Voucher updated successfully", response
                 )
         );
     }
@@ -109,67 +107,61 @@ public class VoucherController {
             @PathVariable UUID voucherId)
             throws ItemNotFoundException, AccessDeniedException {
         VoucherEntity voucherEntity = voucherService.getVoucherById(organisationId, voucherId);
-       // VoucherResponse response = mapToVoucherResponse(voucherEntity);
+        VoucherResponse response = mapToVoucherResponse(voucherEntity);
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
-                        "Voucher retrieved successfully",null
-                     //   response
+                        "Voucher retrieved successfully",
+                        response
                 )
         );
     }
 
 
-//    private VoucherResponse mapToVoucherResponse(VoucherEntity voucher) {
-//        VoucherResponse response = new VoucherResponse();
-//        response.setId(voucher.getId());
-//        response.setVoucherNumber(voucher.getVoucherNumber());
-//        response.setGeneralDescription(voucher.getOverallDescription());
-//        response.setStatus(voucher.getStatus());
-//        response.setTotalAmount(voucher.getTotalAmount());
-//        response.setCurrency(voucher.getCurrency());
-//        response.setCreatedAt(voucher.getCreatedAt());
-//        response.setUpdatedAt(voucher.getUpdatedAt());
-//
-//
-//        response.setDetailAllocationId(voucher.getDetailAllocation().getAllocationId());
-//        response.setHeaderAccountName(voucher.getDetailAllocation().getHeaderAccountName());
-//        response.setHeaderAccountCode(voucher.getDetailAllocation().getHeaderAccountCode());
-//        response.setDetailAccountName(voucher.getDetailAllocation().getDetailAccountName());
-//        response.setDetailAccountCode(voucher.getDetailAllocation().getDetailAccountCode());
-//        response.setAllocationRemaining(voucher.getDetailAllocation().getRemainingAmount());
-//
-//        // Organisation info
-//        response.setOrganisationId(voucher.getOrganisation().getOrganisationId());
-//        response.setOrganisationName(voucher.getOrganisation().getOrganisationName());
-//
-//        // Project info
-//        response.setProjectId(voucher.getProject().getProjectId());
-//        response.setProjectName(voucher.getProject().getName());
-//        response.setProjectCode(voucher.getProject().getProjectCode());
-//
-//        // Creator info
-//        response.setCreatedById(voucher.getCreatedBy().getMemberId());
-//        response.setCreatedByName(voucher.getCreatedBy().getAccount().getUserName());
-//
-//        // Calculate total deductions
-//        BigDecimal totalDeductions = voucher.getBeneficiaries().stream()
-//                .flatMap(beneficiary -> beneficiary.getDeductions().stream())
-//                .map(VoucherDeductionEntity::getDeductionAmount)
-//                .reduce(BigDecimal.ZERO, BigDecimal::add);
-//
-//        response.setTotalDeductions(totalDeductions);
-//        response.setNetAmount(voucher.getTotalAmount().subtract(totalDeductions));
-//
-//        // Map beneficiaries
-//        List<VoucherBeneficiaryResponse> beneficiaryResponses = voucher.getBeneficiaries().stream()
-//                .map(this::mapToBeneficiaryResponse)
-//                .collect(Collectors.toList());
-//        response.setBeneficiaries(beneficiaryResponses);
-//
-//        response.setAttachments(buildAttachments(voucher.getAttachments()));
-//
-//        return response;
-//    }
+    private VoucherResponse mapToVoucherResponse(VoucherEntity voucher) {
+        VoucherResponse response = new VoucherResponse();
+        response.setId(voucher.getId());
+        response.setVoucherNumber(voucher.getVoucherNumber());
+        response.setGeneralDescription(voucher.getOverallDescription());
+        response.setStatus(voucher.getStatus());
+        response.setTotalAmount(voucher.getTotalAmount());
+        response.setCurrency(voucher.getCurrency());
+        response.setCreatedAt(voucher.getCreatedAt());
+        response.setUpdatedAt(voucher.getUpdatedAt());
+
+
+
+        // Organisation info
+        response.setOrganisationId(voucher.getOrganisation().getOrganisationId());
+        response.setOrganisationName(voucher.getOrganisation().getOrganisationName());
+
+        // Project info
+        response.setProjectId(voucher.getProject().getProjectId());
+        response.setProjectName(voucher.getProject().getName());
+        response.setProjectCode(voucher.getProject().getProjectCode());
+
+        // Creator info
+        response.setCreatedById(voucher.getCreatedBy().getMemberId());
+        response.setCreatedByName(voucher.getCreatedBy().getAccount().getUserName());
+
+        // Calculate total deductions
+        BigDecimal totalDeductions = voucher.getBeneficiaries().stream()
+                .flatMap(beneficiary -> beneficiary.getDeductions().stream())
+                .map(VoucherDeductionEntity::getDeductionAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        response.setTotalDeductions(totalDeductions);
+        response.setNetAmount(voucher.getTotalAmount().subtract(totalDeductions));
+
+        // Map beneficiaries
+        List<VoucherBeneficiaryResponse> beneficiaryResponses = voucher.getBeneficiaries().stream()
+                .map(this::mapToBeneficiaryResponse)
+                .collect(Collectors.toList());
+        response.setBeneficiaries(beneficiaryResponses);
+
+        response.setAttachments(buildAttachments(voucher.getAttachments()));
+
+        return response;
+    }
 
 
     private VoucherBeneficiaryResponse mapToBeneficiaryResponse(VoucherBeneficiaryEntity beneficiary) {

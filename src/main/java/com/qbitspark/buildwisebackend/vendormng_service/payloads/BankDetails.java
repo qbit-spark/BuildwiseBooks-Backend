@@ -29,7 +29,7 @@ public class BankDetails {
     @Column(name = "account_name", length = 100)
     private String accountName;
 
-    @Column(name = "branch_code", length = 10)
+    @Column(name = "branch_code")
     private String branchCode;
 
     @Enumerated(EnumType.STRING)
