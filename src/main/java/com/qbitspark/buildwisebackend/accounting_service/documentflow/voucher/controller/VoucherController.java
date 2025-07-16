@@ -4,6 +4,7 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.en
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherDeductionEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.paylaod.*;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.VoucherPrintService;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.VoucherService;
 import com.qbitspark.buildwisebackend.drive_mng.entity.OrgFileEntity;
 import com.qbitspark.buildwisebackend.drive_mng.repo.OrgFileRepo;
@@ -14,10 +15,13 @@ import com.qbitspark.buildwisebackend.minio_service.service.MinioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +41,8 @@ public class VoucherController {
     private final VoucherService voucherService;
     private final MinioService minioService;
     private final OrgFileRepo orgFileRepo;
+    private final VoucherPrintService voucherPrintService;
+
 
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createVoucher(
@@ -117,6 +123,76 @@ public class VoucherController {
     }
 
 
+
+
+    //------------------------------
+
+    @GetMapping("/{voucherId}/print")
+    public ResponseEntity<ByteArrayResource> printVoucher(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID voucherId,
+            @RequestParam(defaultValue = "false") boolean download)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        log.info("Generating PDF for voucher: {} in organisation: {}", voucherId, organisationId);
+
+        // Get voucher data with validation
+        VoucherEntity voucher = voucherService.getVoucherById(organisationId, voucherId);
+
+        // Generate PDF
+        byte[] pdfBytes = voucherPrintService.generateVoucherPdf(voucher);
+
+        // Prepare response
+        ByteArrayResource resource = new ByteArrayResource(pdfBytes);
+        String filename = String.format("voucher_%s.pdf", voucher.getVoucherNumber().replace("/", "_"));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentLength(pdfBytes.length);
+
+        if (download) {
+            headers.setContentDispositionFormData("attachment", filename);
+        } else {
+            headers.setContentDispositionFormData("inline", filename);
+        }
+
+        log.info("PDF generated successfully for voucher: {}. Size: {} bytes",
+                voucher.getVoucherNumber(), pdfBytes.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(resource);
+    }
+
+    @GetMapping("/{voucherId}/preview")
+    public ResponseEntity<String> previewVoucherHtml(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID voucherId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        log.info("Generating HTML preview for voucher: {} in organisation: {}", voucherId, organisationId);
+
+        // Get voucher data with validation
+        VoucherEntity voucher = voucherService.getVoucherById(organisationId, voucherId);
+
+        // Generate HTML
+        String html = voucherPrintService.generateVoucherHtml(voucher);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(html);
+    }
+
+
+    //-----------------------------
+
+
+
+
+
+
+
+
     private VoucherResponse mapToVoucherResponse(VoucherEntity voucher) {
         VoucherResponse response = new VoucherResponse();
         response.setId(voucher.getId());
@@ -127,8 +203,9 @@ public class VoucherController {
         response.setCurrency(voucher.getCurrency());
         response.setCreatedAt(voucher.getCreatedAt());
         response.setUpdatedAt(voucher.getUpdatedAt());
-
-
+        response.setDetailAccountCode(voucher.getAccount().getAccountCode());
+        response.setDetailAccountName(voucher.getAccount().getName());
+        response.setDetailAccountId(voucher.getAccount().getId());
 
         // Organisation info
         response.setOrganisationId(voucher.getOrganisation().getOrganisationId());
@@ -162,7 +239,6 @@ public class VoucherController {
 
         return response;
     }
-
 
     private VoucherBeneficiaryResponse mapToBeneficiaryResponse(VoucherBeneficiaryEntity beneficiary) {
         VoucherBeneficiaryResponse response = new VoucherBeneficiaryResponse();

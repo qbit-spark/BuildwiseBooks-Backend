@@ -21,12 +21,10 @@ public class VoucherResponse {
     private BigDecimal netAmount;
     private String currency;
 
-    private UUID detailAllocationId;
-    private String headerAccountName;
-    private String headerAccountCode;
+    private UUID detailAccountId;
     private String detailAccountName;
     private String detailAccountCode;
-    private BigDecimal allocationRemaining;
+
 
     // Organisation info
     private UUID organisationId;

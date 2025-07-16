@@ -14,5 +14,7 @@ public interface BudgetFundingService {
 
     List<BudgetFundingAllocationEntity> fundAccountsFromAllocation(UUID organisationId, ReceiptAllocationEntity allocation) throws ItemNotFoundException, AccessDeniedException;
 
-    List<AvailableDetailAllocationResponse> getAvailableDetailAllocations(UUID organisationId) throws ItemNotFoundException;
+    List<AvailableDetailAllocationResponse> getAvailableDetailAllocations(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
+
+
 }

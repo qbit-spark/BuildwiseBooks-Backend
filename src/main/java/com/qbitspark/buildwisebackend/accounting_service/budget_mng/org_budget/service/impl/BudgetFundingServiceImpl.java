@@ -27,6 +27,7 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -57,6 +58,7 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
     private final ChartOfAccountsRepo chartOfAccountsRepo;
     private final OrgBudgetDetailDistributionRepo detailDistributionRepo;
     private final BudgetSpendingRepo budgetSpendingRepo;
+    private final PermissionCheckerService permissionChecker;
 
     @Override
     public List<BudgetFundingAllocationEntity> fundAccountsFromAllocation(UUID organisationId, ReceiptAllocationEntity allocation)
@@ -149,10 +151,15 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
     }
 
     @Override
-    public List<AvailableDetailAllocationResponse> getAvailableDetailAllocations(UUID organisationId) throws ItemNotFoundException {
-        OrganisationEntity organisation = new OrganisationEntity();
-        organisation.setOrganisationId(organisationId);
+    public List<AvailableDetailAllocationResponse> getAvailableDetailAllocations(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = getOrganisation(organisationId);
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(member, "BUDGET","viewBudgetSummary");
+
+        organisation.setOrganisationId(organisationId);
         OrgBudgetEntity activeBudget = orgBudgetRepo.findByOrganisationAndStatus(organisation, OrgBudgetStatus.ACTIVE)
                 .orElseThrow(() -> new ItemNotFoundException("No active budget found for organisation"));
 
