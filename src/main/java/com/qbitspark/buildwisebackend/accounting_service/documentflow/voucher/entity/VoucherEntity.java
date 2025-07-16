@@ -1,6 +1,7 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.PaymentMode;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.utils.UUIDListConverter;
@@ -52,6 +53,10 @@ public class VoucherEntity {
 //    @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "detail_allocation_id", nullable = true)
 //    private OrgBudgetDetailAllocationEntity detailAllocation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private ChartOfAccounts account;
 
     @Column(name = "overall_description", columnDefinition = "TEXT")
     private String overallDescription;

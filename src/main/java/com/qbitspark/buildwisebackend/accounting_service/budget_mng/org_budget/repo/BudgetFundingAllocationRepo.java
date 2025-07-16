@@ -12,4 +12,6 @@ import java.util.UUID;
 public interface BudgetFundingAllocationRepo extends JpaRepository<BudgetFundingAllocationEntity, UUID> {
     List<BudgetFundingAllocationEntity> findByBudgetAndAccount(OrgBudgetEntity budget, ChartOfAccounts account);
 
+    List<BudgetFundingAllocationEntity> findByAccount(ChartOfAccounts account);
+
 }

@@ -1,6 +1,9 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.impl;
 
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.BudgetSpendingService;
+import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
+import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.entity.DeductsEntity;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.repo.DeductRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherBeneficiaryEntity;
@@ -65,30 +68,30 @@ public class VoucherServiceImpl implements VoucherService {
     private final VoucherBeneficiaryRepo voucherBeneficiaryRepo;
     private final OrgFileRepo orgFileRepo;
     private final PermissionCheckerService permissionChecker;
+    private final BudgetSpendingService budgetSpendingService;
+    private final ChartOfAccountsRepo chartOfAccountsRepo;
 
     @Override
     public VoucherEntity createVoucher(UUID organisationId, CreateVoucherRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-
-        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
         ProjectEntity project = projectRepo.findById(request.getProjectId())
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
         OrganisationMember member = validateProjectAndOrganisationAccess(currentUser, project, organisation);
-
         permissionChecker.checkMemberPermission(member, "VOUCHERS","createVoucher");
 
-//        OrgBudgetDetailAllocationEntity detailAllocation = validateAndGetDetailAllocation(
-//                request.getDetailAllocationId(), organisationId);
+        // Validate and get account
+        ChartOfAccounts account = validateVoucherAccount(request.getAccountId(), organisationId);
 
         String voucherNumber = voucherNumberService.generateVoucherNumber(project, organisation);
 
         List<VoucherBeneficiaryEntity> beneficiaryEntities = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
-        BigDecimal totalDeductions = BigDecimal.ZERO;
 
         for (VoucherBeneficiaryRequest beneficiaryRequest : request.getBeneficiaries()) {
             VendorEntity vendor = vendorsRepo.findById(beneficiaryRequest.getVendorId())
@@ -107,8 +110,6 @@ public class VoucherServiceImpl implements VoucherService {
             beneficiaryEntity.setAmount(beneficiaryRequest.getAmount());
 
             List<VoucherDeductionEntity> deductionEntities = new ArrayList<>();
-            BigDecimal beneficiaryDeductionTotal = BigDecimal.ZERO;
-
             for (DeductsEntity deductEntity : validDeducts) {
                 VoucherDeductionEntity deductionEntity = new VoucherDeductionEntity();
                 deductionEntity.setBeneficiary(beneficiaryEntity);
@@ -122,27 +123,24 @@ public class VoucherServiceImpl implements VoucherService {
 
                 deductionEntity.setDeductionAmount(deductionAmount);
                 deductionEntities.add(deductionEntity);
-
-                beneficiaryDeductionTotal = beneficiaryDeductionTotal.add(deductionAmount);
             }
 
             beneficiaryEntity.setDeductions(deductionEntities);
             beneficiaryEntities.add(beneficiaryEntity);
-
             totalAmount = totalAmount.add(beneficiaryRequest.getAmount());
-            totalDeductions = totalDeductions.add(beneficiaryDeductionTotal);
         }
 
-       // validateBudgetAvailability(detailAllocation, totalAmount);
+        // SOFT BALANCE CHECK - warn but allow creation
+        performSoftBalanceCheck(account.getId(), totalAmount);
 
         VoucherEntity voucher = new VoucherEntity();
         voucher.setVoucherNumber(voucherNumber);
         voucher.setVoucherDate(LocalDateTime.now());
+        voucher.setAccount(account);
         voucher.setOverallDescription(request.getGeneralDescription());
         voucher.setCreatedBy(member);
         voucher.setOrganisation(organisation);
         voucher.setProject(project);
-       // voucher.setDetailAllocation(detailAllocation);
         voucher.setStatus(VoucherStatus.DRAFT);
         voucher.setCurrency("TSh");
         voucher.setAttachments(request.getAttachments());
@@ -153,6 +151,7 @@ public class VoucherServiceImpl implements VoucherService {
 
         return voucherRepo.save(voucher);
     }
+
 
     @Override
     public Page<VoucherEntity> getProjectVouchers(UUID organisationId, UUID projectId, Pageable pageable)
@@ -177,25 +176,28 @@ public class VoucherServiceImpl implements VoucherService {
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-
-        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
         VoucherEntity existingVoucher = validateVoucherExists(voucherId, organisation);
-
         OrganisationMember member = validateProjectAndOrganisationAccess(currentUser, existingVoucher.getProject(), organisation);
-
         permissionChecker.checkMemberPermission(member, "VOUCHERS","updateVoucher");
 
         validateVoucherCanBeUpdated(existingVoucher);
-
         updateVoucherBasicFields(existingVoucher, request);
 
-        if (request.getDetailAllocationId() != null) {
-            //updateVoucherDetailAllocation(existingVoucher, request.getDetailAllocationId(), organisationId);
+        if (request.getAccountId() != null) {
+            ChartOfAccounts newAccount = validateVoucherAccount(request.getAccountId(), organisationId);
+            existingVoucher.setAccount(newAccount);
         }
 
         if (request.getBeneficiaries() != null && !request.getBeneficiaries().isEmpty()) {
             updateVoucherBeneficiaries(existingVoucher, request.getBeneficiaries(), organisationId);
+
+            // SOFT BALANCE CHECK after updating beneficiaries
+            if (existingVoucher.getAccount() != null) {
+                performSoftBalanceCheck(existingVoucher.getAccount().getId(), existingVoucher.getTotalAmount());
+            }
         }
 
         if (request.getAttachments() != null) {
@@ -503,4 +505,94 @@ public class VoucherServiceImpl implements VoucherService {
 
         return member;
     }
+
+    public VoucherEntity approveVoucher(UUID organisationId, UUID voucherId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        VoucherEntity voucher = validateVoucherExists(voucherId, organisation);
+        OrganisationMember member = validateProjectAndOrganisationAccess(currentUser, voucher.getProject(), organisation);
+        permissionChecker.checkMemberPermission(member, "VOUCHERS", "approveVoucher");
+
+        if (voucher.getStatus() != VoucherStatus.PENDING_APPROVAL) {
+            throw new ItemNotFoundException("Only vouchers in PENDING_APPROVAL status can be approved");
+        }
+
+        // HARD BALANCE CHECK - block approval if insufficient balance
+        performHardBalanceCheck(voucher.getAccount().getId(), voucher.getTotalAmount());
+
+        voucher.setStatus(VoucherStatus.APPROVED);
+        voucher.setApprovedAt(LocalDateTime.now());
+
+        return voucherRepo.save(voucher);
+    }
+
+    // NEW METHOD: Add voucher spending method
+    public VoucherEntity markVoucherAsSpent(UUID organisationId, UUID voucherId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        VoucherEntity voucher = validateVoucherExists(voucherId, organisation);
+        OrganisationMember member = validateProjectAndOrganisationAccess(currentUser, voucher.getProject(), organisation);
+        permissionChecker.checkMemberPermission(member, "VOUCHERS", "processPayment");
+
+        if (voucher.getStatus() != VoucherStatus.APPROVED) {
+            throw new ItemNotFoundException("Only approved vouchers can be marked as spent");
+        }
+
+        // Record spending in budget
+        budgetSpendingService.recordSpendingFromVoucher(organisationId, voucher);
+
+        voucher.setStatus(VoucherStatus.PAID);
+        return voucherRepo.save(voucher);
+    }
+
+    // Helper methods
+    private ChartOfAccounts validateVoucherAccount(UUID accountId, UUID organisationId)
+            throws ItemNotFoundException {
+
+        ChartOfAccounts account = chartOfAccountsRepo.findById(accountId)
+                .orElseThrow(() -> new ItemNotFoundException("Account not found"));
+
+        if (!account.getOrganisation().getOrganisationId().equals(organisationId)) {
+            throw new ItemNotFoundException("Account does not belong to this organisation");
+        }
+
+        if (!account.getIsActive()) {
+            throw new ItemNotFoundException("Account is not active");
+        }
+
+        if (account.getIsHeader()) {
+            throw new ItemNotFoundException("Cannot create voucher for header account. Please select a detail account.");
+        }
+
+        return account;
+    }
+
+    private void performSoftBalanceCheck(UUID accountId, BigDecimal amount) {
+        if (!budgetSpendingService.canSpendFromAccount(accountId, amount)) {
+            BigDecimal available = budgetSpendingService.getAccountAvailableBalance(accountId);
+            log.warn("Voucher created with insufficient balance. Account: {}, Available: {}, Requested: {}",
+                    accountId, available, amount);
+            // Could add notification or flag here
+        }
+    }
+
+    private void performHardBalanceCheck(UUID accountId, BigDecimal amount)
+            throws ItemNotFoundException {
+
+        if (!budgetSpendingService.canSpendFromAccount(accountId, amount)) {
+            BigDecimal available = budgetSpendingService.getAccountAvailableBalance(accountId);
+            throw new ItemNotFoundException(String.format(
+                    "Insufficient balance for approval. Available: TSh %s, Required: TSh %s",
+                    available, amount));
+        }
+    }
+
 }
