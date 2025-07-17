@@ -83,9 +83,10 @@ public class VoucherServiceImpl implements VoucherService {
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
         OrganisationMember member = validateProjectAndOrganisationAccess(currentUser, project, organisation);
+
         permissionChecker.checkMemberPermission(member, "VOUCHERS","createVoucher");
 
-        // Validate and get account
+        // Validate and get an account
         ChartOfAccounts account = validateVoucherAccount(request.getAccountId(), organisationId);
 
         String voucherNumber = voucherNumberService.generateVoucherNumber(project, organisation);

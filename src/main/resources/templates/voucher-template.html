@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Payment Voucher</title>
+    <style type="text/css">
+        body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
+        .header { border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 20px; }
+        .company-name { color: #2563eb; font-size: 24px; font-weight: bold; }
+        .voucher-title { text-align: center; font-size: 18px; font-weight: bold; margin: 10px 0; }
+        .voucher-number { font-size: 14px; font-weight: bold; color: #dc2626; }
+        .details-grid { width: 100%; margin: 20px 0; }
+        .details-grid td { padding: 5px; border: 1px solid #ddd; }
+        .section-header { background: #f1f5f9; font-weight: bold; padding: 8px; }
+        .beneficiaries-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .beneficiaries-table th, .beneficiaries-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .beneficiaries-table th { background: #f1f5f9; font-weight: bold; }
+        .amount-cell { text-align: right; font-family: monospace; }
+        .totals-box {
+            border: 2px solid #2563eb;
+            padding: 15px;
+            margin: 20px 0;
+            width: 300px;
+            float: right;
+        }
+        .total-row { margin: 5px 0; }
+        .main-total {
+            border-top: 2px solid #2563eb;
+            padding-top: 10px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .signatures { margin-top: 40px; }
+        .signature-box {
+            display: inline-block;
+            width: 200px;
+            margin: 20px;
+            text-align: center;
+            vertical-align: top;
+        }
+        .signature-line {
+            border-bottom: 1px solid #000;
+            margin: 60px 0 10px 0;
+        }
+        .clear { clear: both; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="company-name" th:text="${organisationName}">Organisation Name</div>
+    <div class="voucher-title">PAYMENT VOUCHER</div>
+    <div class="voucher-number" th:text="${voucherNumber}">Voucher Number</div>
+</div>
+
+<table class="details-grid">
+    <tr>
+        <td class="section-header" colspan="4">Voucher Information</td>
+    </tr>
+    <tr>
+        <td><strong>Date:</strong></td>
+        <td th:text="${voucherDate}">Date</td>
+        <td><strong>Status:</strong></td>
+        <td th:text="${status}">Status</td>
+    </tr>
+    <tr>
+        <td><strong>Project:</strong></td>
+        <td th:text="${projectName}">Project Name</td>
+        <td><strong>Project Code:</strong></td>
+        <td th:text="${projectCode}">Project Code</td>
+    </tr>
+    <tr>
+        <td><strong>Account:</strong></td>
+        <td th:text="${accountCode + ' - ' + accountName}">Account</td>
+        <td><strong>Created By:</strong></td>
+        <td th:text="${createdByName}">Creator</td>
+    </tr>
+</table>
+
+<div th:if="${description}">
+    <strong>Description:</strong>
+    <p th:text="${description}">Description text</p>
+</div>
+
+<table class="beneficiaries-table">
+    <thead>
+    <tr>
+        <th>Vendor</th>
+        <th>Description</th>
+        <th>Gross Amount</th>
+        <th>Deductions</th>
+        <th>Net Amount</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="beneficiary, stat : ${beneficiaries}">
+        <td th:text="${beneficiary.vendor.name}">Vendor Name</td>
+        <td th:text="${beneficiary.description}">Description</td>
+        <td class="amount-cell" th:text="${#numbers.formatDecimal(beneficiary.amount, 0, 2)}">0.00</td>
+        <td>
+            <div th:each="deduction : ${beneficiary.deductions}" th:if="${beneficiary.deductions != null}">
+                <span th:text="${deduction.deductName + ' (' + deduction.percentage + '%): ' + #numbers.formatDecimal(deduction.deductionAmount, 0, 2)}">Deduction</span>
+            </div>
+            <span th:if="${beneficiary.deductions == null or beneficiary.deductions.isEmpty()}">None</span>
+        </td>
+        <td class="amount-cell" th:text="${#numbers.formatDecimal(beneficiaryNetAmounts[stat.index], 0, 2)}">0.00</td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="totals-box">
+    <div class="total-row">
+        <strong>Total Gross: </strong>
+        <span th:text="${currency + ' ' + totalGrossAmount}">0.00</span>
+    </div>
+    <div class="total-row">
+        <strong>Total Deductions: </strong>
+        <span th:text="${currency + ' ' + totalDeductions}">0.00</span>
+    </div>
+    <div class="total-row main-total">
+        <strong>Net Amount: </strong>
+        <span th:text="${currency + ' ' + totalNetAmount}">0.00</span>
+    </div>
+    <div style="margin-top: 10px; font-size: 11px;">
+        <strong>In Words:</strong>
+        <div th:text="${amountInWords}">Amount in words</div>
+    </div>
+</div>
+
+<div class="clear"></div>
+
+<div class="signatures">
+    <div class="signature-box">
+        <div><strong>Prepared By</strong></div>
+        <div class="signature-line"></div>
+        <div th:text="${createdByName}">Name</div>
+        <div th:text="${voucherDate}">Date</div>
+    </div>
+
+    <div class="signature-box">
+        <div><strong>Reviewed By</strong></div>
+        <div class="signature-line"></div>
+        <div>Finance Manager</div>
+        <div>Date: _______</div>
+    </div>
+
+    <div class="signature-box">
+        <div><strong>Approved By</strong></div>
+        <div class="signature-line"></div>
+        <div>Managing Director</div>
+        <div>Date: _______</div>
+    </div>
+</div>
+
+<div class="clear"></div>
+
+<div style="margin-top: 40px; text-align: center; font-size: 10px; color: #666;">
+    Generated on: <span th:text="${createdAt}">timestamp</span>
+</div>
+</body>
+</html>

@@ -225,6 +225,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         OrgBudgetEntity budget = orgBudgetRepo.findById(budgetId)
                 .orElseThrow(() -> new ItemNotFoundException("Budget not found"));
 
+
         if (!budget.getOrganisation().getOrganisationId().equals(organisationId)) {
             throw new ItemNotFoundException("Budget does not belong to this organisation");
         }

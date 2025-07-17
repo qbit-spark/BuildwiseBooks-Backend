@@ -3,6 +3,7 @@ package com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetDetailDistributionEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.*;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.BudgetFundingService;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.OrgBudgetService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class OrgBudgetController {
 
     private final OrgBudgetService orgBudgetService;
+    private final BudgetFundingService budgetFundingService;
 
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createBudget(
@@ -60,7 +62,7 @@ public class OrgBudgetController {
     @GetMapping("/{budgetId}/distribution-details")
     public ResponseEntity<GlobeSuccessResponseBuilder> getBudgetDistributionDetails(
             @PathVariable UUID organisationId,
-            @PathVariable UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
+            @PathVariable(required = false) UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
 
         BudgetDistributionDetailResponse response = orgBudgetService
                 .getBudgetDistributionDetails(budgetId, organisationId);
@@ -108,6 +110,16 @@ public class OrgBudgetController {
                 "Budget activated successfully. Previous active budget has been closed."));
     }
 
+    @GetMapping("/available-to-spend/summary-list")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getAvailableDetailAllocations(
+            @PathVariable UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        List<AvailableDetailAllocationResponse> allocations = budgetFundingService.getAvailableDetailAllocations(organisationId);
+
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Available detail allocations retrieved successfully", allocations));
+    }
 
     // Simple mapping methods
     private CreateBudgetResponse mapToResponse(OrgBudgetEntity budget) {

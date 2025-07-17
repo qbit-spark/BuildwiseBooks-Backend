@@ -18,6 +18,9 @@ public class AvailableDetailAllocationResponse {
     private String accountCode;
     private String accountName;
     private String headingParent;
+    private BigDecimal TotalFundedAmount;
+    private BigDecimal TotalSpentAmount;
+    private BigDecimal BudgetDistributed;
     private BigDecimal budgetRemaining;
     private BigDecimal availableBalance;
     private String notes;
@@ -29,4 +32,5 @@ public class AvailableDetailAllocationResponse {
     private BigDecimal committedAmount;
     private String allocationStatus;
     private boolean hasAllocation;
+    private boolean HasFunding;
 }

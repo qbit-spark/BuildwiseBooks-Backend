@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/organisation/{orgId}/members")
+@RequestMapping("/api/v1/members/{organisationId}")
 @RequiredArgsConstructor
 public class OrganisationMemberController {
 
@@ -26,12 +26,12 @@ public class OrganisationMemberController {
 
     @PostMapping("/invite")
     public ResponseEntity<GlobeSuccessResponseBuilder> inviteMember(
-            @PathVariable UUID orgId,
+            @PathVariable UUID organisationId,
             @RequestBody @Valid InviteMemberRequest request
     ) throws ItemNotFoundException, AccessDeniedException, RandomExceptions {
 
         boolean invited = organisationMemberService.inviteMember(
-                orgId,
+                organisationId,
                 request.getEmail(),
                 request.getRole()
         );
@@ -49,10 +49,10 @@ public class OrganisationMemberController {
 
     @GetMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllMembersAndInvitations(
-            @PathVariable UUID orgId
+            @PathVariable UUID organisationId
     ) throws ItemNotFoundException, AccessDeniedException {
 
-        OrganisationMembersOverviewResponse overview = organisationMemberService.getAllMembersAndInvitations(orgId);
+        OrganisationMembersOverviewResponse overview = organisationMemberService.getAllMembersAndInvitations(organisationId);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
@@ -64,10 +64,10 @@ public class OrganisationMemberController {
 
     @GetMapping("/active")
     public ResponseEntity<GlobeSuccessResponseBuilder> getActiveMembers(
-            @PathVariable UUID orgId
+            @PathVariable UUID organisationId
     ) throws ItemNotFoundException, AccessDeniedException {
 
-        List<OrganisationMemberResponse> activeMembers = organisationMemberService.getActiveMembers(orgId);
+        List<OrganisationMemberResponse> activeMembers = organisationMemberService.getActiveMembers(organisationId);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
@@ -79,10 +79,10 @@ public class OrganisationMemberController {
 
     @GetMapping("/invitations/pending")
     public ResponseEntity<GlobeSuccessResponseBuilder> getPendingInvitations(
-            @PathVariable UUID orgId
+            @PathVariable UUID organisationId
     ) throws ItemNotFoundException, AccessDeniedException {
 
-        List<PendingInvitationResponse> pendingInvitations = organisationMemberService.getPendingInvitations(orgId);
+        List<PendingInvitationResponse> pendingInvitations = organisationMemberService.getPendingInvitations(organisationId);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
@@ -94,11 +94,11 @@ public class OrganisationMemberController {
 
     @DeleteMapping("/{memberId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> removeMember(
-            @PathVariable UUID orgId,
+            @PathVariable UUID organisationId,
             @PathVariable UUID memberId
     ) throws ItemNotFoundException, AccessDeniedException, RandomExceptions {
 
-        boolean removed = organisationMemberService.removeMember(orgId, memberId);
+        boolean removed = organisationMemberService.removeMember(organisationId, memberId);
 
         if (removed) {
             return ResponseEntity.ok(
