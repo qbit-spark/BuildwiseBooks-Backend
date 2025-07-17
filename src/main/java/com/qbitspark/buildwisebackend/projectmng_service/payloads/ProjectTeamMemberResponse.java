@@ -1,7 +1,5 @@
 package com.qbitspark.buildwisebackend.projectmng_service.payloads;
 
-import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
-import lombok.Data;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -12,8 +10,11 @@ public class ProjectTeamMemberResponse {
     private UUID memberId;
     private String memberName;
     private String memberEmail;
-    private TeamMemberRole role;
-    private String organisationRole; // OWNER, ADMIN, MEMBER
-    private String status; // ACTIVE, SUSPENDED, etc.
+    private UUID roleId;
+    private String roleName;
+    private String roleDescription;
+    private String organisationRole;
+    private String status;
     private LocalDateTime joinedAt;
+    private String addedBy;
 }

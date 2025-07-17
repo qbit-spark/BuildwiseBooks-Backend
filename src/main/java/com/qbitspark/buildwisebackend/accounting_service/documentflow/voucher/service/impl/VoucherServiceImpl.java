@@ -1,6 +1,5 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.impl;
 
-import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.BudgetSpendingService;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
@@ -28,8 +27,6 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
-import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
-import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
 import com.qbitspark.buildwisebackend.vendormng_service.entity.VendorEntity;
@@ -252,24 +249,6 @@ public class VoucherServiceImpl implements VoucherService {
         }
     }
 
-    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
-
-        OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
-                .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
-
-        if (organisationMember.getStatus() != MemberStatus.ACTIVE) {
-            throw new ItemNotFoundException("Member is not active");
-        }
-
-
-        ProjectTeamMemberEntity projectTeamMember = projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
-                .orElseThrow(() -> new ItemNotFoundException("Project team member not found"));
-
-        if (!allowedRoles.contains(projectTeamMember.getRole())) {
-            throw new AccessDeniedException("Member has insufficient permissions for this operation");
-        }
-
-    }
 
 
     private OrganisationEntity validateOrganisationExists(UUID organisationId)

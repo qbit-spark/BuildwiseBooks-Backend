@@ -24,7 +24,6 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
-import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +35,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -75,7 +73,7 @@ public class ReceiptServiceImpl implements ReceiptService {
         ProjectEntity project = invoice.getProject();
         ClientEntity client = invoice.getClient();
 
-        validateProjectMemberPermissions(currentUser, project);
+        validateProjectMemberAccess(currentUser, project);
 
         BankAccountEntity bankAccount = null;
         if (request.getBankAccountId() != null) {
@@ -149,7 +147,7 @@ public class ReceiptServiceImpl implements ReceiptService {
         ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
 
-        validateProjectMemberPermissions(currentUser, receipt.getProject());
+        validateProjectMemberAccess(currentUser, receipt.getProject());
 
         if (receipt.getStatus() != ReceiptStatus.DRAFT) {
             throw new ItemNotFoundException("Only draft receipts can be updated");
@@ -198,7 +196,7 @@ public class ReceiptServiceImpl implements ReceiptService {
         ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
 
-        validateProjectMemberPermissions(currentUser, receipt.getProject());
+        validateProjectMemberAccess(currentUser, receipt.getProject());
 
         receipt.setStatus(ReceiptStatus.APPROVED);
         receipt.setUpdatedBy(currentUser.getAccountId());
@@ -220,7 +218,7 @@ public class ReceiptServiceImpl implements ReceiptService {
         ReceiptEntity receipt = receiptRepo.findByReceiptIdAndOrganisation(receiptId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Receipt not found"));
 
-        validateProjectMemberPermissions(currentUser, receipt.getProject());
+        validateProjectMemberAccess(currentUser, receipt.getProject());
 
         receipt.setStatus(ReceiptStatus.CANCELLED);
         receipt.setUpdatedBy(currentUser.getAccountId());
@@ -241,7 +239,7 @@ public class ReceiptServiceImpl implements ReceiptService {
         permissionChecker.checkMemberPermission(member, "RECEIPTS","viewReceipts");
 
         InvoiceDocEntity invoice = validateInvoice(invoiceId, organisation);
-        validateProjectMemberPermissions(currentUser, invoice.getProject());
+        validateProjectMemberAccess(currentUser, invoice.getProject());
 
         return receiptRepo.findByInvoiceOrderByReceiptDateDesc(invoice);
     }
@@ -262,7 +260,7 @@ public class ReceiptServiceImpl implements ReceiptService {
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
         validateProject(project, organisation);
-        validateProjectMemberPermissions(currentUser, project);
+        validateProjectMemberAccess(currentUser, project);
 
         return receiptRepo.findByProject(project, pageable);
     }
@@ -355,7 +353,7 @@ public class ReceiptServiceImpl implements ReceiptService {
         }
     }
 
-    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project)
+    private void validateProjectMemberAccess(AccountEntity account, ProjectEntity project)
             throws ItemNotFoundException, AccessDeniedException {
 
         OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
@@ -368,11 +366,6 @@ public class ReceiptServiceImpl implements ReceiptService {
         ProjectTeamMemberEntity projectTeamMember = projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
                 .orElseThrow(() -> new ItemNotFoundException("Project team member not found"));
 
-        List<TeamMemberRole> allowedRoles = List.of(TeamMemberRole.ACCOUNTANT, TeamMemberRole.OWNER, TeamMemberRole.PROJECT_MANAGER, TeamMemberRole.MEMBER);
-
-        if (!allowedRoles.contains(projectTeamMember.getRole())) {
-            throw new AccessDeniedException("Insufficient permissions for this operation");
-        }
     }
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {

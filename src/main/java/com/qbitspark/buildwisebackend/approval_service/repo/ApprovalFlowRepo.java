@@ -11,9 +11,9 @@ import java.util.UUID;
 
 public interface ApprovalFlowRepo extends JpaRepository<ApprovalFlow, UUID> {
 
-    Optional<ApprovalFlow> findByServiceNameAndOrganisationAndActiveIsTrue(ServiceType serviceName, OrganisationEntity organisation);
+    Optional<ApprovalFlow> findByServiceNameAndOrganisationAndIsActiveTrue(ServiceType serviceName, OrganisationEntity organisation);
 
-    List<ApprovalFlow> findByOrganisationAndActiveIsTrue(OrganisationEntity organisation);
+    List<ApprovalFlow> findByOrganisationAndIsActiveTrue(OrganisationEntity organisation);
 
-    boolean existsByServiceNameAndOrganisationAndActiveIsTrue(ServiceType serviceName, OrganisationEntity organisation);
+    boolean existsByServiceNameAndOrganisationAndIsActiveTrue(ServiceType serviceName, OrganisationEntity organisation);
 }

@@ -1,36 +1,22 @@
-#services:
-#  db:
-#    image: postgres:15
-#    environment:
-#      - POSTGRES_DB=buildwise_db
-#      - POSTGRES_USER=postgres
-#      - POSTGRES_PASSWORD=password123
-#    ports:
-#      - "5432:5432"
-#    volumes:
-#      - postgres_data:/var/lib/postgresql/data
-#    networks:
-#      - buildwise-network
-#
-#  buildwise-app:
-#    image: josh656/buildwise-backend:latest
-#    ports:
-#      - "8080:8080"
-#    environment:
-#      - DATABASE_URL=jdbc:postgresql://db:5432/buildwise_db?stringtype=unspecified
-#      - DATABASE_USERNAME=postgres
-#      - DATABASE_PASSWORD=password123
-#      - JWT_SECRET=b79943ecd429541f7960138c5a8d53c926f8fe27c41354e8ced0d73fb5269353
-#      - FRONTEND_URL=http://localhost:3000
-#    depends_on:
-#      - db
-#    restart: on-failure
-#    networks:
-#      - buildwise-network
-#
-#volumes:
-#  postgres_data:
-#
-#networks:
-#  buildwise-network:
-#    driver: bridge
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: buildwise-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: buildwise_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: BuildWised@123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persistent volume
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local

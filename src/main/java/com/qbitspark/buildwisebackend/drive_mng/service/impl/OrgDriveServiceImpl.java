@@ -22,7 +22,6 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
-import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
 import lombok.RequiredArgsConstructor;
@@ -425,7 +424,7 @@ public class OrgDriveServiceImpl implements OrgDriveService {
         }
     }
 
-    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project, List<TeamMemberRole> allowedRoles) throws ItemNotFoundException, AccessDeniedException {
+    private void validateProjectMemberPermissions(AccountEntity account, ProjectEntity project) throws ItemNotFoundException, AccessDeniedException {
 
         OrganisationMember organisationMember = organisationMemberRepo.findByAccountAndOrganisation(account, project.getOrganisation())
                 .orElseThrow(() -> new ItemNotFoundException("Member is not found in organisation"));
@@ -437,9 +436,7 @@ public class OrgDriveServiceImpl implements OrgDriveService {
         ProjectTeamMemberEntity projectTeamMember = projectTeamMemberRepo.findByOrganisationMemberAndProject(organisationMember, project)
                 .orElseThrow(() -> new ItemNotFoundException("Project team member not found"));
 
-        if (!allowedRoles.contains(projectTeamMember.getRole())) {
-            throw new AccessDeniedException("Member has insufficient permissions for this operation");
-        }
+
 
     }
 
@@ -461,8 +458,7 @@ public class OrgDriveServiceImpl implements OrgDriveService {
 
         // Validate project access if file belongs to a project
         if (file.getProject() != null) {
-            validateProjectMemberPermissions(requestedBy, file.getProject(),
-                    List.of(TeamMemberRole.values())); // Allow all project members to preview
+            validateProjectMemberPermissions(requestedBy, file.getProject()); // Allow all project members to preview
         }
 
         return buildFileInfoResponse(file);

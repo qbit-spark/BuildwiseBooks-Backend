@@ -36,7 +36,7 @@ public class ApprovalFlow {
     private OrganisationEntity organisation;
 
     @Column(nullable = false)
-    private boolean isActive = true;
+    private Boolean isActive = true;
 
     @OneToMany(mappedBy = "approvalFlow", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ApprovalStep> steps;

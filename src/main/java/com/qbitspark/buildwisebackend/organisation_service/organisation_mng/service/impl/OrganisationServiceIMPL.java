@@ -18,6 +18,8 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.MemberRoleEntity;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.MemberRoleService;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamRoleEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.service.ProjectTeamRoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,6 +44,7 @@ public class OrganisationServiceIMPL implements OrganisationService {
     private final MemberRoleService memberRoleService;
     private final PermissionCheckerService permissionChecker;
     private final OrganisationMemberRepo organisationMemberRepo;
+    private final ProjectTeamRoleService projectTeamRoleService;
 
     @Transactional
     @Override
@@ -66,6 +69,8 @@ public class OrganisationServiceIMPL implements OrganisationService {
         OrganisationEntity savedOrganisation = organisationRepo.save(organisationEntity);
 
         List<MemberRoleEntity> list = memberRoleService.createDefaultRolesForOrganisation(savedOrganisation);
+
+        List<ProjectTeamRoleEntity> projectTeamRoles = projectTeamRoleService.createDefaultProjectTeamRoles(savedOrganisation);
 
         organisationMemberService.addOwnerAsMember(savedOrganisation, authenticatedAccount);
 

@@ -52,7 +52,7 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
 
         permissionChecker.checkMemberPermission(member, "ORGANISATION", "manageMembers");
 
-        if (approvalFlowRepo.existsByServiceNameAndOrganisationAndActiveIsTrue(request.getServiceName(), organisation)) {
+        if (approvalFlowRepo.existsByServiceNameAndOrganisationAndIsActiveTrue(request.getServiceName(), organisation)) {
             throw new ItemNotFoundException("Approval flow already exists for service: " + request.getServiceName());
         }
 
@@ -60,7 +60,7 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
         approvalFlow.setServiceName(request.getServiceName());
         approvalFlow.setDescription(request.getDescription());
         approvalFlow.setOrganisation(organisation);
-        approvalFlow.setActive(true);
+        approvalFlow.setIsActive(true);
         approvalFlow.setCreatedAt(LocalDateTime.now());
         approvalFlow.setUpdatedAt(LocalDateTime.now());
 
@@ -125,7 +125,7 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
 
         OrganisationEntity organisation = getOrganisation(organisationId);
 
-        return approvalFlowRepo.findByServiceNameAndOrganisationAndActiveIsTrue(serviceName, organisation)
+        return approvalFlowRepo.findByServiceNameAndOrganisationAndIsActiveTrue(serviceName, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Approval flow not found for service: " + serviceName));
     }
 
@@ -139,7 +139,7 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
 
         permissionChecker.checkMemberPermission(member, "ORGANISATION", "viewOrganisation");
 
-        return approvalFlowRepo.findByOrganisationAndActiveIsTrue(organisation);
+        return approvalFlowRepo.findByOrganisationAndIsActiveTrue(organisation);
     }
 
     @Transactional
@@ -154,7 +154,7 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
         OrganisationMember member = validateOrganisationMemberAccess(currentUser, approvalFlow.getOrganisation());
         permissionChecker.checkMemberPermission(member, "ORGANISATION", "manageMembers");
 
-        approvalFlow.setActive(false);
+        approvalFlow.setIsActive(false);
         approvalFlow.setUpdatedAt(LocalDateTime.now());
         approvalFlowRepo.save(approvalFlow);
     }

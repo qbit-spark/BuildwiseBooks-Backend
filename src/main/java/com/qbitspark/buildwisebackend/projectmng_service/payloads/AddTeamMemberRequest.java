@@ -1,6 +1,5 @@
 package com.qbitspark.buildwisebackend.projectmng_service.payloads;
 
-import com.qbitspark.buildwisebackend.projectmng_service.enums.TeamMemberRole;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -16,8 +15,8 @@ public class AddTeamMemberRequest {
     @NotNull(message = "Member ID is required")
     private UUID memberId;
 
-    @NotNull(message = "Role is required")
-    private TeamMemberRole role;
+    @NotNull(message = "Role ID is required")
+    private UUID roleId;
 
     @NotBlank(message = "Contract number is required")
     private String contractNumber;
