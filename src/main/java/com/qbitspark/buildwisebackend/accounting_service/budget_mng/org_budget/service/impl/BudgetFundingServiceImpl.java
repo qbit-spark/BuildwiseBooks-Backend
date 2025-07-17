@@ -62,7 +62,7 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
 
     @Override
     public List<BudgetFundingAllocationEntity> fundAccountsFromAllocation(UUID organisationId, ReceiptAllocationEntity allocation)
-            throws ItemNotFoundException, AccessDeniedException {
+            throws ItemNotFoundException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = getOrganisation(organisationId);
@@ -102,7 +102,7 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
             }
 
             // Get the distribution for validation (should be only one)
-            OrgBudgetDetailDistributionEntity distribution = distributions.get(0);
+            OrgBudgetDetailDistributionEntity distribution = distributions.getFirst();
 
             // Optional: Check if account has budget allocated (distributed amount > 0)
             if (distribution.getDistributedAmount().compareTo(BigDecimal.ZERO) == 0) {
@@ -400,5 +400,6 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
 
         return response;
     }
+
 
 }

@@ -272,21 +272,6 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
 
-//    private void validateBudgetAvailability(OrgBudgetDetailAllocationEntity allocation,
-//                                            BigDecimal requestedAmount) throws ItemNotFoundException {
-//
-//        BigDecimal availableBudget = allocation.getRemainingAmount();
-//
-//        if (availableBudget.compareTo(requestedAmount) < 0) {
-//            throw new ItemNotFoundException(String.format(
-//                    "Insufficient budget for %s - %s. Available: TSh %s, Requested: TSh %s",
-//                    allocation.getDetailAccountCode(),
-//                    allocation.getDetailAccountName(),
-//                    availableBudget,
-//                    requestedAmount
-//            ));
-//        }
-//    }
     private OrganisationEntity validateOrganisationExists(UUID organisationId)
             throws ItemNotFoundException {
         return organisationRepo.findById(organisationId)
@@ -313,14 +298,6 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setUpdatedAt(LocalDateTime.now());
     }
 
-//    private void updateVoucherDetailAllocation(VoucherEntity voucher, UUID newDetailAllocationId, UUID organisationId)
-//            throws ItemNotFoundException {
-//
-//        OrgBudgetDetailAllocationEntity newDetailAllocation = validateAndGetDetailAllocation(
-//                newDetailAllocationId, organisationId);
-//
-//        voucher.setDetailAllocation(newDetailAllocation);
-//    }
 
     private void updateVoucherBeneficiaries(VoucherEntity voucher, List<VoucherBeneficiaryRequest> newBeneficiaries,
                                             UUID organisationId) throws ItemNotFoundException {

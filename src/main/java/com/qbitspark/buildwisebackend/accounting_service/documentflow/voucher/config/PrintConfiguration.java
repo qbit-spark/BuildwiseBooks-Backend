@@ -16,7 +16,7 @@ public class PrintConfiguration {
         templateResolver.setSuffix(".html");
         templateResolver.setTemplateMode(TemplateMode.HTML);
         templateResolver.setCharacterEncoding("UTF-8");
-        templateResolver.setCacheable(false); // Set to true in production
+        templateResolver.setCacheable(true); // Set to true in production
 
         TemplateEngine templateEngine = new TemplateEngine();
         templateEngine.setTemplateResolver(templateResolver);
