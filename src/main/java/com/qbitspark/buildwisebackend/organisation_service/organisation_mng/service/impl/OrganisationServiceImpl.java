@@ -34,7 +34,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class OrganisationServiceIMPL implements OrganisationService {
+public class OrganisationServiceImpl implements OrganisationService {
 
     private final AccountRepo accountRepo;
     private final OrganisationRepo organisationRepo;

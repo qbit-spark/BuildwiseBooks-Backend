@@ -47,7 +47,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
     @Transactional
     @Override
-    public boolean inviteMember(UUID organisationId, String email, String roleName) throws ItemNotFoundException, AccessDeniedException {
+    public boolean inviteMember(UUID organisationId, String email, UUID roleId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
@@ -64,12 +64,14 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
             return false;
         }
 
-        MemberRoleEntity roleToAssign = memberRoleRepository.findByOrganisationAndRoleName(organisation, roleName)
-                .orElseThrow(() -> new ItemNotFoundException("Role '" + roleName + "' not found in organisation"));
+        MemberRoleEntity roleToAssign = memberRoleRepository.findByOrganisationAndRoleId(organisation, roleId).orElseThrow(
+                ()-> new ItemNotFoundException("Role not found in organisation")
+        );
+
 
         String currentUserRoleName = currentMember.getMemberRole().getRoleName();
 
-        if ("OWNER".equals(roleName) && !"OWNER".equals(currentUserRoleName)) {
+        if ("OWNER".equals(roleToAssign.getRoleName()) && !"OWNER".equals(currentUserRoleName)) {
             throw new AccessDeniedException("Only organisation owner can invite other owners");
         }
 

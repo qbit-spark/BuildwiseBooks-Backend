@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/project-team/{organisationId}/roles")
+@RequestMapping("/api/v1/{organisationId}/project-team-role")
 @RequiredArgsConstructor
 public class ProjectTeamRoleController {
 

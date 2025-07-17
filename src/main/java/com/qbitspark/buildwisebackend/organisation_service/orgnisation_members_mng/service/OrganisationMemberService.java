@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface OrganisationMemberService {
 
-    boolean inviteMember(UUID organisationId, String email, String role) throws ItemNotFoundException, AccessDeniedException;
+    boolean inviteMember(UUID organisationId, String email, UUID roleId) throws ItemNotFoundException, AccessDeniedException;
 
     AcceptInvitationResponse acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException;
 

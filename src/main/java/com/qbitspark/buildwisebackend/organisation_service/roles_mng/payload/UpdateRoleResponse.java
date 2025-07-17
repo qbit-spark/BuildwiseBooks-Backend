@@ -13,5 +13,5 @@ public class UpdateRoleResponse {
     private Map<String, Map<String, Boolean>> permissions;
     private LocalDateTime updatedAt;
     private String updatedBy;
-    private boolean isDefaultRole;
+    private Boolean isDefaultRole;
 }

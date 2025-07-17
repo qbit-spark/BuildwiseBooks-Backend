@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public interface MemberRoleRepo extends JpaRepository<MemberRoleEntity, UUID> {
     Optional<MemberRoleEntity> findByOrganisationAndRoleName(OrganisationEntity organisation, String roleName);
+    Optional<MemberRoleEntity> findByOrganisationAndRoleId(OrganisationEntity organisation, UUID roleId);
 
     boolean existsByOrganisationAndRoleNameIgnoreCase(OrganisationEntity organisation, String roleName);
 

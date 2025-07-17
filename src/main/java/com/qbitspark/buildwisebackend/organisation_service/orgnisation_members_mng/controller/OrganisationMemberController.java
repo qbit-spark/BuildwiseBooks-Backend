@@ -33,7 +33,7 @@ public class OrganisationMemberController {
         boolean invited = organisationMemberService.inviteMember(
                 organisationId,
                 request.getEmail(),
-                request.getRole()
+                request.getRoleId()
         );
 
         if (invited) {
