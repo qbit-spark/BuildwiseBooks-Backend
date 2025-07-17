@@ -15,7 +15,7 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.OrganisationMemberService;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.MemberRoleEntity;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.MemberRoleService;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamRoleEntity;
@@ -68,7 +68,7 @@ public class OrganisationServiceImpl implements OrganisationService {
 
         OrganisationEntity savedOrganisation = organisationRepo.save(organisationEntity);
 
-        List<MemberRoleEntity> list = memberRoleService.createDefaultRolesForOrganisation(savedOrganisation);
+        List<OrgMemberRoleEntity> list = memberRoleService.createDefaultRolesForOrganisation(savedOrganisation);
 
         List<ProjectTeamRoleEntity> projectTeamRoles = projectTeamRoleService.createDefaultProjectTeamRoles(savedOrganisation);
 

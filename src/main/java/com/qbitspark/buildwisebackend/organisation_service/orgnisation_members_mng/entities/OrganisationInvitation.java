@@ -3,7 +3,7 @@ package com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.InvitationStatus;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.MemberRoleEntity;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -45,7 +45,7 @@ public class OrganisationInvitation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
-    private MemberRoleEntity memberRole;
+    private OrgMemberRoleEntity memberRole;
 
     @Column(name = "token", columnDefinition = "TEXT", unique = true, nullable = false)
     private String token;

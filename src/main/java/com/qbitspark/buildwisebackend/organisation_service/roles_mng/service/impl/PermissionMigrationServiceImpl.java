@@ -1,7 +1,7 @@
 package com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.impl;
 
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.config.PermissionConfig;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.MemberRoleEntity;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.MemberRoleRepo;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionMigrationService;
 import lombok.RequiredArgsConstructor;
@@ -37,14 +37,14 @@ public class PermissionMigrationServiceImpl implements PermissionMigrationServic
             migrationInProgress = true;
             log.info("Starting async permission migration...");
 
-            List<MemberRoleEntity> allRoles = memberRoleRepo.findAll();
+            List<OrgMemberRoleEntity> allRoles = memberRoleRepo.findAll();
             Map<String, Map<String, Boolean>> latestPermissions = PermissionConfig.getAllPermissions();
 
             int totalRoles = allRoles.size();
             int updatedCount = 0;
 
             for (int i = 0; i < allRoles.size(); i++) {
-                MemberRoleEntity role = allRoles.get(i);
+                OrgMemberRoleEntity role = allRoles.get(i);
 
                 try {
                     boolean wasUpdated = updateRolePermissions(role, latestPermissions);
@@ -92,7 +92,7 @@ public class PermissionMigrationServiceImpl implements PermissionMigrationServic
     }
 
     @Transactional
-    public boolean updateRolePermissions(MemberRoleEntity role, Map<String, Map<String, Boolean>> latestPermissions) {
+    public boolean updateRolePermissions(OrgMemberRoleEntity role, Map<String, Map<String, Boolean>> latestPermissions) {
 
         Map<String, Map<String, Boolean>> currentPermissions = role.getPermissions();
 

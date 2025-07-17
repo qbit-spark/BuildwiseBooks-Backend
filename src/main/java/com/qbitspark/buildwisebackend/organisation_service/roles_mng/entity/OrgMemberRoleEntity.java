@@ -1,7 +1,6 @@
 package com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity;
 
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
-import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.utils.PermissionJsonbConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -22,7 +21,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Setter
-public class MemberRoleEntity {
+public class OrgMemberRoleEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

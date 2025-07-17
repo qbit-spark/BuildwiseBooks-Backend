@@ -3,6 +3,7 @@ package com.qbitspark.buildwisebackend.approval_service.service.impl;
 import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalFlow;
 import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalStep;
 import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
+import com.qbitspark.buildwisebackend.approval_service.enums.ScopeType;
 import com.qbitspark.buildwisebackend.approval_service.payloads.CreateApprovalFlowRequest;
 import com.qbitspark.buildwisebackend.approval_service.payloads.CreateApprovalStepRequest;
 import com.qbitspark.buildwisebackend.approval_service.repo.ApprovalFlowRepo;
@@ -17,7 +18,11 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.MemberRoleRepo;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamRoleEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamRoleRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,6 +45,8 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
     private final AccountRepo accountRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
     private final PermissionCheckerService permissionChecker;
+    private final MemberRoleRepo memberRoleRepo;
+    private final ProjectTeamRoleRepo projectTeamRoleRepo;
 
     @Transactional
     @Override
@@ -52,10 +59,17 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
 
         permissionChecker.checkMemberPermission(member, "ORGANISATION", "manageMembers");
 
+        // Check if flow already exists FIRST
         if (approvalFlowRepo.existsByServiceNameAndOrganisationAndIsActiveTrue(request.getServiceName(), organisation)) {
             throw new ItemNotFoundException("Approval flow already exists for service: " + request.getServiceName());
         }
 
+        // Validate ALL roles BEFORE saving anything
+        for (CreateApprovalStepRequest stepRequest : request.getSteps()) {
+            validateRoleForScope(stepRequest.getRoleId(), stepRequest.getScopeType(), organisation);
+        }
+
+        // Now create and save the flow
         ApprovalFlow approvalFlow = new ApprovalFlow();
         approvalFlow.setServiceName(request.getServiceName());
         approvalFlow.setDescription(request.getDescription());
@@ -66,13 +80,13 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
 
         ApprovalFlow savedFlow = approvalFlowRepo.save(approvalFlow);
 
+        // Create steps (validation already done)
         List<ApprovalStep> steps = new ArrayList<>();
         for (CreateApprovalStepRequest stepRequest : request.getSteps()) {
             ApprovalStep step = new ApprovalStep();
             step.setApprovalFlow(savedFlow);
             step.setStepOrder(stepRequest.getStepOrder());
             step.setScopeType(stepRequest.getScopeType());
-            //Todo we need to validate this role id!
             step.setRoleId(stepRequest.getRoleId());
             step.setRequired(stepRequest.isRequired());
             steps.add(step);
@@ -104,6 +118,10 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
 
         List<ApprovalStep> steps = new ArrayList<>();
         for (CreateApprovalStepRequest stepRequest : request.getSteps()) {
+
+            // Validate role ID based on scope type
+            validateRoleForScope(stepRequest.getRoleId(), stepRequest.getScopeType(), existingFlow.getOrganisation());
+
             ApprovalStep step = new ApprovalStep();
             step.setApprovalFlow(existingFlow);
             step.setStepOrder(stepRequest.getStepOrder());
@@ -184,5 +202,39 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
         }
 
         return member;
+    }
+
+    private void validateRoleForScope(UUID roleId, ScopeType scopeType, OrganisationEntity organisation)
+            throws ItemNotFoundException {
+
+        switch (scopeType) {
+            case ORGANIZATION -> {
+                // Check if role exists in organization member roles
+                OrgMemberRoleEntity orgRole = memberRoleRepo.findById(roleId)
+                        .orElseThrow(() -> new ItemNotFoundException("Organization role not found with ID: " + roleId));
+
+                if (!orgRole.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
+                    throw new ItemNotFoundException("Role does not belong to this organization");
+                }
+
+                if (!orgRole.getIsActive()) {
+                    throw new ItemNotFoundException("Organization role is not active");
+                }
+            }
+            case PROJECT -> {
+                // Check if role exists in project team roles
+                ProjectTeamRoleEntity projectRole = projectTeamRoleRepo.findById(roleId)
+                        .orElseThrow(() -> new ItemNotFoundException("Project role not found with ID: " + roleId));
+
+                if (!projectRole.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {
+                    throw new ItemNotFoundException("Project role does not belong to this organization");
+                }
+
+                if (!projectRole.getIsActive()) {
+                    throw new ItemNotFoundException("Project role is not active");
+                }
+            }
+            default -> throw new ItemNotFoundException("Invalid scope type: " + scopeType);
+        }
     }
 }

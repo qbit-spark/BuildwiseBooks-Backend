@@ -5,7 +5,7 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundExcepti
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.MemberRoleEntity;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.payload.CreateRoleRequest;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.payload.CreateRoleResponse;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.payload.UpdateRoleRequest;
@@ -34,7 +34,7 @@ public class MemberRoleController {
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        List<MemberRoleEntity> roles = memberRoleService.getAllRolesForOrganisation(organisation);
+        List<OrgMemberRoleEntity> roles = memberRoleService.getAllRolesForOrganisation(organisation);
         List<CreateRoleResponse> responses = roles.stream()
                 .map(this::mapToCreateRoleResponse)
                 .toList();
@@ -55,7 +55,7 @@ public class MemberRoleController {
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        List<MemberRoleEntity> roles = memberRoleService.getAllRolesForOrganisation(organisation);
+        List<OrgMemberRoleEntity> roles = memberRoleService.getAllRolesForOrganisation(organisation);
         List<CreateRoleResponse> responses = roles.stream()
                 .map(this::mapToSummaryRoleResponse)
                 .toList();
@@ -74,7 +74,7 @@ public class MemberRoleController {
             @PathVariable UUID organisationId,
             @Valid @RequestBody CreateRoleRequest request) throws ItemNotFoundException, AccessDeniedException {
 
-        MemberRoleEntity role = memberRoleService.createNewRole(organisationId, request);
+        OrgMemberRoleEntity role = memberRoleService.createNewRole(organisationId, request);
         CreateRoleResponse response = mapToCreateRoleResponse(role);
 
         return ResponseEntity.ok(
@@ -91,7 +91,7 @@ public class MemberRoleController {
             @PathVariable UUID roleId,
             @Valid @RequestBody UpdateRoleRequest request) throws ItemNotFoundException, AccessDeniedException {
 
-        MemberRoleEntity role = memberRoleService.updateRole(roleId, request);
+        OrgMemberRoleEntity role = memberRoleService.updateRole(roleId, request);
         UpdateRoleResponse response = mapToUpdateRoleResponse(role);
 
         return ResponseEntity.ok(
@@ -109,7 +109,7 @@ public class MemberRoleController {
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        MemberRoleEntity defaultRole = memberRoleService.getMemberRole(organisation);
+        OrgMemberRoleEntity defaultRole = memberRoleService.getMemberRole(organisation);
         CreateRoleResponse response = mapToCreateRoleResponse(defaultRole);
 
         return ResponseEntity.ok(
@@ -128,8 +128,8 @@ public class MemberRoleController {
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        List<MemberRoleEntity> roles = memberRoleService.getAllRolesForOrganisation(organisation);
-        MemberRoleEntity role = roles.stream()
+        List<OrgMemberRoleEntity> roles = memberRoleService.getAllRolesForOrganisation(organisation);
+        OrgMemberRoleEntity role = roles.stream()
                 .filter(r -> r.getRoleId().equals(roleId))
                 .findFirst()
                 .orElseThrow(() -> new ItemNotFoundException("Member role not found"));
@@ -145,7 +145,7 @@ public class MemberRoleController {
     }
 
     // Helper mapping methods
-    private CreateRoleResponse mapToCreateRoleResponse(MemberRoleEntity role) {
+    private CreateRoleResponse mapToCreateRoleResponse(OrgMemberRoleEntity role) {
         CreateRoleResponse response = new CreateRoleResponse();
         response.setId(role.getRoleId().toString());
         response.setName(role.getRoleName());
@@ -158,7 +158,7 @@ public class MemberRoleController {
     }
 
 
-    private CreateRoleResponse mapToSummaryRoleResponse(MemberRoleEntity role) {
+    private CreateRoleResponse mapToSummaryRoleResponse(OrgMemberRoleEntity role) {
         CreateRoleResponse response = new CreateRoleResponse();
         response.setId(role.getRoleId().toString());
         response.setName(role.getRoleName());
@@ -170,7 +170,7 @@ public class MemberRoleController {
     }
 
 
-    private UpdateRoleResponse mapToUpdateRoleResponse(MemberRoleEntity role) {
+    private UpdateRoleResponse mapToUpdateRoleResponse(OrgMemberRoleEntity role) {
         UpdateRoleResponse response = new UpdateRoleResponse();
         response.setId(role.getRoleId().toString());
         response.setName(role.getRoleName());

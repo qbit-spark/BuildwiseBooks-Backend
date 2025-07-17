@@ -11,7 +11,7 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.config.PermissionConfig;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.MemberRoleEntity;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.payload.CreateRoleRequest;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.payload.UpdateRoleRequest;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.MemberRoleRepo;
@@ -40,12 +40,12 @@ public class MemberRoleServiceImpl implements MemberRoleService {
 
     @Override
     @Transactional
-    public List<MemberRoleEntity> createDefaultRolesForOrganisation(OrganisationEntity organisation) {
+    public List<OrgMemberRoleEntity> createDefaultRolesForOrganisation(OrganisationEntity organisation) {
 
-        List<MemberRoleEntity> defaultRoles = new ArrayList<>();
+        List<OrgMemberRoleEntity> defaultRoles = new ArrayList<>();
 
         // Create an OWNER role
-        MemberRoleEntity ownerRole = new MemberRoleEntity();
+        OrgMemberRoleEntity ownerRole = new OrgMemberRoleEntity();
         ownerRole.setOrganisation(organisation);
         ownerRole.setRoleName("OWNER");
         ownerRole.setIsDefaultRole(true);
@@ -56,7 +56,7 @@ public class MemberRoleServiceImpl implements MemberRoleService {
         defaultRoles.add(ownerRole);
 
         // Create ADMIN role
-        MemberRoleEntity adminRole = new MemberRoleEntity();
+        OrgMemberRoleEntity adminRole = new OrgMemberRoleEntity();
         adminRole.setOrganisation(organisation);
         adminRole.setRoleName("ADMIN");
         adminRole.setIsDefaultRole(true);
@@ -67,7 +67,7 @@ public class MemberRoleServiceImpl implements MemberRoleService {
         defaultRoles.add(adminRole);
 
         // Create a MEMBER role
-        MemberRoleEntity memberRole = new MemberRoleEntity();
+        OrgMemberRoleEntity memberRole = new OrgMemberRoleEntity();
         memberRole.setOrganisation(organisation);
         memberRole.setRoleName("MEMBER");
         memberRole.setIsDefaultRole(true);
@@ -82,19 +82,19 @@ public class MemberRoleServiceImpl implements MemberRoleService {
     }
 
     @Override
-    public List<MemberRoleEntity> getAllRolesForOrganisation(OrganisationEntity organisation) {
+    public List<OrgMemberRoleEntity> getAllRolesForOrganisation(OrganisationEntity organisation) {
         return memberRoleRepository.findByOrganisationAndIsActiveTrue(organisation);
     }
 
     @Override
-    public MemberRoleEntity getMemberRole(OrganisationEntity organisation) {
+    public OrgMemberRoleEntity getMemberRole(OrganisationEntity organisation) {
         return memberRoleRepository.findByOrganisationAndRoleName(organisation, "MEMBER")
                 .orElseThrow(() -> new RuntimeException("MEMBER role not found for organisation"));
     }
 
     @Override
     @Transactional
-    public MemberRoleEntity createNewRole(UUID organisationId, CreateRoleRequest createRoleRequest) throws ItemNotFoundException {
+    public OrgMemberRoleEntity createNewRole(UUID organisationId, CreateRoleRequest createRoleRequest) throws ItemNotFoundException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
@@ -107,7 +107,7 @@ public class MemberRoleServiceImpl implements MemberRoleService {
             throw new ItemNotFoundException("Role with name " + createRoleRequest.getName() + " already exists");
         }
 
-        MemberRoleEntity newRole = new MemberRoleEntity();
+        OrgMemberRoleEntity newRole = new OrgMemberRoleEntity();
         newRole.setOrganisation(organisation);
         newRole.setRoleName(createRoleRequest.getName());
         newRole.setIsDefaultRole(false);
@@ -121,11 +121,11 @@ public class MemberRoleServiceImpl implements MemberRoleService {
 
     @Override
     @Transactional
-    public MemberRoleEntity updateRole(UUID roleId, UpdateRoleRequest updateRoleRequest) throws AccessDeniedException, ItemNotFoundException {
+    public OrgMemberRoleEntity updateRole(UUID roleId, UpdateRoleRequest updateRoleRequest) throws AccessDeniedException, ItemNotFoundException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        MemberRoleEntity role = memberRoleRepository.findById(roleId)
+        OrgMemberRoleEntity role = memberRoleRepository.findById(roleId)
                 .orElseThrow(() -> new ItemNotFoundException("Role not found"));
 
         OrganisationEntity organisation = role.getOrganisation();
@@ -159,9 +159,9 @@ public class MemberRoleServiceImpl implements MemberRoleService {
 
     @Override
     @Transactional
-    public MemberRoleEntity assignRoleToMember(OrganisationMember member, String roleName) {
+    public OrgMemberRoleEntity assignRoleToMember(OrganisationMember member, String roleName) {
 
-        MemberRoleEntity role = memberRoleRepository.findByOrganisationAndRoleName(member.getOrganisation(), roleName)
+        OrgMemberRoleEntity role = memberRoleRepository.findByOrganisationAndRoleName(member.getOrganisation(), roleName)
                 .orElseThrow(() -> new RuntimeException("Role '" + roleName + "' not found"));
 
         member.setMemberRole(role);
