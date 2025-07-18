@@ -28,4 +28,7 @@ public interface OrgBudgetService {
 
     void activateBudget(UUID budgetId, UUID organisationId)
             throws ItemNotFoundException, AccessDeniedException;
+
+    BudgetAllocationResponse getBudgetAllocationSummary(UUID budgetId, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException;
 }

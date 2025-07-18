@@ -29,6 +29,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -86,25 +87,11 @@ public class ApprovalHistoryServiceImpl implements ApprovalHistoryService {
     private ApprovalStepHistoryResponse buildStepHistory(ApprovalStepInstance step, AccountEntity currentUser) {
         ApprovalStepHistoryResponse stepResponse = new ApprovalStepHistoryResponse();
 
-        String roleName = "";
-
-        if (step.getScopeType().equals(ScopeType.ORGANIZATION)) {
-            OrgMemberRoleEntity role = orgMemberRoleRepo.findById(step.getRoleId()).orElseThrow(
-                    () -> new ResourceNotFoundException("Role if given ID not found for this step")
-            );
-            roleName = role.getRoleName();
-        } else if (step.getScopeType().equals(ScopeType.PROJECT)) {
-            ProjectTeamRoleEntity role = projectTeamRoleRepo.findById(step.getRoleId()).orElseThrow(
-                    () -> new ResourceNotFoundException("Role if given ID not found for this step")
-            );
-            roleName = role.getRoleName();
-        }
-
 
         stepResponse.setStepOrder(step.getStepOrder());
         stepResponse.setScopeType(step.getScopeType());
         stepResponse.setRoleId(step.getRoleId());
-        stepResponse.setRoleName(roleName);
+        stepResponse.setRoleName(getRoleName(step.getRoleId(), step.getScopeType()));
         stepResponse.setRequired(step.isRequired());
         stepResponse.setStatus(step.getStatus());
         stepResponse.setComments(step.getComments());
@@ -123,6 +110,26 @@ public class ApprovalHistoryServiceImpl implements ApprovalHistoryService {
         }
 
         return stepResponse;
+    }
+
+    private String getRoleName(UUID roleId, ScopeType scopeType) {
+        try {
+            switch (scopeType) {
+                case ORGANIZATION -> {
+                    Optional<OrgMemberRoleEntity> orgRole = orgMemberRoleRepo.findById(roleId);
+                    return orgRole.map(OrgMemberRoleEntity::getRoleName).orElse("Unknown Role");
+                }
+                case PROJECT -> {
+                    Optional<ProjectTeamRoleEntity> projectRole = projectTeamRoleRepo.findById(roleId);
+                    return projectRole.map(ProjectTeamRoleEntity::getRoleName).orElse("Unknown Role");
+                }
+                default -> {
+                    return "Unknown Role";
+                }
+            }
+        } catch (Exception e) {
+            return "Unknown Role";
+        }
     }
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {

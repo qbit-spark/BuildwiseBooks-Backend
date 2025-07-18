@@ -7,6 +7,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.p
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetDetailDistributionRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.OrgBudgetService;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.utitls.BudgetAllocationResponseUtils;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
@@ -46,6 +47,8 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
     private final ChartOfAccountsRepo chartOfAccountsRepo;
     private final OrgBudgetDetailDistributionRepo detailDistributionRepo;
     private final PermissionCheckerService permissionChecker;
+    private final BudgetAllocationResponseUtils budgetAllocationResponseUtils;
+
 
     @Override
     public OrgBudgetEntity createBudget(CreateBudgetRequest request, UUID organisationId)
@@ -315,6 +318,28 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         budgetToActivate.setModifiedBy(authenticatedAccount.getAccountId());
         budgetToActivate.setModifiedDate(LocalDateTime.now());
         orgBudgetRepo.save(budgetToActivate);
+    }
+
+
+    @Override
+    public BudgetAllocationResponse getBudgetAllocationSummary(UUID budgetId, UUID organisationId)
+            throws ItemNotFoundException, AccessDeniedException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+        permissionChecker.checkMemberPermission(member, "BUDGET", "viewBudget");
+
+        OrgBudgetEntity budget = orgBudgetRepo.findById(budgetId)
+                .orElseThrow(() -> new ItemNotFoundException("Budget not found"));
+
+        if (!budget.getOrganisation().getOrganisationId().equals(organisationId)) {
+            throw new ItemNotFoundException("Budget does not belong to this organisation");
+        }
+
+        return budgetAllocationResponseUtils.buildBudgetAllocationResponse(budget, organisation);
     }
 
 

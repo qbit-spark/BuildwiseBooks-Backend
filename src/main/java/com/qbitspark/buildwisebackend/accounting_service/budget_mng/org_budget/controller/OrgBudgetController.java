@@ -41,6 +41,18 @@ public class OrgBudgetController {
         );
     }
 
+    @GetMapping("/{budgetId}/detailed-allocation-summary")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getBudgetAllocationSummary(
+            @PathVariable UUID organisationId,
+            @PathVariable UUID budgetId) throws ItemNotFoundException, AccessDeniedException {
+
+        BudgetAllocationResponse response = orgBudgetService
+                .getBudgetAllocationSummary(budgetId, organisationId);
+
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Budget allocation summary retrieved successfully", response));
+    }
+
     @PostMapping("/{budgetId}/detail-distribution")
     public ResponseEntity<GlobeSuccessResponseBuilder> distributeToDetails(
             @PathVariable UUID organisationId,
