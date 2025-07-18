@@ -1,6 +1,7 @@
 package com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo;
 
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -15,4 +16,6 @@ public interface MemberRoleRepo extends JpaRepository<OrgMemberRoleEntity, UUID>
     boolean existsByOrganisationAndRoleNameIgnoreCase(OrganisationEntity organisation, String roleName);
 
     List<OrgMemberRoleEntity> findByOrganisationAndIsActiveTrue(OrganisationEntity organisation);
+
+
 }

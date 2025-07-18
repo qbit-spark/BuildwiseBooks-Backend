@@ -18,4 +18,7 @@ public interface ApprovalStepInstanceRepo extends JpaRepository<ApprovalStepInst
     List<ApprovalStepInstance> findByRoleIdAndStatus(UUID roleId, StepStatus status);
 
     List<ApprovalStepInstance> findByApprovalInstanceAndStatus(ApprovalInstance approvalInstance, StepStatus status);
+
+   List<ApprovalStepInstance> findByStatus(StepStatus status);
+
 }

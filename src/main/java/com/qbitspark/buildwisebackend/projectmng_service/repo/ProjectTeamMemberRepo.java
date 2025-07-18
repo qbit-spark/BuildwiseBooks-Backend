@@ -19,7 +19,7 @@ public interface ProjectTeamMemberRepo extends JpaRepository<ProjectTeamMemberEn
 
     Page<ProjectTeamMemberEntity> findByProject(ProjectEntity project, Pageable pageable);
 
-    ProjectTeamMemberEntity findProjectTeamMemberEntitiesByOrganisationMember(OrganisationMember organisationMember);
-
     Optional<ProjectTeamMemberEntity> findByOrganisationMemberAndProject(OrganisationMember organisationMember, ProjectEntity project);
+
+    ProjectTeamMemberEntity findByProject_ProjectIdAndOrganisationMember_MemberId(UUID projectId, UUID memberId);
 }
