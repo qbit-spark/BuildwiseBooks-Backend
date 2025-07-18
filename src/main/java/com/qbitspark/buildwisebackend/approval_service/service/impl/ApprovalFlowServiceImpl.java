@@ -19,7 +19,7 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.MemberRoleRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.OrgMemberRoleRepo;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamRoleEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamRoleRepo;
@@ -45,7 +45,7 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
     private final AccountRepo accountRepo;
     private final OrganisationMemberRepo organisationMemberRepo;
     private final PermissionCheckerService permissionChecker;
-    private final MemberRoleRepo memberRoleRepo;
+    private final OrgMemberRoleRepo orgMemberRoleRepo;
     private final ProjectTeamRoleRepo projectTeamRoleRepo;
 
     @Transactional
@@ -214,7 +214,7 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
         switch (scopeType) {
             case ORGANIZATION -> {
                 // Check if role exists in organization member roles
-                OrgMemberRoleEntity orgRole = memberRoleRepo.findById(roleId)
+                OrgMemberRoleEntity orgRole = orgMemberRoleRepo.findById(roleId)
                         .orElseThrow(() -> new ItemNotFoundException("Organization role not found with ID: " + roleId));
 
                 if (!orgRole.getOrganisation().getOrganisationId().equals(organisation.getOrganisationId())) {

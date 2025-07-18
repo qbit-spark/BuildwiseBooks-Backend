@@ -12,7 +12,7 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedExcepti
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.MemberRoleRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.OrgMemberRoleRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamRoleEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamRoleRepo;
 import jakarta.validation.Valid;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 public class ApprovalFlowController {
 
     private final ApprovalFlowService approvalFlowService;
-    private final MemberRoleRepo memberRoleRepo;
+    private final OrgMemberRoleRepo orgMemberRoleRepo;
     private final ProjectTeamRoleRepo projectTeamRoleRepo;
 
     @PostMapping
@@ -160,7 +160,7 @@ public class ApprovalFlowController {
         try {
             switch (scopeType) {
                 case ORGANIZATION -> {
-                    Optional<OrgMemberRoleEntity> orgRole = memberRoleRepo.findById(roleId);
+                    Optional<OrgMemberRoleEntity> orgRole = orgMemberRoleRepo.findById(roleId);
                     return orgRole.map(OrgMemberRoleEntity::getRoleName).orElse("Unknown Role");
                 }
                 case PROJECT -> {

@@ -14,7 +14,7 @@ import com.qbitspark.buildwisebackend.organisation_service.roles_mng.config.Perm
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.payload.CreateRoleRequest;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.payload.UpdateRoleRequest;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.MemberRoleRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.OrgMemberRoleRepo;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.MemberRoleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ import java.util.*;
 @Slf4j
 public class MemberRoleServiceImpl implements MemberRoleService {
 
-    private final MemberRoleRepo memberRoleRepository;
+    private final OrgMemberRoleRepo orgMemberRoleRepository;
     private final OrganisationMemberRepo organisationMemberRepo;
     private final AccountRepo accountRepo;
     private final OrganisationRepo organisationRepo;
@@ -78,17 +78,17 @@ public class MemberRoleServiceImpl implements MemberRoleService {
         defaultRoles.add(memberRole);
 
 
-        return memberRoleRepository.saveAll(defaultRoles);
+        return orgMemberRoleRepository.saveAll(defaultRoles);
     }
 
     @Override
     public List<OrgMemberRoleEntity> getAllRolesForOrganisation(OrganisationEntity organisation) {
-        return memberRoleRepository.findByOrganisationAndIsActiveTrue(organisation);
+        return orgMemberRoleRepository.findByOrganisationAndIsActiveTrue(organisation);
     }
 
     @Override
     public OrgMemberRoleEntity getMemberRole(OrganisationEntity organisation) {
-        return memberRoleRepository.findByOrganisationAndRoleName(organisation, "MEMBER")
+        return orgMemberRoleRepository.findByOrganisationAndRoleName(organisation, "MEMBER")
                 .orElseThrow(() -> new RuntimeException("MEMBER role not found for organisation"));
     }
 
@@ -103,7 +103,7 @@ public class MemberRoleServiceImpl implements MemberRoleService {
 
         OrganisationMember organisationMember = validateOrganisationMemberAccess(currentUser, organisation);
 
-        if (memberRoleRepository.existsByOrganisationAndRoleNameIgnoreCase(organisation,createRoleRequest.getName())){
+        if (orgMemberRoleRepository.existsByOrganisationAndRoleNameIgnoreCase(organisation,createRoleRequest.getName())){
             throw new ItemNotFoundException("Role with name " + createRoleRequest.getName() + " already exists");
         }
 
@@ -116,7 +116,7 @@ public class MemberRoleServiceImpl implements MemberRoleService {
         newRole.setCreatedBy(organisationMember.getMemberId());
         newRole.setCreatedDate(LocalDateTime.now());
 
-        return memberRoleRepository.save(newRole);
+        return orgMemberRoleRepository.save(newRole);
     }
 
     @Override
@@ -125,7 +125,7 @@ public class MemberRoleServiceImpl implements MemberRoleService {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        OrgMemberRoleEntity role = memberRoleRepository.findById(roleId)
+        OrgMemberRoleEntity role = orgMemberRoleRepository.findById(roleId)
                 .orElseThrow(() -> new ItemNotFoundException("Role not found"));
 
         OrganisationEntity organisation = role.getOrganisation();
@@ -140,7 +140,7 @@ public class MemberRoleServiceImpl implements MemberRoleService {
         if (updateRoleRequest.getName() != null && !updateRoleRequest.getName().trim().isEmpty()) {
             String newName = updateRoleRequest.getName().trim();
 
-                if (memberRoleRepository.existsByOrganisationAndRoleNameIgnoreCase(organisation, newName)) {
+                if (orgMemberRoleRepository.existsByOrganisationAndRoleNameIgnoreCase(organisation, newName)) {
                     throw new IllegalArgumentException("Role with name '" + newName + "' already exists in this organisation");
                 }
                 role.setRoleName(newName);
@@ -154,14 +154,14 @@ public class MemberRoleServiceImpl implements MemberRoleService {
         role.setPermissions(validatedPermissions);
         role.setUpdatedDate(LocalDateTime.now());
 
-        return memberRoleRepository.save(role);
+        return orgMemberRoleRepository.save(role);
     }
 
     @Override
     @Transactional
     public OrgMemberRoleEntity assignRoleToMember(OrganisationMember member, String roleName) {
 
-        OrgMemberRoleEntity role = memberRoleRepository.findByOrganisationAndRoleName(member.getOrganisation(), roleName)
+        OrgMemberRoleEntity role = orgMemberRoleRepository.findByOrganisationAndRoleName(member.getOrganisation(), roleName)
                 .orElseThrow(() -> new RuntimeException("Role '" + roleName + "' not found"));
 
         member.setMemberRole(role);

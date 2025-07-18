@@ -6,25 +6,20 @@ import com.qbitspark.buildwisebackend.approval_service.service.ApprovalPermissio
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.MemberRoleRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.OrgMemberRoleRepo;
 import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
-import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamRoleEntity;
 import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamMemberRepo;
-import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamRoleRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
-
-import static org.bouncycastle.asn1.x500.style.RFC4519Style.member;
 
 @Service
 @RequiredArgsConstructor
 public class ApprovalPermissionServiceImpl implements ApprovalPermissionService {
 
     private final OrganisationMemberRepo organisationMemberRepo;
-    private final MemberRoleRepo memberRoleRepo;
+    private final OrgMemberRoleRepo orgMemberRoleRepo;
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
 
     @Override

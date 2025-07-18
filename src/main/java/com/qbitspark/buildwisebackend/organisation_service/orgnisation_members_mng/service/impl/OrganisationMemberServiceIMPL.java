@@ -14,7 +14,7 @@ import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_m
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.OrganisationMemberService;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.MemberRoleRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.OrgMemberRoleRepo;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.MemberRoleService;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
     private final GlobeMailService globeMailService;
     private final MemberRoleService memberRoleService;
     private final PermissionCheckerService permissionChecker;
-    private final MemberRoleRepo memberRoleRepository;
+    private final OrgMemberRoleRepo orgMemberRoleRepository;
 
     @Value("${frontend.base-url}")
     private String frontendBaseUrl;
@@ -64,7 +64,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
             return false;
         }
 
-        OrgMemberRoleEntity roleToAssign = memberRoleRepository.findByOrganisationAndRoleId(organisation, roleId).orElseThrow(
+        OrgMemberRoleEntity roleToAssign = orgMemberRoleRepository.findByOrganisationAndRoleId(organisation, roleId).orElseThrow(
                 ()-> new ItemNotFoundException("Role not found in organisation")
         );
 

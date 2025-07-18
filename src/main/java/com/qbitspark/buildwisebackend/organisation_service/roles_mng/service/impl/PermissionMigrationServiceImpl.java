@@ -2,7 +2,7 @@ package com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.im
 
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.config.PermissionConfig;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
-import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.MemberRoleRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.OrgMemberRoleRepo;
 import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionMigrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class PermissionMigrationServiceImpl implements PermissionMigrationService {
 
-    private final MemberRoleRepo memberRoleRepo;
+    private final OrgMemberRoleRepo orgMemberRoleRepo;
     private volatile boolean migrationInProgress = false;
     private volatile String lastMigrationResult = "No migration has been run yet";
 
@@ -37,7 +37,7 @@ public class PermissionMigrationServiceImpl implements PermissionMigrationServic
             migrationInProgress = true;
             log.info("Starting async permission migration...");
 
-            List<OrgMemberRoleEntity> allRoles = memberRoleRepo.findAll();
+            List<OrgMemberRoleEntity> allRoles = orgMemberRoleRepo.findAll();
             Map<String, Map<String, Boolean>> latestPermissions = PermissionConfig.getAllPermissions();
 
             int totalRoles = allRoles.size();
@@ -120,7 +120,7 @@ public class PermissionMigrationServiceImpl implements PermissionMigrationServic
 
         if (needsUpdate) {
             role.setPermissions(currentPermissions);
-            memberRoleRepo.save(role);
+            orgMemberRoleRepo.save(role);
         }
 
         return needsUpdate;

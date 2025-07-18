@@ -2,6 +2,7 @@ package com.qbitspark.buildwisebackend.approval_service.service.impl;
 
 import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalInstance;
 import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalStepInstance;
+import com.qbitspark.buildwisebackend.approval_service.enums.ScopeType;
 import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
 import com.qbitspark.buildwisebackend.approval_service.enums.StepStatus;
 import com.qbitspark.buildwisebackend.approval_service.payloads.ApprovalHistoryResponse;
@@ -13,6 +14,14 @@ import com.qbitspark.buildwisebackend.approval_service.service.ApprovalPermissio
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.ResourceNotFoundException;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.OrgMemberRoleRepo;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamRoleEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamRoleRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,6 +39,8 @@ public class ApprovalHistoryServiceImpl implements ApprovalHistoryService {
     private final ApprovalStepInstanceRepo approvalStepInstanceRepo;
     private final ApprovalPermissionService permissionService;
     private final AccountRepo accountRepo;
+    private final OrgMemberRoleRepo orgMemberRoleRepo;
+    private final ProjectTeamRoleRepo projectTeamRoleRepo;
 
     @Override
     public ApprovalHistoryResponse getApprovalHistory(ServiceType serviceType, UUID itemId)
@@ -74,9 +85,26 @@ public class ApprovalHistoryServiceImpl implements ApprovalHistoryService {
 
     private ApprovalStepHistoryResponse buildStepHistory(ApprovalStepInstance step, AccountEntity currentUser) {
         ApprovalStepHistoryResponse stepResponse = new ApprovalStepHistoryResponse();
+
+        String roleName = "";
+
+        if (step.getScopeType().equals(ScopeType.ORGANIZATION)) {
+            OrgMemberRoleEntity role = orgMemberRoleRepo.findById(step.getRoleId()).orElseThrow(
+                    () -> new ResourceNotFoundException("Role if given ID not found for this step")
+            );
+            roleName = role.getRoleName();
+        } else if (step.getScopeType().equals(ScopeType.PROJECT)) {
+            ProjectTeamRoleEntity role = projectTeamRoleRepo.findById(step.getRoleId()).orElseThrow(
+                    () -> new ResourceNotFoundException("Role if given ID not found for this step")
+            );
+            roleName = role.getRoleName();
+        }
+
+
         stepResponse.setStepOrder(step.getStepOrder());
         stepResponse.setScopeType(step.getScopeType());
         stepResponse.setRoleId(step.getRoleId());
+        stepResponse.setRoleName(roleName);
         stepResponse.setRequired(step.isRequired());
         stepResponse.setStatus(step.getStatus());
         stepResponse.setComments(step.getComments());
