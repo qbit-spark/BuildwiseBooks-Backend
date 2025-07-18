@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+import static org.bouncycastle.asn1.x500.style.RFC4519Style.member;
+
 @Service
 @RequiredArgsConstructor
 public class ApprovalPermissionServiceImpl implements ApprovalPermissionService {
@@ -43,17 +45,16 @@ public class ApprovalPermissionServiceImpl implements ApprovalPermissionService 
     }
 
     private boolean hasOrganizationRole(AccountEntity user, UUID organisationId, UUID roleId) {
-        // Find an organization member
-        OrganisationMember member = organisationMemberRepo.findByAccount_IdAndOrganisation_OrganisationId(user.getId(), organisationId);
+        OrganisationMember member = organisationMemberRepo
+                .findByAccount_IdAndOrganisation_OrganisationId(user.getId(), organisationId);
+
         if (member == null) {
             return false;
         }
 
-        // Check if a member has the required role and it's active
         return member.getMemberRole().getRoleId().equals(roleId) &&
                 member.getMemberRole().getIsActive();
     }
-
     private boolean hasProjectRole(AccountEntity user, UUID projectId, UUID roleId) {
         // Find an organization member first (needed for project team membership)
         OrganisationMember orgMember = organisationMemberRepo.findByAccount_Id(user.getId());

@@ -5,6 +5,9 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.enti
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +35,16 @@ public interface OrganisationMemberRepo extends JpaRepository<OrganisationMember
   OrganisationMember findByAccountIdAndOrganisation_OrganisationId(UUID accountId, UUID organisationId);
 
     OrganisationMember findByAccount_IdAndOrganisation_OrganisationId(UUID accountId, UUID organisationId);
+
+    @Query("SELECT COUNT(om) > 0 FROM OrganisationMember om " +
+            "WHERE om.account.id = :userId " +
+            "AND om.organisation.organisationId = :orgId " +
+            "AND om.memberRole.roleId = :roleId " +
+            "AND om.memberRole.isActive = true " +
+            "AND om.status = 'ACTIVE'")
+    boolean hasActiveOrgRole(@Param("userId") UUID userId,
+                             @Param("orgId") UUID orgId,
+                             @Param("roleId") UUID roleId);
 
     OrganisationMember findByAccount_Id(UUID accountId);
 
