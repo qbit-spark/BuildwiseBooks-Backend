@@ -67,6 +67,7 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
         ApprovalInstance instance = new ApprovalInstance();
         instance.setApprovalFlow(flow);
         instance.setServiceName(serviceName);
+        instance.setOrganisation(organisation);
         instance.setItemId(itemId);
         instance.setContextProjectId(contextProjectId);
         instance.setOrganisation(organisation);
@@ -85,6 +86,7 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
             stepInstance.setApprovalInstance(savedInstance);
             stepInstance.setStepOrder(flowStep.getStepOrder());
             stepInstance.setScopeType(flowStep.getScopeType());
+            stepInstance.setOrganisation(organisation);
             stepInstance.setRoleId(flowStep.getRoleId());
             stepInstance.setRequired(flowStep.isRequired());
 

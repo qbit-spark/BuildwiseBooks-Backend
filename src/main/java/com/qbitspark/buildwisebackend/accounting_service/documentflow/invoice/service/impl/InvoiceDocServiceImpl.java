@@ -112,7 +112,7 @@ public class InvoiceDocServiceImpl implements InvoiceDocService {
 
         InvoiceDocEntity savedInvoice = invoiceDocRepo.save(invoice);
 
-        // 🚀 NEW: Handle approval workflow (FIXED - no circular dependency)
+        // Handle approval workflow (FIXED - no circular dependency)
         if (action == ActionType.SAVE_AND_APPROVAL) {
             // 1. Update document status via integration service
             approvalIntegrationService.submitForApproval(

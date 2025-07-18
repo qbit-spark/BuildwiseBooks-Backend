@@ -28,7 +28,7 @@ public class ApprovalController {
     private final ApprovalActionService approvalActionService;
     private final ApprovalStatusService approvalStatusService;
 
-    // Get approval history for specific item
+    // Get approval history for a specific item
     @GetMapping("/history/{serviceType}/{itemId}")
     public ResponseEntity<GlobeSuccessResponseBuilder> getApprovalHistory(
             @PathVariable UUID organisationId,

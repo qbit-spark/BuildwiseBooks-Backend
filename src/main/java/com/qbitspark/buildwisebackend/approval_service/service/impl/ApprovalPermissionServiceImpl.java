@@ -26,7 +26,6 @@ public class ApprovalPermissionServiceImpl implements ApprovalPermissionService 
     private final OrganisationMemberRepo organisationMemberRepo;
     private final MemberRoleRepo memberRoleRepo;
     private final ProjectTeamMemberRepo projectTeamMemberRepo;
-    private final ProjectTeamRoleRepo projectTeamRoleRepo;
 
     @Override
     public boolean canUserApprove(AccountEntity user, ApprovalStepInstance stepInstance) {
