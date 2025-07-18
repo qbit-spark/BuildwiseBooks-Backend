@@ -16,6 +16,7 @@ import com.qbitspark.buildwisebackend.accounting_service.tax_mng.entity.TaxEntit
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.repo.TaxRepo;
 import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalIntegrationService;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalWorkflowService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
@@ -56,7 +57,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
-public class InvoiceDocServiceIMPL implements InvoiceDocService {
+public class InvoiceDocServiceImpl implements InvoiceDocService {
 
     private final InvoiceDocRepo invoiceDocRepo;
     private final ProjectRepo projectRepo;
@@ -70,6 +71,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     private final ReceiptRepo receiptRepo;
     private final PermissionCheckerService permissionChecker;
     private final ApprovalIntegrationService approvalIntegrationService;
+    private final ApprovalWorkflowService approvalWorkflowService;
 
     @Transactional
     public InvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request, ActionType action)
@@ -88,7 +90,7 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
         ClientEntity client = project.getClient();
         String invoiceNumber = invoiceNumberService.generateInvoiceNumber(project, client, organisation);
 
-
+        // Create invoice (same as before)
         InvoiceDocEntity invoice = InvoiceDocEntity.builder()
                 .invoiceNumber(invoiceNumber)
                 .project(project)
@@ -110,9 +112,18 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         InvoiceDocEntity savedInvoice = invoiceDocRepo.save(invoice);
 
-        // Handle approval workflow
+        // 🚀 NEW: Handle approval workflow (FIXED - no circular dependency)
         if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
             approvalIntegrationService.submitForApproval(
+                    ServiceType.INVOICE,
+                    savedInvoice.getId(),
+                    organisationId,
+                    project.getProjectId()
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
                     ServiceType.INVOICE,
                     savedInvoice.getId(),
                     organisationId,

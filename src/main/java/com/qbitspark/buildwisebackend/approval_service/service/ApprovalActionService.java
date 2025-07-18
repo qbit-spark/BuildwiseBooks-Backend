@@ -5,11 +5,12 @@ import com.qbitspark.buildwisebackend.approval_service.payloads.ApprovalActionRe
 import com.qbitspark.buildwisebackend.approval_service.payloads.ApprovalActionResponse;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 
 import java.util.UUID;
 
 public interface ApprovalActionService {
-    ApprovalActionResponse takeApprovalAction(ServiceType serviceType, UUID itemId,
+    ApprovalActionResponse takeApprovalAction(UUID organisationId, ServiceType serviceType, UUID itemId,
                                               ApprovalActionRequest request)
             throws ItemNotFoundException, AccessDeniedException;
 }

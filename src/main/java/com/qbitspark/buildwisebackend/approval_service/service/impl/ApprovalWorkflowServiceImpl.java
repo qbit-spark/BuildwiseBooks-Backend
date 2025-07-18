@@ -48,8 +48,8 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
 
     @Transactional
     @Override
-    public ApprovalInstance startApprovalWorkflow(ServiceType serviceName, UUID itemId, UUID organisationId, UUID contextProjectId)
-            throws ItemNotFoundException, AccessDeniedException {
+    public void startApprovalWorkflow(ServiceType serviceName, UUID itemId, UUID organisationId, UUID contextProjectId)
+            throws ItemNotFoundException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = getOrganisation(organisationId);
@@ -97,7 +97,6 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
         approvalStepInstanceRepo.saveAll(stepInstances);
         savedInstance.setStepInstances(stepInstances);
 
-        return savedInstance;
     }
 
     @Transactional
@@ -114,7 +113,7 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
             throw new AccessDeniedException("Approval workflow is not active");
         }
 
-        // Get current step
+        // Get the current step
         ApprovalStepInstance currentStep = approvalStepInstanceRepo
                 .findByApprovalInstanceAndStepOrder(instance, instance.getCurrentStepOrder())
                 .orElseThrow(() -> new ItemNotFoundException("Current step not found"));
@@ -123,7 +122,7 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
             throw new AccessDeniedException("Step is not pending approval");
         }
 
-        // 🚀 NEW: Use permission service to check if user can approve
+        // 🚀 NEW: Use permission service to check if a user can approve
         if (!permissionService.canUserApprove(currentUser, currentStep)) {
             throw new AccessDeniedException("You do not have the required role to approve this step");
         }
@@ -143,10 +142,10 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
                 instance.setStatus(ApprovalStatus.APPROVED);
                 instance.setCompletedAt(LocalDateTime.now());
             } else {
-                // Move to next step
+                // Move to the next step
                 instance.setCurrentStepOrder(instance.getCurrentStepOrder() + 1);
 
-                // Set next step to PENDING
+                // Set the next step to PENDING
                 ApprovalStepInstance nextStep = approvalStepInstanceRepo
                         .findByApprovalInstanceAndStepOrder(instance, instance.getCurrentStepOrder())
                         .orElseThrow(() -> new ItemNotFoundException("Next step not found"));
@@ -161,10 +160,10 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
                 instance.setStatus(ApprovalStatus.REJECTED);
                 instance.setCompletedAt(LocalDateTime.now());
             } else {
-                // Go back to previous step
+                // Go back to a previous step
                 instance.setCurrentStepOrder(instance.getCurrentStepOrder() - 1);
 
-                // Set previous step to PENDING and clear its approval
+                // Set the previous step to PENDING and clear its approval
                 ApprovalStepInstance previousStep = approvalStepInstanceRepo
                         .findByApprovalInstanceAndStepOrder(instance, instance.getCurrentStepOrder())
                         .orElseThrow(() -> new ItemNotFoundException("Previous step not found"));
@@ -202,13 +201,6 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
     public List<ApprovalInstance> getMySubmittedApprovals() throws ItemNotFoundException {
         AccountEntity currentUser = getAuthenticatedAccount();
         return approvalInstanceRepo.findBySubmittedBy(currentUser.getId());
-    }
-
-    @Override
-    public List<ApprovalInstance> getPendingApprovalsForUser() throws ItemNotFoundException {
-        // This will be implemented when we have user role resolution logic
-        // For now, return empty list
-        return new ArrayList<>();
     }
 
     @Override

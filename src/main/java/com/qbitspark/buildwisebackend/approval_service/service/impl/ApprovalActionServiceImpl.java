@@ -15,6 +15,11 @@ import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountR
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,13 +37,19 @@ public class ApprovalActionServiceImpl implements ApprovalActionService {
     private final ApprovalStepInstanceRepo approvalStepInstanceRepo;
     private final ApprovalPermissionService permissionService;
     private final AccountRepo accountRepo;
+    private final OrganisationRepo organisationRepo;
+    private final OrganisationMemberRepo organisationMemberRepo;
 
     @Override
-    public ApprovalActionResponse takeApprovalAction(ServiceType serviceType, UUID itemId,
+    public ApprovalActionResponse takeApprovalAction(UUID organisationId, ServiceType serviceType, UUID itemId,
                                                      ApprovalActionRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        validateOrganisationMemberAccess(currentUser, organisation);
 
         ApprovalInstance instance = approvalInstanceRepo.findByServiceNameAndItemId(serviceType, itemId)
                 .orElseThrow(() -> new ItemNotFoundException("No approval found for this item"));
@@ -88,5 +99,15 @@ public class ApprovalActionServiceImpl implements ApprovalActionService {
 
         return accountRepo.findByUserName(userName)
                 .orElseThrow(() -> new ItemNotFoundException("User not found"));
+    }
+
+    private void validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
     }
 }

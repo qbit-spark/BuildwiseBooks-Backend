@@ -55,7 +55,7 @@ public class ApprovalController {
             throws ItemNotFoundException, AccessDeniedException {
 
         ApprovalActionResponse response = approvalActionService.takeApprovalAction(
-                serviceType, itemId, request);
+                organisationId, serviceType, itemId, request);
 
         String message = request.getAction().name().toLowerCase() + " action completed successfully";
 

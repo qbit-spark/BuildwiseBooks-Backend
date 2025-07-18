@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public interface ApprovalWorkflowService {
 
-    ApprovalInstance startApprovalWorkflow(ServiceType serviceName, UUID itemId, UUID organisationId, UUID contextProjectId)
+    void startApprovalWorkflow(ServiceType serviceName, UUID itemId, UUID organisationId, UUID contextProjectId)
             throws ItemNotFoundException, AccessDeniedException;
 
     ApprovalInstance processApprovalAction(UUID instanceId, ApprovalAction action, String comments)
@@ -23,8 +23,6 @@ public interface ApprovalWorkflowService {
     List<ApprovalInstance> getMySubmittedApprovals()
             throws ItemNotFoundException;
 
-    List<ApprovalInstance> getPendingApprovalsForUser()
-            throws ItemNotFoundException;
 
     boolean canUserApproveStep(UUID instanceId, int stepOrder)
             throws ItemNotFoundException;

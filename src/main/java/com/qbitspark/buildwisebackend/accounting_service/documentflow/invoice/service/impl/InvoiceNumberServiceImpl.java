@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Service
 @AllArgsConstructor
-public class InvoiceNumberServiceIMPL implements InvoiceNumberService {
+public class InvoiceNumberServiceImpl implements InvoiceNumberService {
 
 
     private final ClientInvoiceSequenceRepository sequenceRepository;

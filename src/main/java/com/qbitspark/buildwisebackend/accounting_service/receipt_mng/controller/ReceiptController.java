@@ -1,7 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.controller;
 
-import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.InvoiceDocService;
-import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.impl.InvoiceDocServiceIMPL;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.impl.InvoiceDocServiceImpl;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.*;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.ReceiptService;
@@ -29,7 +28,7 @@ import java.util.stream.Collectors;
 public class ReceiptController {
 
     private final ReceiptService receiptService;
-    private final InvoiceDocServiceIMPL invoiceDocService;
+    private final InvoiceDocServiceImpl invoiceDocService;
 
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createReceipt(
