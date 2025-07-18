@@ -12,15 +12,14 @@ import com.qbitspark.buildwisebackend.approval_service.repo.ApprovalInstanceRepo
 import com.qbitspark.buildwisebackend.approval_service.repo.ApprovalStepInstanceRepo;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalFlowService;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalWorkflowService;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalPermissionService;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalCompletionHandler;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
-import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
-import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
-import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,7 +41,10 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
     private final ApprovalFlowService approvalFlowService;
     private final OrganisationRepo organisationRepo;
     private final AccountRepo accountRepo;
-    private final OrganisationMemberRepo organisationMemberRepo;
+
+
+    private final ApprovalPermissionService permissionService;
+    private final ApprovalCompletionHandler completionHandler;
 
     @Transactional
     @Override
@@ -122,9 +123,9 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
             throw new AccessDeniedException("Step is not pending approval");
         }
 
-        // Check if user can approve this step
-        if (!canUserApproveStep(instanceId, instance.getCurrentStepOrder())) {
-            throw new AccessDeniedException("You are not authorized to approve this step");
+        // 🚀 NEW: Use permission service to check if user can approve
+        if (!permissionService.canUserApprove(currentUser, currentStep)) {
+            throw new AccessDeniedException("You do not have the required role to approve this step");
         }
 
         // Process the action
@@ -178,7 +179,15 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
         }
 
         approvalStepInstanceRepo.save(currentStep);
-        return approvalInstanceRepo.save(instance);
+        ApprovalInstance updatedInstance = approvalInstanceRepo.save(instance);
+
+        // 🚀 NEW: Handle completion if workflow finished
+        if (updatedInstance.getStatus() == ApprovalStatus.APPROVED ||
+                updatedInstance.getStatus() == ApprovalStatus.REJECTED) {
+            completionHandler.handleApprovalCompletion(updatedInstance);
+        }
+
+        return updatedInstance;
     }
 
     @Override
@@ -204,9 +213,17 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
 
     @Override
     public boolean canUserApproveStep(UUID instanceId, int stepOrder) throws ItemNotFoundException {
-        // This will be implemented when we have user role resolution logic
-        // For now, return true (we'll implement proper permission checking later)
-        return true;
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        ApprovalInstance instance = approvalInstanceRepo.findById(instanceId)
+                .orElseThrow(() -> new ItemNotFoundException("Approval instance not found"));
+
+        ApprovalStepInstance step = approvalStepInstanceRepo
+                .findByApprovalInstanceAndStepOrder(instance, stepOrder)
+                .orElseThrow(() -> new ItemNotFoundException("Step not found"));
+
+        // 🚀 NEW: Use permission service
+        return permissionService.canUserApprove(currentUser, step);
     }
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {

@@ -34,38 +34,27 @@ public class InvoiceDocController {
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createInvoice(
             @PathVariable UUID organisationId,
-            @RequestBody CreateInvoiceDocRequest request ,
+            @RequestBody CreateInvoiceDocRequest request,
             @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException, RandomExceptions {
-
 
         if (action == null) {
             throw new IllegalArgumentException("Action parameter is required and cannot be null");
         }
 
-        InvoiceDocResponse response;
-        String successMessage = "";
+        //Service handles both save and approval
+        InvoiceDocResponse response = invoiceDocService.createInvoice(organisationId, request, action);
 
-        switch (action) {
-            case SAVE:
-                response = invoiceDocService.createInvoice(
-                        organisationId, request);
-                successMessage = "Invoice saved successfully";
-                break;
+        // Dynamic success message
+        String successMessage = switch (action) {
+            case SAVE -> "Invoice saved successfully";
+            case SAVE_AND_APPROVAL -> "Invoice created and submitted for approval";
+        };
 
-            case SAVE_AND_APPROVAL:
-                //Save and approval will be here
-                response = invoiceDocService.createInvoice(
-                        organisationId, request);
-                successMessage = "Invoice saved and ready for approval successfully";
-                break;
-
-            default:
-                throw new RandomExceptions("Unsupported action type: " + action);
-        }
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(GlobeSuccessResponseBuilder.success(successMessage, response));
     }
+
 
     @GetMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> getAllInvoicesForOrganisation(

@@ -3,6 +3,7 @@ package com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.s
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceDocEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceLineItemEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.embedings.InvoiceTaxDetail;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.InvoiceStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.paylaod.*;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.repo.InvoiceDocRepo;
@@ -13,6 +14,8 @@ import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.Recei
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptRepo;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.entity.TaxEntity;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.repo.TaxRepo;
+import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalIntegrationService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
@@ -66,24 +69,25 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
     private final OrgFileRepo orgFileRepo;
     private final ReceiptRepo receiptRepo;
     private final PermissionCheckerService permissionChecker;
+    private final ApprovalIntegrationService approvalIntegrationService;
 
     @Transactional
-    public InvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException {
+    public InvoiceDocResponse createInvoice(UUID organisationId, CreateInvoiceDocRequest request, ActionType action)
+            throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-
-        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
         ProjectEntity project = projectRepo.findById(request.getProjectId())
                 .orElseThrow(() -> new ItemNotFoundException("Project not found"));
 
         OrganisationMember member = validateProjectAndOrganisationAccess(currentUser, project, organisation);
-
         permissionChecker.checkMemberPermission(member, "INVOICES","createInvoice");
 
         ClientEntity client = project.getClient();
-
         String invoiceNumber = invoiceNumberService.generateInvoiceNumber(project, client, organisation);
+
 
         InvoiceDocEntity invoice = InvoiceDocEntity.builder()
                 .invoiceNumber(invoiceNumber)
@@ -102,10 +106,19 @@ public class InvoiceDocServiceIMPL implements InvoiceDocService {
 
         List<InvoiceLineItemEntity> lineItems = createLineItems(request.getLineItems(), invoice);
         invoice.setLineItems(lineItems);
-
         calculateInvoiceTotals(invoice, request.getTaxesToApply(), request.getCreditApplied());
 
         InvoiceDocEntity savedInvoice = invoiceDocRepo.save(invoice);
+
+        // Handle approval workflow
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.INVOICE,
+                    savedInvoice.getId(),
+                    organisationId,
+                    project.getProjectId()
+            );
+        }
 
         return mapToInvoiceResponse(savedInvoice, currentUser, request.getCreditApplied());
     }
