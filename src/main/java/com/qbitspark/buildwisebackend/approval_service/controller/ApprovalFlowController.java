@@ -58,7 +58,7 @@ public class ApprovalFlowController {
             @Valid @RequestBody CreateApprovalFlowRequest request
     ) throws ItemNotFoundException, AccessDeniedException {
 
-        ApprovalFlow flow = approvalFlowService.updateApprovalFlow(flowId, request);
+        ApprovalFlow flow = approvalFlowService.updateApprovalFlow(organisationId, flowId, request);
         ApprovalFlowResponse response = mapToResponse(flow);
 
         return ResponseEntity.ok(
@@ -110,7 +110,7 @@ public class ApprovalFlowController {
             @PathVariable UUID flowId
     ) throws ItemNotFoundException, AccessDeniedException {
 
-        approvalFlowService.deleteApprovalFlow(flowId);
+        approvalFlowService.deleteApprovalFlow(organisationId, flowId);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(

@@ -11,6 +11,8 @@ import com.qbitspark.buildwisebackend.approval_service.service.ApprovalStatusSer
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,12 +30,16 @@ public class ApprovalStatusServiceImpl implements ApprovalStatusService {
     private final ApprovalStepInstanceRepo approvalStepInstanceRepo;
     private final ApprovalPermissionService permissionService;
     private final AccountRepo accountRepo;
+    private final OrganisationRepo organisationRepo;
 
     @Override
-    public List<ApprovalInstance> getMyPendingApprovals() throws ItemNotFoundException {
+    public List<ApprovalInstance> getMyPendingApprovals(UUID organisationId) throws ItemNotFoundException {
+
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        List<ApprovalStepInstance> pendingSteps = approvalStepInstanceRepo.findByStatus(StepStatus.PENDING);
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
+
+        List<ApprovalStepInstance> pendingSteps = approvalStepInstanceRepo.findByOrganisationAndStatus(organisation, StepStatus.PENDING);
 
         return pendingSteps.stream()
                 .filter(step -> permissionService.canUserApprove(currentUser, step))

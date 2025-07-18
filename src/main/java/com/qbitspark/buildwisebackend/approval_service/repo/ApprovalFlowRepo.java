@@ -16,4 +16,6 @@ public interface ApprovalFlowRepo extends JpaRepository<ApprovalFlow, UUID> {
     List<ApprovalFlow> findByOrganisationAndIsActiveTrue(OrganisationEntity organisation);
 
     boolean existsByServiceNameAndOrganisationAndIsActiveTrue(ServiceType serviceName, OrganisationEntity organisation);
+
+    Optional<ApprovalFlow> findByOrganisationAndFlowId(OrganisationEntity organisation, UUID flowId);
 }

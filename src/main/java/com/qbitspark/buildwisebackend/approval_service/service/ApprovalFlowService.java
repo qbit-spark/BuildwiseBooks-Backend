@@ -14,7 +14,7 @@ public interface ApprovalFlowService {
     ApprovalFlow createApprovalFlow(UUID organisationId, CreateApprovalFlowRequest request)
             throws ItemNotFoundException, AccessDeniedException;
 
-    ApprovalFlow updateApprovalFlow(UUID flowId, CreateApprovalFlowRequest request)
+    ApprovalFlow updateApprovalFlow(UUID organisationId, UUID flowId, CreateApprovalFlowRequest request)
             throws ItemNotFoundException, AccessDeniedException;
 
     ApprovalFlow getApprovalFlowByService(UUID organisationId, ServiceType serviceName)
@@ -23,6 +23,6 @@ public interface ApprovalFlowService {
     List<ApprovalFlow> getAllApprovalFlows(UUID organisationId)
             throws ItemNotFoundException, AccessDeniedException;
 
-    void deleteApprovalFlow(UUID flowId)
+    void deleteApprovalFlow(UUID organisationId, UUID flowId)
             throws ItemNotFoundException, AccessDeniedException;
 }

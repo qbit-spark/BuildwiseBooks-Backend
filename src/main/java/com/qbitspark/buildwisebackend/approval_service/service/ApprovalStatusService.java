@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ApprovalStatusService {
-    List<ApprovalInstance> getMyPendingApprovals() throws ItemNotFoundException;
+    List<ApprovalInstance> getMyPendingApprovals(UUID organisationId) throws ItemNotFoundException;
     ApprovalInstance getApprovalStatus(ServiceType serviceType, UUID itemId) throws ItemNotFoundException;
 }

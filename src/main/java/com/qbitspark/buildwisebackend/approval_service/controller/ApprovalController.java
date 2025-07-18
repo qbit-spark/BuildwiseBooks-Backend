@@ -69,7 +69,7 @@ public class ApprovalController {
     public ResponseEntity<GlobeSuccessResponseBuilder> getMyPendingApprovals(
             @PathVariable UUID organisationId) throws ItemNotFoundException {
 
-        List<ApprovalInstance> pendingApprovals = approvalStatusService.getMyPendingApprovals();
+        List<ApprovalInstance> pendingApprovals = approvalStatusService.getMyPendingApprovals(organisationId);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(

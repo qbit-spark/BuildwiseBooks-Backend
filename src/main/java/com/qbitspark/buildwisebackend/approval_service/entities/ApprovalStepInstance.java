@@ -3,6 +3,7 @@ package com.qbitspark.buildwisebackend.approval_service.entities;
 import com.qbitspark.buildwisebackend.approval_service.enums.ApprovalAction;
 import com.qbitspark.buildwisebackend.approval_service.enums.ScopeType;
 import com.qbitspark.buildwisebackend.approval_service.enums.StepStatus;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,6 +24,10 @@ public class ApprovalStepInstance {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID stepInstanceId;
+
+    @ManyToOne
+    @JoinColumn(name = "organisation_id", nullable = false)
+    private OrganisationEntity organisation;
 
     @ManyToOne
     @JoinColumn(name = "instance_id", nullable = false)

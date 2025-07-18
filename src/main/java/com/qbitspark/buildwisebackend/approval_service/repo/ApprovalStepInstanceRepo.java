@@ -3,6 +3,7 @@ package com.qbitspark.buildwisebackend.approval_service.repo;
 import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalInstance;
 import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalStepInstance;
 import com.qbitspark.buildwisebackend.approval_service.enums.StepStatus;
+import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -19,6 +20,6 @@ public interface ApprovalStepInstanceRepo extends JpaRepository<ApprovalStepInst
 
     List<ApprovalStepInstance> findByApprovalInstanceAndStatus(ApprovalInstance approvalInstance, StepStatus status);
 
-   List<ApprovalStepInstance> findByStatus(StepStatus status);
+   List<ApprovalStepInstance> findByOrganisationAndStatus(OrganisationEntity organisation, StepStatus status);
 
 }

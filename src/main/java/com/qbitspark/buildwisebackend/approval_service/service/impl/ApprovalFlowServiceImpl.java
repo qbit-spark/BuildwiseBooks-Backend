@@ -100,15 +100,17 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
 
     @Transactional
     @Override
-    public ApprovalFlow updateApprovalFlow(UUID flowId, CreateApprovalFlowRequest request)
+    public ApprovalFlow updateApprovalFlow(UUID organisationId, UUID flowId, CreateApprovalFlowRequest request)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        ApprovalFlow existingFlow = approvalFlowRepo.findById(flowId)
+        OrganisationEntity organisation = getOrganisation(organisationId);
+
+        ApprovalFlow existingFlow = approvalFlowRepo.findByOrganisationAndFlowId(organisation, flowId)
                 .orElseThrow(() -> new ItemNotFoundException("Approval flow not found"));
 
-        OrganisationMember member = validateOrganisationMemberAccess(currentUser, existingFlow.getOrganisation());
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
         permissionChecker.checkMemberPermission(member, "ORGANISATION", "manageMembers");
 
         existingFlow.setDescription(request.getDescription());
@@ -162,12 +164,14 @@ public class ApprovalFlowServiceImpl implements ApprovalFlowService {
 
     @Transactional
     @Override
-    public void deleteApprovalFlow(UUID flowId) throws ItemNotFoundException, AccessDeniedException {
+    public void deleteApprovalFlow(UUID organisationId, UUID flowId) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        ApprovalFlow approvalFlow = approvalFlowRepo.findById(flowId)
-                .orElseThrow(() -> new ItemNotFoundException("Approval flow not found"));
+        OrganisationEntity organisation = getOrganisation(organisationId);
+
+        ApprovalFlow approvalFlow = approvalFlowRepo.findByOrganisationAndFlowId(organisation, flowId)
+                .orElseThrow(() -> new ItemNotFoundException("Approval flow not found in organisation"));
 
         OrganisationMember member = validateOrganisationMemberAccess(currentUser, approvalFlow.getOrganisation());
         permissionChecker.checkMemberPermission(member, "ORGANISATION", "manageMembers");
