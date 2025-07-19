@@ -46,7 +46,6 @@ public class ApprovalHistoryServiceImpl implements ApprovalHistoryService {
     private final OrgMemberRoleRepo orgMemberRoleRepo;
     private final ProjectTeamRoleRepo projectTeamRoleRepo;
 
-
     @Override
     public ApprovalHistoryResponse getApprovalHistory(ServiceType serviceType, UUID itemId)
             throws ItemNotFoundException {
