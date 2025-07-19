@@ -5,6 +5,7 @@ import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
 import com.qbitspark.buildwisebackend.approval_service.payloads.ApprovalActionRequest;
 import com.qbitspark.buildwisebackend.approval_service.payloads.ApprovalActionResponse;
 import com.qbitspark.buildwisebackend.approval_service.payloads.ApprovalHistoryResponse;
+import com.qbitspark.buildwisebackend.approval_service.payloads.PendingApprovalResponse;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalActionService;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalHistoryService;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalStatusService;
@@ -69,7 +70,7 @@ public class ApprovalController {
     public ResponseEntity<GlobeSuccessResponseBuilder> getMyPendingApprovals(
             @PathVariable UUID organisationId) throws ItemNotFoundException {
 
-        List<ApprovalInstance> pendingApprovals = approvalStatusService.getMyPendingApprovals(organisationId);
+        List<PendingApprovalResponse> pendingApprovals = approvalStatusService.getMyPendingApprovals(organisationId);
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(

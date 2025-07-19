@@ -4,10 +4,12 @@ import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalInstance
 import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalStepInstance;
 import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
 import com.qbitspark.buildwisebackend.approval_service.enums.StepStatus;
+import com.qbitspark.buildwisebackend.approval_service.payloads.PendingApprovalResponse;
 import com.qbitspark.buildwisebackend.approval_service.repo.ApprovalInstanceRepo;
 import com.qbitspark.buildwisebackend.approval_service.repo.ApprovalStepInstanceRepo;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalPermissionService;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalStatusService;
+import com.qbitspark.buildwisebackend.approval_service.utils.PendingApprovalResponseUtils;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
@@ -31,20 +33,22 @@ public class ApprovalStatusServiceImpl implements ApprovalStatusService {
     private final ApprovalPermissionService permissionService;
     private final AccountRepo accountRepo;
     private final OrganisationRepo organisationRepo;
+    private final PendingApprovalResponseUtils pendingApprovalUtils;
 
     @Override
-    public List<ApprovalInstance> getMyPendingApprovals(UUID organisationId) throws ItemNotFoundException {
+    public List<PendingApprovalResponse> getMyPendingApprovals(UUID organisationId) throws ItemNotFoundException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
+        OrganisationEntity organisation = organisationRepo.findById(organisationId)
+                .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
-
-        List<ApprovalStepInstance> pendingSteps = approvalStepInstanceRepo.findByOrganisationAndStatus(organisation, StepStatus.PENDING);
+        List<ApprovalStepInstance> pendingSteps = approvalStepInstanceRepo
+                .findByOrganisationAndStatus(organisation, StepStatus.PENDING);
 
         return pendingSteps.stream()
                 .filter(step -> permissionService.canUserApprove(currentUser, step))
-                .map(ApprovalStepInstance::getApprovalInstance)
-                .distinct()
+                .map(step -> pendingApprovalUtils.mapToPendingApprovalResponse(step, currentUser)) // 🎯 USE UTILS
+                .sorted((a, b) -> b.getSubmittedAt().compareTo(a.getSubmittedAt())) // Latest first
                 .toList();
     }
 
