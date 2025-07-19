@@ -1,5 +1,7 @@
 package com.qbitspark.buildwisebackend.approval_service.entities.embedings;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.qbitspark.buildwisebackend.approval_service.enums.ApprovalRecordStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ApprovalRecord {
 
     private UUID approvalId;
@@ -20,23 +23,32 @@ public class ApprovalRecord {
     private String approvedBy;
     private String comments;
     private Integer revisionNumber;
-    private String status; // "ACTIVE", "SUPERSEDED"
+    private ApprovalRecordStatus status;
     private LocalDateTime createdAt;
 
     // Helper methods
     public boolean isActive() {
-        return "ACTIVE".equals(status);
+        return ApprovalRecordStatus.ACTIVE.equals(status);
     }
 
     public boolean isSuperseded() {
-        return "SUPERSEDED".equals(status);
+        return ApprovalRecordStatus.SUPERSEDED.equals(status);
     }
 
     public void markAsSuperseded() {
-        this.status = "SUPERSEDED";
+        this.status = ApprovalRecordStatus.SUPERSEDED;
     }
 
     public void markAsActive() {
-        this.status = "ACTIVE";
+        this.status = ApprovalRecordStatus.ACTIVE;
+    }
+
+    // Backward compatibility helpers
+    public String getStatusAsString() {
+        return status != null ? status.getValue() : null;
+    }
+
+    public void setStatusFromString(String statusString) {
+        this.status = ApprovalRecordStatus.fromString(statusString);
     }
 }

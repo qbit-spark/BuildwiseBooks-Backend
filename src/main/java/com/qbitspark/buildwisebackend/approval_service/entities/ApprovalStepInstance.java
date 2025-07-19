@@ -2,9 +2,9 @@ package com.qbitspark.buildwisebackend.approval_service.entities;
 
 import com.qbitspark.buildwisebackend.approval_service.entities.embedings.ApprovalRecord;
 import com.qbitspark.buildwisebackend.approval_service.entities.embedings.RejectionRecord;
-import com.qbitspark.buildwisebackend.approval_service.enums.ApprovalAction;
-import com.qbitspark.buildwisebackend.approval_service.enums.ScopeType;
-import com.qbitspark.buildwisebackend.approval_service.enums.StepStatus;
+import com.qbitspark.buildwisebackend.approval_service.enums.*;
+import com.qbitspark.buildwisebackend.approval_service.utils.ApprovalRecordListConverter;
+import com.qbitspark.buildwisebackend.approval_service.utils.RejectionRecordListConverter;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -69,26 +69,19 @@ public class ApprovalStepInstance {
     @Enumerated(EnumType.STRING)
     private ApprovalAction action;
 
-    // 🆕 NEW: Approval History - Never gets deleted
     @Column(name = "approval_history", columnDefinition = "jsonb")
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Convert(converter = ApprovalRecordListConverter.class)
     private List<ApprovalRecord> approvalHistory = new ArrayList<>();
 
-    // 🆕 NEW: Rejection History - Never gets deleted
     @Column(name = "rejection_history", columnDefinition = "jsonb")
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Convert(converter = RejectionRecordListConverter.class)
     private List<RejectionRecord> rejectionHistory = new ArrayList<>();
 
-    // 🆕 NEW: Helper methods for managing history
 
-    /**
-     * Add a new approval to the history
-     */
     public void addApprovalToHistory(UUID approvedBy, String approvedByEmail, String comments, Integer revisionNumber) {
         // Mark all previous approvals as superseded
         approvalHistory.forEach(ApprovalRecord::markAsSuperseded);
 
-        // Create new approval record
         ApprovalRecord newApproval = ApprovalRecord.builder()
                 .approvalId(UUID.randomUUID())
                 .stepId(this.stepInstanceId)
@@ -96,16 +89,13 @@ public class ApprovalStepInstance {
                 .approvedBy(approvedByEmail)
                 .comments(comments)
                 .revisionNumber(revisionNumber)
-                .status("ACTIVE")
+                .status(ApprovalRecordStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .build();
 
         approvalHistory.add(newApproval);
     }
 
-    /**
-     * Add a new rejection to the history
-     */
     public void addRejectionToHistory(String rejectedByEmail, String rejectionReason, Integer revisionNumber) {
         RejectionRecord newRejection = RejectionRecord.builder()
                 .rejectionId(UUID.randomUUID())
@@ -114,7 +104,7 @@ public class ApprovalStepInstance {
                 .rejectedBy(rejectedByEmail)
                 .rejectionReason(rejectionReason)
                 .revisionNumber(revisionNumber)
-                .status("ACTIVE")
+                .status(RejectionRecordStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .build();
 

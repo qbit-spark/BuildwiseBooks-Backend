@@ -1,5 +1,7 @@
 package com.qbitspark.buildwisebackend.approval_service.entities.embedings;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.qbitspark.buildwisebackend.approval_service.enums.RejectionRecordStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RejectionRecord {
 
     private UUID rejectionId;
@@ -20,7 +23,7 @@ public class RejectionRecord {
     private String rejectedBy;
     private String rejectionReason;
     private Integer revisionNumber;
-    private String status; // "ACTIVE", "RESOLVED"
+    private RejectionRecordStatus status;
 
     // Resolution tracking
     private LocalDateTime resolvedAt;
@@ -32,21 +35,30 @@ public class RejectionRecord {
 
     // Helper methods
     public boolean isActive() {
-        return "ACTIVE".equals(status);
+        return RejectionRecordStatus.ACTIVE.equals(status);
     }
 
     public boolean isResolved() {
-        return "RESOLVED".equals(status);
+        return RejectionRecordStatus.RESOLVED.equals(status);
     }
 
     public void markAsResolved(String resolvedBy, String resolutionComments) {
-        this.status = "RESOLVED";
+        this.status = RejectionRecordStatus.RESOLVED;
         this.resolvedAt = LocalDateTime.now();
         this.resolvedBy = resolvedBy;
         this.resolutionComments = resolutionComments;
     }
 
     public void markAsActive() {
-        this.status = "ACTIVE";
+        this.status = RejectionRecordStatus.ACTIVE;
+    }
+
+    // Backward compatibility helpers
+    public String getStatusAsString() {
+        return status != null ? status.getValue() : null;
+    }
+
+    public void setStatusFromString(String statusString) {
+        this.status = RejectionRecordStatus.fromString(statusString);
     }
 }

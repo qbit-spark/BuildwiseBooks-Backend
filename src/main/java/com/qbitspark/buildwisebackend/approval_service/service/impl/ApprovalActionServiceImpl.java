@@ -51,12 +51,18 @@ public class ApprovalActionServiceImpl implements ApprovalActionService {
 
         validateOrganisationMemberAccess(currentUser, organisation);
 
+
         ApprovalInstance instance = approvalInstanceRepo.findByServiceNameAndItemId(serviceType, itemId)
                 .orElseThrow(() -> new ItemNotFoundException("No approval found for this item"));
+
+
 
         ApprovalStepInstance currentStep = approvalStepInstanceRepo
                 .findByApprovalInstanceAndStepOrder(instance, instance.getCurrentStepOrder())
                 .orElseThrow(() -> new ItemNotFoundException("Current step not found"));
+
+
+        System.out.println("Here ---> "+instance.getServiceName());
 
         if (currentStep.getStatus() != StepStatus.PENDING) {
             throw new AccessDeniedException("This step is not pending approval");
@@ -71,6 +77,7 @@ public class ApprovalActionServiceImpl implements ApprovalActionService {
                 request.getAction(),
                 request.getComments()
         );
+
 
         ApprovalActionResponse response = new ApprovalActionResponse();
         response.setInstanceId(updatedInstance.getInstanceId());

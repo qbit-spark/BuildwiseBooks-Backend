@@ -2,7 +2,9 @@ package com.qbitspark.buildwisebackend.approval_service.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.qbitspark.buildwisebackend.approval_service.entities.embedings.ApprovalRecord;
 import jakarta.persistence.AttributeConverter;
@@ -20,7 +22,17 @@ public class ApprovalRecordListConverter implements AttributeConverter<List<Appr
 
     public ApprovalRecordListConverter() {
         this.objectMapper = new ObjectMapper();
+
+        // Configure for enum and LocalDateTime support
         this.objectMapper.registerModule(new JavaTimeModule());
+        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        // Enum configuration
+        this.objectMapper.enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING);
+        this.objectMapper.enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING);
+
+        // Ignore unknown properties for backward compatibility
+        this.objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 
     @Override
@@ -47,7 +59,7 @@ public class ApprovalRecordListConverter implements AttributeConverter<List<Appr
 
         try {
             List<ApprovalRecord> result = objectMapper.readValue(dbData, new TypeReference<List<ApprovalRecord>>() {});
-            log.debug("Converting JSON to ApprovalRecord list: {} records", result.size());
+            log.debug("Converting JSON to ApprovalRecord list: {} records", result != null ? result.size() : 0);
             return result != null ? result : new ArrayList<>();
         } catch (JsonProcessingException e) {
             log.error("Error converting JSON to ApprovalRecord list: {}", dbData, e);

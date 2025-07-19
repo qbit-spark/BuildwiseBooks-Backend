@@ -29,16 +29,16 @@ public class ApprovalStepHistoryResponse {
     private ApprovalAction action;
     private boolean canCurrentUserApprove;
 
-    // 🆕 NEW: Complete history tracking
+    // Complete history tracking
     private List<ApprovalRecord> approvalHistory;
     private List<RejectionRecord> rejectionHistory;
     private ApprovalHistorySummary historySummary;
 
-    // 🆕 NEW: User context
+    // User context
     private String userMessage; // "You previously approved this on Jan 15" or "CEO rejected due to budget concerns"
     private String actionRequired; // "Please review and approve" or "Already completed"
 
-    // 🆕 NEW: Revision tracking
+    // Revision tracking
     private Integer currentRevision;
     private boolean isRevision; // True if this step has been through approval/rejection cycles
 }
