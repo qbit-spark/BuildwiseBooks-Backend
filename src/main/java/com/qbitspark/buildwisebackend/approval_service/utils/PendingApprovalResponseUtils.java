@@ -51,7 +51,7 @@ public class PendingApprovalResponseUtils {
     // =========================================================================================
 
     /**
-     * 🎯 Main method to convert ApprovalStepInstance to PendingApprovalResponse
+     * Main method to convert ApprovalStepInstance to PendingApprovalResponse
      */
     public PendingApprovalResponse mapToPendingApprovalResponse(ApprovalStepInstance step, AccountEntity currentUser) {
         ApprovalInstance instance = step.getApprovalInstance();
