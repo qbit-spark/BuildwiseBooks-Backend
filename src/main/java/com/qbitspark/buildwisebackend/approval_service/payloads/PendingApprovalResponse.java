@@ -31,22 +31,43 @@ public class PendingApprovalResponse {
     private String myRoleName;
 
     // Item Context (what am I approving?)
-    private String itemReference; // Invoice number, voucher number, etc.
-    private String itemDescription; // Brief description
+    private String itemReference;
+    private String itemDescription;
     private String projectName;
     private String clientName;
 
     // Timing Info
     private LocalDateTime submittedAt;
     private String submittedBy;
-    private int daysWaiting; // How many days it's been waiting
+    private int daysWaiting;
 
     // Priority/Urgency
-    private String priority; // "HIGH", "MEDIUM", "LOW"
-    private boolean isOverdue; // Based on some business rule
+    private String priority;
+    private boolean isOverdue;
+
+    // REJECTION CONTEXT - Why did this come back?
+    private boolean hasRejectionHistory;
+    private RejectionContext rejectionContext;
 
     // Quick Actions
     private boolean canApprove;
     private boolean canReject;
 
+    // REJECTION CONTEXT CLASS
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RejectionContext {
+        private boolean isComingBackFromRejection;
+        private String rejectedByRole;
+        private String rejectedByUser;
+        private LocalDateTime rejectedAt;
+        private String rejectionReason;
+        private int rejectedFromStep;
+        private String rejectedFromStepName;
+        private int timesRejected;
+        private String contextMessage; // Human-readable explanation
+        private String actionRequired; // What user should do
+    }
 }
