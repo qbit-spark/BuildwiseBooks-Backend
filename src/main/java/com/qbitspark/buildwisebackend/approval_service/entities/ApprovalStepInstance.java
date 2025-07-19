@@ -145,7 +145,7 @@ public class ApprovalStepInstance {
     }
 
     /**
-     * Get total number of rejections
+     * Get the total number of rejections
      */
     public int getTotalRejections() {
         return rejectionHistory.size();
