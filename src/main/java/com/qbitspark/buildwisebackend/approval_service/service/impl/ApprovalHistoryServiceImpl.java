@@ -46,6 +46,7 @@ public class ApprovalHistoryServiceImpl implements ApprovalHistoryService {
     private final OrgMemberRoleRepo orgMemberRoleRepo;
     private final ProjectTeamRoleRepo projectTeamRoleRepo;
 
+
     @Override
     public ApprovalHistoryResponse getApprovalHistory(ServiceType serviceType, UUID itemId)
             throws ItemNotFoundException {
@@ -94,11 +95,16 @@ public class ApprovalHistoryServiceImpl implements ApprovalHistoryService {
         stepResponse.setStepOrder(step.getStepOrder());
         stepResponse.setScopeType(step.getScopeType());
         stepResponse.setRoleId(step.getRoleId());
+
+        //Set role based on level
+        String roleName = getRoleName(step.getRoleId(), step.getScopeType());
+        stepResponse.setRoleName(roleName);
         stepResponse.setRequired(step.isRequired());
         stepResponse.setStatus(step.getStatus());
         stepResponse.setComments(step.getComments());
         stepResponse.setApprovedAt(step.getApprovedAt());
         stepResponse.setAction(step.getAction());
+
 
         // Current approver info
         if (step.getApprovedBy() != null) {
@@ -253,4 +259,5 @@ public class ApprovalHistoryServiceImpl implements ApprovalHistoryService {
         return accountRepo.findByUserName(userName)
                 .orElseThrow(() -> new ItemNotFoundException("User not found"));
     }
+
 }
