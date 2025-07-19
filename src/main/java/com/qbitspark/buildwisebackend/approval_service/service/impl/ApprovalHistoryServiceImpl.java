@@ -2,10 +2,13 @@ package com.qbitspark.buildwisebackend.approval_service.service.impl;
 
 import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalInstance;
 import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalStepInstance;
+import com.qbitspark.buildwisebackend.approval_service.entities.embedings.ApprovalRecord;
+import com.qbitspark.buildwisebackend.approval_service.entities.embedings.RejectionRecord;
 import com.qbitspark.buildwisebackend.approval_service.enums.ScopeType;
 import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
 import com.qbitspark.buildwisebackend.approval_service.enums.StepStatus;
 import com.qbitspark.buildwisebackend.approval_service.payloads.ApprovalHistoryResponse;
+import com.qbitspark.buildwisebackend.approval_service.payloads.ApprovalHistorySummary;
 import com.qbitspark.buildwisebackend.approval_service.payloads.ApprovalStepHistoryResponse;
 import com.qbitspark.buildwisebackend.approval_service.repo.ApprovalInstanceRepo;
 import com.qbitspark.buildwisebackend.approval_service.repo.ApprovalStepInstanceRepo;
@@ -87,29 +90,139 @@ public class ApprovalHistoryServiceImpl implements ApprovalHistoryService {
     private ApprovalStepHistoryResponse buildStepHistory(ApprovalStepInstance step, AccountEntity currentUser) {
         ApprovalStepHistoryResponse stepResponse = new ApprovalStepHistoryResponse();
 
-
+        // Basic step information
         stepResponse.setStepOrder(step.getStepOrder());
         stepResponse.setScopeType(step.getScopeType());
         stepResponse.setRoleId(step.getRoleId());
-        stepResponse.setRoleName(getRoleName(step.getRoleId(), step.getScopeType()));
         stepResponse.setRequired(step.isRequired());
         stepResponse.setStatus(step.getStatus());
         stepResponse.setComments(step.getComments());
         stepResponse.setApprovedAt(step.getApprovedAt());
         stepResponse.setAction(step.getAction());
 
+        // Current approver info
         if (step.getApprovedBy() != null) {
             AccountEntity approver = accountRepo.findById(step.getApprovedBy()).orElse(null);
             stepResponse.setApprovedBy(approver != null ? approver.getUserName() : "Unknown");
         }
 
+        // Permission check
         if (step.getStatus() == StepStatus.PENDING) {
             stepResponse.setCanCurrentUserApprove(permissionService.canUserApprove(currentUser, step));
         } else {
             stepResponse.setCanCurrentUserApprove(false);
         }
 
+        // Add complete history
+        stepResponse.setApprovalHistory(step.getApprovalHistory());
+        stepResponse.setRejectionHistory(step.getRejectionHistory());
+
+        //Build history summary
+        ApprovalHistorySummary summary = buildHistorySummary(step);
+        stepResponse.setHistorySummary(summary);
+
+        //Set revision info
+        stepResponse.setCurrentRevision(step.getNextRevisionNumber() - 1);
+        stepResponse.setRevision(step.getTotalApprovals() > 0 || step.getTotalRejections() > 0);
+
+        //Build a user context message
+        String userMessage = buildUserContextMessage(step, currentUser);
+        stepResponse.setUserMessage(userMessage);
+
+        String actionRequired = determineActionRequired(step, currentUser);
+        stepResponse.setActionRequired(actionRequired);
+
         return stepResponse;
+    }
+
+    private ApprovalHistorySummary buildHistorySummary(ApprovalStepInstance step) {
+        ApprovalHistorySummary summary = new ApprovalHistorySummary();
+
+        summary.setTotalApprovals(step.getTotalApprovals());
+        summary.setTotalRejections(step.getTotalRejections());
+        summary.setCurrentRevision(step.getNextRevisionNumber() - 1);
+        summary.setHasActiveRejections(step.hasActiveRejections());
+
+        // Count active/resolved rejections
+        long activeRejections = step.getRejectionHistory().stream()
+                .filter(r -> "ACTIVE".equals(r.getStatus()))
+                .count();
+        long resolvedRejections = step.getRejectionHistory().stream()
+                .filter(r -> "RESOLVED".equals(r.getStatus()))
+                .count();
+
+        summary.setActiveRejections((int) activeRejections);
+        summary.setResolvedRejections((int) resolvedRejections);
+
+        // Count superseded approvals
+        long supersededApprovals = step.getApprovalHistory().stream()
+                .filter(a -> "SUPERSEDED".equals(a.getStatus()))
+                .count();
+        summary.setSupersededApprovals((int) supersededApprovals);
+
+        // Determine last action
+        if (step.getAction() != null) {
+            summary.setLastAction(step.getAction().name());
+            summary.setLastActionAt(step.getApprovedAt());
+
+            if (step.getApprovedBy() != null) {
+                AccountEntity lastActor = accountRepo.findById(step.getApprovedBy()).orElse(null);
+                summary.setLastActionBy(lastActor != null ? lastActor.getUserName() : "Unknown");
+            }
+        }
+
+        return summary;
+    }
+
+    private String buildUserContextMessage(ApprovalStepInstance step, AccountEntity currentUser) {
+        if (step.getStatus() == StepStatus.PENDING) {
+            // Check if user previously approved this step
+            boolean userPreviouslyApproved = step.getApprovalHistory().stream()
+                    .anyMatch(approval -> currentUser.getUserName().equals(approval.getApprovedBy()));
+
+            if (userPreviouslyApproved) {
+                ApprovalRecord lastApproval = step.getApprovalHistory().stream()
+                        .filter(approval -> currentUser.getUserName().equals(approval.getApprovedBy()))
+                        .reduce((first, second) -> second) // Get last
+                        .orElse(null);
+
+                if (lastApproval != null) {
+                    return String.format("You previously approved this on %s with comment: '%s'",
+                            lastApproval.getApprovedAt().toLocalDate(),
+                            lastApproval.getComments());
+                }
+            }
+
+            // Check if there are active rejections
+            if (step.hasActiveRejections()) {
+                RejectionRecord latestRejection = step.getLatestRejection();
+                if (latestRejection != null) {
+                    return String.format("This step came back due to rejection: '%s' by %s",
+                            latestRejection.getRejectionReason(),
+                            latestRejection.getRejectedBy());
+                }
+            }
+
+            return "This step is awaiting your approval";
+        }
+
+        return "This step has been completed";
+    }
+
+    private String determineActionRequired(ApprovalStepInstance step, AccountEntity currentUser) {
+        if (step.getStatus() == StepStatus.PENDING) {
+            if (permissionService.canUserApprove(currentUser, step)) {
+                if (step.hasActiveRejections()) {
+                    return "REVIEW_AND_APPROVE"; // Step came back due to rejection
+                } else {
+                    return "APPROVE"; // Normal approval
+                }
+            } else {
+                return "WAITING_FOR_APPROVER"; // Someone else needs to approve
+            }
+        }
+
+        return "COMPLETED"; // Step is already done
     }
 
     private String getRoleName(UUID roleId, ScopeType scopeType) {

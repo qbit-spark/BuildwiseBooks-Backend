@@ -42,7 +42,6 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
     private final OrganisationRepo organisationRepo;
     private final AccountRepo accountRepo;
 
-
     private final ApprovalPermissionService permissionService;
     private final ApprovalCompletionHandler completionHandler;
 
@@ -124,21 +123,35 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
             throw new AccessDeniedException("Step is not pending approval");
         }
 
-        // 🚀 NEW: Use permission service to check if a user can approve
+        // Check permissions
         if (!permissionService.canUserApprove(currentUser, currentStep)) {
             throw new AccessDeniedException("You do not have the required role to approve this step");
         }
 
         // Process the action
-        currentStep.setApprovedBy(currentUser.getId());
-        currentStep.setApprovedAt(LocalDateTime.now());
-        currentStep.setComments(comments);
-        currentStep.setAction(action);
-
         if (action == ApprovalAction.APPROVE) {
+            //Add approval to history
+            currentStep.addApprovalToHistory(
+                    currentUser.getId(),
+                    currentUser.getUserName(),
+                    comments,
+                    currentStep.getNextRevisionNumber()
+            );
+
+            //Resolve any active rejections
+            currentStep.resolveActiveRejections(
+                    currentUser.getUserName(),
+                    "Resolved by approval: " + comments
+            );
+
+            //Set current step state
+            currentStep.setApprovedBy(currentUser.getId());
+            currentStep.setApprovedAt(LocalDateTime.now());
+            currentStep.setComments(comments);
+            currentStep.setAction(ApprovalAction.APPROVE);
             currentStep.setStatus(StepStatus.APPROVED);
 
-            // Check if this is the last step
+            //Check if this is the last step
             if (instance.getCurrentStepOrder() >= instance.getTotalSteps()) {
                 // Workflow completed
                 instance.setStatus(ApprovalStatus.APPROVED);
@@ -154,7 +167,20 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
                 nextStep.setStatus(StepStatus.PENDING);
                 approvalStepInstanceRepo.save(nextStep);
             }
+
         } else { // REJECT
+            //Adds rejection to history
+            currentStep.addRejectionToHistory(
+                    currentUser.getUserName(),
+                    comments,
+                    currentStep.getNextRevisionNumber()
+            );
+
+            //Set the current step state
+            currentStep.setApprovedBy(currentUser.getId());
+            currentStep.setApprovedAt(LocalDateTime.now());
+            currentStep.setComments(comments);
+            currentStep.setAction(ApprovalAction.REJECT);
             currentStep.setStatus(StepStatus.REJECTED);
 
             if (instance.getCurrentStepOrder() == 1) {
@@ -165,16 +191,18 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
                 // Go back to a previous step
                 instance.setCurrentStepOrder(instance.getCurrentStepOrder() - 1);
 
-                // Set the previous step to PENDING and clear its approval
+                // Set the previous step to PENDING and clear its current state
                 ApprovalStepInstance previousStep = approvalStepInstanceRepo
                         .findByApprovalInstanceAndStepOrder(instance, instance.getCurrentStepOrder())
                         .orElseThrow(() -> new ItemNotFoundException("Previous step not found"));
 
+                //Clear the current state (but history remains intact!)
                 previousStep.setStatus(StepStatus.PENDING);
                 previousStep.setApprovedBy(null);
                 previousStep.setApprovedAt(null);
                 previousStep.setComments(null);
                 previousStep.setAction(null);
+
                 approvalStepInstanceRepo.save(previousStep);
             }
         }
@@ -182,7 +210,7 @@ public class ApprovalWorkflowServiceImpl implements ApprovalWorkflowService {
         approvalStepInstanceRepo.save(currentStep);
         ApprovalInstance updatedInstance = approvalInstanceRepo.save(instance);
 
-        // 🚀 NEW: Handle completion if workflow finished
+        // Handle completion if workflow finished
         if (updatedInstance.getStatus() == ApprovalStatus.APPROVED ||
                 updatedInstance.getStatus() == ApprovalStatus.REJECTED) {
             completionHandler.handleApprovalCompletion(updatedInstance);
