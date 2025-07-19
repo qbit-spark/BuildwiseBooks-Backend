@@ -67,7 +67,7 @@ public class PendingApprovalResponse {
         private int rejectedFromStep;
         private String rejectedFromStepName;
         private int timesRejected;
-        private String contextMessage; // Human-readable explanation
-        private String actionRequired; // What user should do
+        private String contextMessage;
+        private String actionRequired;
     }
 }
