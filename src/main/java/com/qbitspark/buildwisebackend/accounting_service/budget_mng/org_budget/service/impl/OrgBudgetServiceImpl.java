@@ -101,8 +101,8 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         OrganisationMember member = validateOrganisationMemberAccess(authenticatedAccount, organisation);
         permissionChecker.checkMemberPermission(member, "BUDGET", "distributeBudget");
 
-        OrgBudgetEntity budget = orgBudgetRepo.findById(budgetId)
-                .orElseThrow(() -> new ItemNotFoundException("Budget not found"));
+
+        OrgBudgetEntity budget = orgBudgetRepo.findById(budgetId).orElseThrow(() -> new ItemNotFoundException("Budget not found"));
 
         if (budget.getStatus() != OrgBudgetStatus.DRAFT) {
             throw new ItemNotFoundException("Only draft budgets can be distributed");
@@ -197,7 +197,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         budget.setModifiedBy(authenticatedAccount.getAccountId());
         budget.setModifiedDate(LocalDateTime.now());
 
-        OrgBudgetEntity savedBudget =  orgBudgetRepo.save(budget);
+        OrgBudgetEntity savedBudget = orgBudgetRepo.save(budget);
 
         if (action == ActionType.SAVE_AND_APPROVAL) {
             // 1. Update document status via integration service
@@ -379,8 +379,17 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
         permissionChecker.checkMemberPermission(member, "BUDGET", "viewBudget");
 
-        OrgBudgetEntity budget = orgBudgetRepo.findById(budgetId)
-                .orElseThrow(() -> new ItemNotFoundException("Budget not found"));
+        OrgBudgetEntity budget;
+
+        if (budgetId == null) {
+            budget = orgBudgetRepo.findByOrganisationAndStatus(organisation, OrgBudgetStatus.ACTIVE).orElseThrow(
+                    () -> new ItemNotFoundException("No active budget found for organisation")
+            );
+        } else {
+            budget = orgBudgetRepo.findById(budgetId)
+                    .orElseThrow(() -> new ItemNotFoundException("Budget not found, with given Id"));
+        }
+
 
         if (!budget.getOrganisation().getOrganisationId().equals(organisationId)) {
             throw new ItemNotFoundException("Budget does not belong to this organisation");
