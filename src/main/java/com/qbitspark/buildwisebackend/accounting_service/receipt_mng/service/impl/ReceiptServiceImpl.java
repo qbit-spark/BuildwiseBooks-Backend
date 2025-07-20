@@ -3,6 +3,7 @@ package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.im
 import com.qbitspark.buildwisebackend.accounting_service.bank_mng.entity.BankAccountEntity;
 import com.qbitspark.buildwisebackend.accounting_service.bank_mng.repo.BankAccountRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.entity.InvoiceDocEntity;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.InvoiceStatus;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.repo.InvoiceDocRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
@@ -11,6 +12,9 @@ import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.Cre
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.UpdateReceiptRequest;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.ReceiptService;
+import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalIntegrationService;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalWorkflowService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
@@ -53,9 +57,11 @@ public class ReceiptServiceImpl implements ReceiptService {
     private final AccountRepo accountRepo;
     private final ReceiptNumberService receiptNumberService;
     private final PermissionCheckerService permissionChecker;
+    private final ApprovalIntegrationService approvalIntegrationService;
+    private final ApprovalWorkflowService approvalWorkflowService;
 
     @Override
-    public ReceiptEntity createReceipt(UUID organisationId, CreateReceiptRequest request)
+    public ReceiptEntity createReceipt(UUID organisationId, CreateReceiptRequest request, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
@@ -97,7 +103,29 @@ public class ReceiptServiceImpl implements ReceiptService {
         receipt.setAttachments(request.getAttachments());
         receipt.setCreatedBy(currentUser.getAccountId());
 
-        return receiptRepo.save(receipt);
+        ReceiptEntity savedReceipt =  receiptRepo.save(receipt);
+
+        // Handle approval workflow
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.RECEIPT,
+                    savedReceipt.getReceiptId(),
+                    organisationId,
+                    project.getProjectId()
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
+                    ServiceType.RECEIPT,
+                    savedReceipt.getReceiptId(),
+                    organisationId,
+                    project.getProjectId()
+            );
+        }
+
+        return savedReceipt;
+
     }
 
     @Override
@@ -133,7 +161,7 @@ public class ReceiptServiceImpl implements ReceiptService {
     }
 
     @Override
-    public ReceiptEntity updateReceipt(UUID organisationId, UUID receiptId, UpdateReceiptRequest request)
+    public ReceiptEntity updateReceipt(UUID organisationId, UUID receiptId, UpdateReceiptRequest request, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
@@ -178,7 +206,29 @@ public class ReceiptServiceImpl implements ReceiptService {
 
         receipt.setUpdatedBy(currentUser.getAccountId());
 
-        return receiptRepo.save(receipt);
+        ReceiptEntity savedReceipt = receiptRepo.save(receipt);
+
+        // Handle approval workflow
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.RECEIPT,
+                    savedReceipt.getReceiptId(),
+                    organisationId,
+                    savedReceipt.getProject().getProjectId()
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
+                    ServiceType.RECEIPT,
+                    savedReceipt.getReceiptId(),
+                    organisationId,
+                    savedReceipt.getProject().getProjectId()
+            );
+        }
+
+        return savedReceipt;
+
     }
 
     @Override

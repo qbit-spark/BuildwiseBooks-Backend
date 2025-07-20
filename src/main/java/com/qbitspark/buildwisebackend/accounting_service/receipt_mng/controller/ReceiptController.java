@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.controller;
 
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.service.impl.InvoiceDocServiceImpl;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.*;
@@ -33,14 +34,19 @@ public class ReceiptController {
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createReceipt(
             @PathVariable UUID organisationId,
-            @Valid @RequestBody CreateReceiptRequest request)
+            @Valid @RequestBody CreateReceiptRequest request,  @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
-        ReceiptEntity receipt = receiptService.createReceipt(organisationId, request);
+        ReceiptEntity receipt = receiptService.createReceipt(organisationId, request, action);
         ReceiptResponse response = mapToResponse(receipt);
 
+        String successMessage = switch (action) {
+            case SAVE -> "Receipt saved successfully";
+            case SAVE_AND_APPROVAL -> "Receipt saved and submitted for approval";
+        };
+
         return ResponseEntity.ok(
-                GlobeSuccessResponseBuilder.success("Receipt created successfully", response)
+                GlobeSuccessResponseBuilder.success(successMessage, response)
         );
     }
 
@@ -102,14 +108,19 @@ public class ReceiptController {
     public ResponseEntity<GlobeSuccessResponseBuilder> updateReceipt(
             @PathVariable UUID organisationId,
             @PathVariable UUID receiptId,
-            @Valid @RequestBody UpdateReceiptRequest request)
+            @Valid @RequestBody UpdateReceiptRequest request, @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
-        ReceiptEntity receipt = receiptService.updateReceipt(organisationId, receiptId, request);
+        ReceiptEntity receipt = receiptService.updateReceipt(organisationId, receiptId, request, action);
         ReceiptResponse response = mapToResponse(receipt);
 
+        String successMessage = switch (action) {
+            case SAVE -> "Receipt saved successfully";
+            case SAVE_AND_APPROVAL -> "Receipt saved and submitted for approval";
+        };
+
         return ResponseEntity.ok(
-                GlobeSuccessResponseBuilder.success("Receipt updated successfully", response)
+                GlobeSuccessResponseBuilder.success(successMessage, response)
         );
     }
 

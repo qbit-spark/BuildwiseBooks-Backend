@@ -11,6 +11,10 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.u
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.enums.AccountType;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
+import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalIntegrationService;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalWorkflowService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
@@ -48,6 +52,8 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
     private final OrgBudgetDetailDistributionRepo detailDistributionRepo;
     private final PermissionCheckerService permissionChecker;
     private final BudgetAllocationResponseUtils budgetAllocationResponseUtils;
+    private final ApprovalIntegrationService approvalIntegrationService;
+    private final ApprovalWorkflowService approvalWorkflowService;
 
 
     @Override
@@ -80,11 +86,12 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
 
         OrgBudgetEntity savedBudget = orgBudgetRepo.save(budget);
         initializeBudgetDistribution(savedBudget, organisation, currentAccount);
+
         return savedBudget;
     }
 
     @Override
-    public List<OrgBudgetDetailDistributionEntity> distributeToDetails(UUID budgetId, DistributeToDetailsRequest request, UUID organisationId)
+    public List<OrgBudgetDetailDistributionEntity> distributeToDetails(UUID budgetId, DistributeToDetailsRequest request, UUID organisationId, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
@@ -107,7 +114,28 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
 
 
         validateNoDuplicateAccounts(request);
+
+        // Handle approval workflow
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.BUDGET,
+                    budget.getBudgetId(),
+                    organisationId,
+                    null
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
+                    ServiceType.BUDGET,
+                    budget.getBudgetId(),
+                    organisationId,
+                    null
+            );
+        }
+
         return processDistributions(request, budget, organisationId, authenticatedAccount);
+
     }
 
 
@@ -126,7 +154,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
     }
 
     @Override
-    public OrgBudgetEntity updateBudget(UUID budgetId, UpdateBudgetRequest request, UUID organisationId)
+    public OrgBudgetEntity updateBudget(UUID budgetId, UpdateBudgetRequest request, UUID organisationId, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity authenticatedAccount = getAuthenticatedAccount();
@@ -169,7 +197,26 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         budget.setModifiedBy(authenticatedAccount.getAccountId());
         budget.setModifiedDate(LocalDateTime.now());
 
-        return orgBudgetRepo.save(budget);
+        OrgBudgetEntity savedBudget =  orgBudgetRepo.save(budget);
+
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.BUDGET,
+                    savedBudget.getBudgetId(),
+                    organisationId,
+                    null
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
+                    ServiceType.BUDGET,
+                    savedBudget.getBudgetId(),
+                    organisationId,
+                    null
+            );
+        }
+        return savedBudget;
     }
 
 

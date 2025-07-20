@@ -8,5 +8,6 @@ public enum VendorStatus {
     INACTIVE,
     SUSPENDED,
     BLACKLISTED,
-    PENDING_APPROVAL;
+    PENDING_APPROVAL,
+    APPROVED,
 }

@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.vendormng_service.controller;
 
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.vendormng_service.entity.VendorEntity;
 import com.qbitspark.buildwisebackend.vendormng_service.enums.VendorStatus;
@@ -32,15 +33,27 @@ public class VendorsController {
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createVendor(
             @PathVariable UUID organisationId,
-            @Valid @RequestBody CreateVendorRequest request)
+            @Valid @RequestBody CreateVendorRequest request,
+            @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
-        VendorEntity vendorEntity = vendorService.createVendor(organisationId, request);
+        if (action == null) {
+            throw new IllegalArgumentException("Action parameter is required and cannot be null");
+        }
+
+        VendorEntity vendorEntity = vendorService.createVendor(organisationId, request,action);
         VendorResponse response = mapToVendorResponse(vendorEntity);
+
+
+        String successMessage = switch (action) {
+            case SAVE -> "Vendor saved successfully";
+            case SAVE_AND_APPROVAL -> "Vendor created and submitted for approval";
+        };
+
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
-                        "Vendor created successfully",
+                        successMessage,
                         response
                 )
         );
@@ -118,15 +131,27 @@ public class VendorsController {
     public ResponseEntity<GlobeSuccessResponseBuilder> updateVendor(
             @PathVariable UUID organisationId,
             @PathVariable UUID vendorId,
-            @Valid @RequestBody UpdateVendorRequest request)
+            @Valid @RequestBody UpdateVendorRequest request,
+            @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
-        VendorEntity vendorEntity = vendorService.updateVendor(organisationId, vendorId, request);
+        VendorEntity vendorEntity = vendorService.updateVendor(organisationId, vendorId, request, action);
+
+        if (action == null) {
+            throw new IllegalArgumentException("Action parameter is required and cannot be null");
+        }
+
         VendorResponse response = mapToVendorResponse(vendorEntity);
+
+        String successMessage = switch (action) {
+            case SAVE -> "Vendor saved successfully";
+            case SAVE_AND_APPROVAL -> "Vendor created and submitted for approval";
+        };
+
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
-                        "Vendor updated successfully",
+                        successMessage,
                         response
                 )
         );

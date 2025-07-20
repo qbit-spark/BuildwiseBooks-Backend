@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.vendormng_service.service;
 
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.vendormng_service.entity.VendorEntity;
 import com.qbitspark.buildwisebackend.vendormng_service.enums.VendorStatus;
@@ -17,7 +18,7 @@ import java.util.UUID;
 
 public interface VendorService {
 
-    VendorEntity createVendor(UUID organisationId, CreateVendorRequest request) throws ItemNotFoundException, AccessDeniedException;
+    VendorEntity createVendor(UUID organisationId, CreateVendorRequest request, ActionType action) throws ItemNotFoundException, AccessDeniedException;
 
     List<VendorEntity> getVendorSummaries(UUID organisationId, VendorType vendorType)
             throws ItemNotFoundException, AccessDeniedException;
@@ -28,7 +29,7 @@ public interface VendorService {
     Page<VendorEntity> getAllVendors(UUID organisationId, VendorStatus status, Pageable pageable)
             throws ItemNotFoundException, AccessDeniedException;
 
-    VendorEntity updateVendor(UUID organisationId, UUID vendorId, UpdateVendorRequest request)
+    VendorEntity updateVendor(UUID organisationId, UUID vendorId, UpdateVendorRequest request, ActionType action)
             throws ItemNotFoundException, AccessDeniedException;
 
     void deleteVendor(UUID organisationId, UUID vendorId)

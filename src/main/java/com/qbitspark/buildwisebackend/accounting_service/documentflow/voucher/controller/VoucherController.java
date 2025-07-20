@@ -111,13 +111,23 @@ public class VoucherController {
             @Valid @RequestBody UpdateVoucherRequest request,
             @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
-
         VoucherEntity voucherEntity = voucherService.updateVoucher(organisationId, voucherId, request, action);
-       VoucherResponse response = mapToVoucherResponse(voucherEntity);
+
+        if (action == null) {
+            throw new IllegalArgumentException("Action parameter is required and cannot be null");
+        }
+
+        VoucherResponse response = mapToVoucherResponse(voucherEntity);
+
+        // Dynamic success message
+        String successMessage = switch (action) {
+            case SAVE -> "Voucher saved successfully";
+            case SAVE_AND_APPROVAL -> "Voucher saved and submitted for approval";
+        };
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
-                        "Voucher updated successfully", response
+                        successMessage, response
                 )
         );
     }

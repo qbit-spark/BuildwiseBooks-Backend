@@ -5,6 +5,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.e
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.*;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.BudgetFundingService;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.OrgBudgetService;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
@@ -35,6 +36,7 @@ public class OrgBudgetController {
         OrgBudgetEntity createdBudget = orgBudgetService.createBudget(request, organisationId);
         CreateBudgetResponse response = mapToResponse(createdBudget);
 
+
         return new ResponseEntity<>(
                 GlobeSuccessResponseBuilder.success("Budget created successfully", response),
                 HttpStatus.CREATED
@@ -57,18 +59,25 @@ public class OrgBudgetController {
     public ResponseEntity<GlobeSuccessResponseBuilder> distributeToDetails(
             @PathVariable UUID organisationId,
             @PathVariable UUID budgetId,
-            @Valid @RequestBody DistributeToDetailsRequest request)
+            @Valid @RequestBody DistributeToDetailsRequest request, @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
+
         List<OrgBudgetDetailDistributionEntity> distributions =
-                orgBudgetService.distributeToDetails(budgetId, request, organisationId);
+                orgBudgetService.distributeToDetails(budgetId, request, organisationId, action);
 
         List<DistributionCreatedResponse> responses = distributions.stream()
                 .map(this::mapToCreatedResponse)
                 .collect(Collectors.toList());
 
+        String successMessage = switch (action) {
+            case SAVE -> "Budget distribution saved successfully";
+            case SAVE_AND_APPROVAL -> "Budget distribution saved and submitted for approval";
+        };
+
+
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
-                "Budget distributed to detail accounts successfully", responses));
+                successMessage, responses));
     }
 
     @GetMapping("/{budgetId}/distribution-details")
@@ -101,13 +110,19 @@ public class OrgBudgetController {
     public ResponseEntity<GlobeSuccessResponseBuilder> updateBudget(
             @PathVariable UUID organisationId,
             @PathVariable UUID budgetId,
-            @Valid @RequestBody UpdateBudgetRequest request) throws ItemNotFoundException, AccessDeniedException {
+            @Valid @RequestBody UpdateBudgetRequest request,
+            @RequestParam(value = "action") ActionType action) throws ItemNotFoundException, AccessDeniedException {
 
-        OrgBudgetEntity updatedBudget = orgBudgetService.updateBudget(budgetId, request, organisationId);
+        OrgBudgetEntity updatedBudget = orgBudgetService.updateBudget(budgetId, request, organisationId, action);
         CreateBudgetResponse response = mapToResponse(updatedBudget);
 
+        String successMessage = switch (action) {
+            case SAVE -> "Budget saved successfully";
+            case SAVE_AND_APPROVAL -> "Budget saved and submitted for approval";
+        };
+
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
-                "Budget updated successfully", response));
+                successMessage, response));
     }
 
 

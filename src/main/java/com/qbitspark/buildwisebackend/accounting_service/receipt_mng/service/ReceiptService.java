@@ -1,6 +1,7 @@
 package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service;
 
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.AvailableDetailAllocationResponse;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.CreateReceiptRequest;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.UpdateReceiptRequest;
@@ -14,7 +15,7 @@ import java.util.UUID;
 
 public interface ReceiptService {
 
-    ReceiptEntity createReceipt(UUID organisationId, CreateReceiptRequest request)
+    ReceiptEntity createReceipt(UUID organisationId, CreateReceiptRequest request, ActionType actionType)
             throws ItemNotFoundException, AccessDeniedException;
 
     Page<ReceiptEntity> getOrganisationReceipts(UUID organisationId, Pageable pageable)
@@ -23,7 +24,7 @@ public interface ReceiptService {
     ReceiptEntity getReceiptById(UUID organisationId, UUID receiptId)
             throws ItemNotFoundException, AccessDeniedException;
 
-    ReceiptEntity updateReceipt(UUID organisationId, UUID receiptId, UpdateReceiptRequest request)
+    ReceiptEntity updateReceipt(UUID organisationId, UUID receiptId, UpdateReceiptRequest request, ActionType actionType)
             throws ItemNotFoundException, AccessDeniedException;
 
     void confirmReceipt(UUID organisationId, UUID receiptId)

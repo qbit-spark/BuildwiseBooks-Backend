@@ -3,7 +3,7 @@ package com.qbitspark.buildwisebackend.approval_service.enums;
 public enum ServiceType {
     VOUCHER,
     BUDGET,
-    BUDGET_ALLOCATIONS,
+    RECEIPT_ALLOCATIONS_TO_BUDGET,
     VENDORS,
 
     PROJECT,

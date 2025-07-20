@@ -1,5 +1,9 @@
 package com.qbitspark.buildwisebackend.vendormng_service.service.impl;
 
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
+import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalIntegrationService;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalWorkflowService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
@@ -39,9 +43,11 @@ public class VendorServiceImpl implements VendorService {
     private final OrganisationMemberRepo organisationMemberRepo;
     private final AccountRepo accountRepo;
     private final PermissionCheckerService permissionChecker;
+    private final ApprovalIntegrationService approvalIntegrationService;
+    private final ApprovalWorkflowService approvalWorkflowService;
 
     @Override
-    public VendorEntity createVendor(UUID organisationId, CreateVendorRequest request)
+    public VendorEntity createVendor(UUID organisationId, CreateVendorRequest request, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
@@ -81,7 +87,28 @@ public class VendorServiceImpl implements VendorService {
         vendor.setAttachmentIds(request.getAttachmentIds() != null ?
                 request.getAttachmentIds() : new ArrayList<>());
 
-        return vendorsRepo.save(vendor);
+        VendorEntity savedVendor = vendorsRepo.save(vendor);
+
+        // Handle approval workflow
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.VENDORS,
+                    savedVendor.getVendorId(),
+                    organisationId,
+                    null
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
+                    ServiceType.VENDORS,
+                    savedVendor.getVendorId(),
+                    organisationId,
+                    null
+            );
+        }
+
+        return savedVendor;
     }
 
     @Override
@@ -147,7 +174,7 @@ public class VendorServiceImpl implements VendorService {
     }
 
     @Override
-    public VendorEntity updateVendor(UUID organisationId, UUID vendorId, UpdateVendorRequest request)
+    public VendorEntity updateVendor(UUID organisationId, UUID vendorId, UpdateVendorRequest request, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
@@ -161,7 +188,28 @@ public class VendorServiceImpl implements VendorService {
 
         updateVendorFields(vendor, request, organisation, vendorId);
 
-        return vendorsRepo.save(vendor);
+        VendorEntity savedVendor =  vendorsRepo.save(vendor);
+
+        // Handle approval workflow
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.VENDORS,
+                    savedVendor.getVendorId(),
+                    organisationId,
+                    null
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
+                    ServiceType.VENDORS,
+                    savedVendor.getVendorId(),
+                    organisationId,
+                    null
+            );
+        }
+
+        return savedVendor;
     }
 
 
