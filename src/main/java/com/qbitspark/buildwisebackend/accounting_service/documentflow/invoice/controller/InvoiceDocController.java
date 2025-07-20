@@ -96,12 +96,13 @@ public class InvoiceDocController {
     public ResponseEntity<GlobeSuccessResponseBuilder> updateInvoice(
             @PathVariable UUID organisationId,
             @PathVariable UUID invoiceId,
-            @RequestBody UpdateInvoiceDocRequest request)
+            @RequestBody UpdateInvoiceDocRequest request,
+            @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException, JsonProcessingException {
 
 
         InvoiceDocResponse response = invoiceDocService.updateInvoice(
-                organisationId, invoiceId, request);
+                organisationId, invoiceId, request, action);
 
         return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Invoice updated successfully", response));
     }

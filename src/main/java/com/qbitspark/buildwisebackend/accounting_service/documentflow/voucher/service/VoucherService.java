@@ -19,7 +19,7 @@ public interface VoucherService {
     Page<VoucherEntity> getProjectVouchers(UUID organisationId, UUID projectId, Pageable pageable)
             throws ItemNotFoundException, AccessDeniedException;
 
-    VoucherEntity updateVoucher(UUID organisationId, UUID voucherId, UpdateVoucherRequest request)
+    VoucherEntity updateVoucher(UUID organisationId, UUID voucherId, UpdateVoucherRequest request, ActionType action)
             throws ItemNotFoundException, AccessDeniedException;
 
     VoucherEntity getVoucherById(UUID organisationId, UUID voucherId) throws ItemNotFoundException, AccessDeniedException;

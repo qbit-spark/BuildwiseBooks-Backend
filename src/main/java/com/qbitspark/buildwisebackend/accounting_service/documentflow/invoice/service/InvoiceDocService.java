@@ -5,9 +5,7 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.pa
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import org.springframework.data.domain.Page;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface InvoiceDocService {
@@ -21,7 +19,7 @@ public interface InvoiceDocService {
 
     public InvoiceDocResponse getInvoiceById(UUID organisationId, UUID invoiceId) throws ItemNotFoundException, AccessDeniedException;
 
-    InvoiceDocResponse updateInvoice(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException;
+    InvoiceDocResponse updateInvoice(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request, ActionType actionType) throws ItemNotFoundException, AccessDeniedException;
 }
 
 

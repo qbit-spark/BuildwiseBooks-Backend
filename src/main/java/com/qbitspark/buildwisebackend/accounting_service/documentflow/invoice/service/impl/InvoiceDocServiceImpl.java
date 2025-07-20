@@ -195,7 +195,7 @@ public class InvoiceDocServiceImpl implements InvoiceDocService {
 
     @Override
     @Transactional
-    public InvoiceDocResponse updateInvoice(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request) throws ItemNotFoundException, AccessDeniedException {
+    public InvoiceDocResponse updateInvoice(UUID organisationId, UUID invoiceId, UpdateInvoiceDocRequest request, ActionType action) throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
 
@@ -256,6 +256,27 @@ public class InvoiceDocServiceImpl implements InvoiceDocService {
 
         // Save an updated invoice
         InvoiceDocEntity savedInvoice = invoiceDocRepo.save(invoice);
+
+
+        // Handle approval workflow
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.INVOICE,
+                    savedInvoice.getId(),
+                    organisationId,
+                    savedInvoice.getProject().getProjectId()
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
+                    ServiceType.INVOICE,
+                    savedInvoice.getId(),
+                    organisationId,
+                    savedInvoice.getProject().getProjectId()
+            );
+        }
+
 
         return mapToInvoiceResponse(savedInvoice, currentUser, creditApplied);
     }
