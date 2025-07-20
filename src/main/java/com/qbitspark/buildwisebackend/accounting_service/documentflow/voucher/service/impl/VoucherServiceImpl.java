@@ -159,7 +159,7 @@ public class VoucherServiceImpl implements VoucherService {
         if (action == ActionType.SAVE_AND_APPROVAL) {
             // 1. Update document status via integration service
             approvalIntegrationService.submitForApproval(
-                    ServiceType.INVOICE,
+                    ServiceType.VOUCHER,
                     savedVoucher.getId(),
                     organisationId,
                     project.getProjectId()
@@ -167,7 +167,7 @@ public class VoucherServiceImpl implements VoucherService {
 
             // 2. Start the workflow directly
             approvalWorkflowService.startApprovalWorkflow(
-                    ServiceType.INVOICE,
+                    ServiceType.VOUCHER,
                     savedVoucher.getId(),
                     organisationId,
                     project.getProjectId()
@@ -197,7 +197,7 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
     @Override
-    public VoucherEntity updateVoucher(UUID organisationId, UUID voucherId, UpdateVoucherRequest request)
+    public VoucherEntity updateVoucher(UUID organisationId, UUID voucherId, UpdateVoucherRequest request, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
@@ -229,7 +229,28 @@ public class VoucherServiceImpl implements VoucherService {
             updateVoucherAttachments(existingVoucher, request.getAttachments(), organisation);
         }
 
-        return voucherRepo.save(existingVoucher);
+        VoucherEntity savedVoucher =  voucherRepo.save(existingVoucher);
+
+        // Handle approval workflow
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.VOUCHER,
+                    savedVoucher.getId(),
+                    organisationId,
+                    savedVoucher.getProject().getProjectId()
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
+                    ServiceType.VOUCHER,
+                    savedVoucher.getId(),
+                    organisationId,
+                    savedVoucher.getProject().getProjectId()
+            );
+        }
+
+        return savedVoucher;
     }
 
 

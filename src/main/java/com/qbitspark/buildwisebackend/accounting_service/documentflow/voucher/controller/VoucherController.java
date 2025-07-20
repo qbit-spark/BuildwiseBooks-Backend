@@ -108,10 +108,11 @@ public class VoucherController {
     public ResponseEntity<GlobeSuccessResponseBuilder> updateVoucher(
             @PathVariable UUID organisationId,
             @PathVariable UUID voucherId,
-            @Valid @RequestBody UpdateVoucherRequest request)
+            @Valid @RequestBody UpdateVoucherRequest request,
+            @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
-        VoucherEntity voucherEntity = voucherService.updateVoucher(organisationId, voucherId, request);
+        VoucherEntity voucherEntity = voucherService.updateVoucher(organisationId, voucherId, request, action);
        VoucherResponse response = mapToVoucherResponse(voucherEntity);
 
         return ResponseEntity.ok(
