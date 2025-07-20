@@ -18,6 +18,7 @@ public class ProjectResponse {
     private String organisationName;
     private UUID organisationId;
     private String status;
+    private BigDecimal contractSum;
     private String contractNumber;
     private Set<TeamMemberResponse> teamMembers;
     private String createdBy;

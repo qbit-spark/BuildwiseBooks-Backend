@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.controller;
 
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherBeneficiaryEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherDeductionEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherEntity;
@@ -47,14 +48,27 @@ public class VoucherController {
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createVoucher(
             @PathVariable UUID organisationId,
-            @Valid @RequestBody CreateVoucherRequest request)
+            @Valid @RequestBody CreateVoucherRequest request,
+            @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
-        VoucherEntity voucher = voucherService.createVoucher(organisationId, request);
+        if (action == null) {
+            throw new IllegalArgumentException("Action parameter is required and cannot be null");
+        }
+
+
+        VoucherEntity voucher = voucherService.createVoucher(organisationId, request, action);
+
+        // Dynamic success message
+        String successMessage = switch (action) {
+            case SAVE -> "Voucher saved successfully";
+            case SAVE_AND_APPROVAL -> "Voucher created and submitted for approval";
+        };
+
 
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
-                        "Voucher created successfully", mapToVoucherResponse(voucher)
+                        successMessage, mapToVoucherResponse(voucher)
                 )
         );
     }

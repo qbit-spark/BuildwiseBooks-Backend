@@ -13,6 +13,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -75,6 +76,9 @@ public class ProjectEntity {
 
     @Column(name = "contract_number", nullable = false, length = 100)
     private String contractNumber;
+
+    @Column(name = "contract_sum")
+    private BigDecimal contractSum;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")

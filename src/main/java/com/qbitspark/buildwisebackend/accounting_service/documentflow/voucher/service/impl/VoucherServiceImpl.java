@@ -5,6 +5,7 @@ import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccou
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.entity.DeductsEntity;
 import com.qbitspark.buildwisebackend.accounting_service.deducts_mng.repo.DeductRepo;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherBeneficiaryEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherDeductionEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherEntity;
@@ -14,6 +15,9 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.re
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.repo.VoucherRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.VoucherNumberService;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.VoucherService;
+import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalIntegrationService;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalWorkflowService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.drive_mng.entity.OrgFileEntity;
@@ -67,9 +71,11 @@ public class VoucherServiceImpl implements VoucherService {
     private final PermissionCheckerService permissionChecker;
     private final BudgetSpendingService budgetSpendingService;
     private final ChartOfAccountsRepo chartOfAccountsRepo;
+    private final ApprovalIntegrationService approvalIntegrationService;
+    private final ApprovalWorkflowService approvalWorkflowService;
 
     @Override
-    public VoucherEntity createVoucher(UUID organisationId, CreateVoucherRequest request)
+    public VoucherEntity createVoucher(UUID organisationId, CreateVoucherRequest request, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
@@ -147,7 +153,28 @@ public class VoucherServiceImpl implements VoucherService {
         voucher.setBeneficiaries(beneficiaryEntities);
         voucher.setTotalAmount(totalAmount);
 
-        return voucherRepo.save(voucher);
+        VoucherEntity savedVoucher =  voucherRepo.save(voucher);
+
+        // Handle approval workflow
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.INVOICE,
+                    savedVoucher.getId(),
+                    organisationId,
+                    project.getProjectId()
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
+                    ServiceType.INVOICE,
+                    savedVoucher.getId(),
+                    organisationId,
+                    project.getProjectId()
+            );
+        }
+
+        return savedVoucher;
     }
 
 

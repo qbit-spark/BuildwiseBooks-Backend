@@ -89,6 +89,7 @@ public class ProjectServiceImpl implements ProjectService {
         project.setCreatedBy(member);
         project.setProjectCode(projectCode);
         project.setClient(client);
+        project.setContractSum(request.getContractSum() == null ? BigDecimal.ZERO : request.getContractSum());
         project.setContractNumber(request.getContractNumber());
         project.setStatus(ProjectStatus.ACTIVE);
         project.setCreatedAt(LocalDateTime.now());
@@ -280,6 +281,7 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectResponse response = new ProjectResponse();
         response.setProjectId(project.getProjectId());
         response.setName(project.getName());
+        response.setContractSum(project.getContractSum() == null ? BigDecimal.ZERO : project.getContractSum());
         response.setDescription(project.getDescription());
         response.setOrganisationName(project.getOrganisation().getOrganisationName());
         response.setOrganisationId(project.getOrganisation().getOrganisationId());

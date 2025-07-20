@@ -25,6 +25,9 @@ public class ProjectCreateRequest {
     @NotBlank(message = "The contract number is required")
     private String contractNumber;
 
+    @NotNull(message = "Contract sum is required")
+    private BigDecimal contractSum;
+
     @NotNull(message = "Client ID is required")
     private UUID clientId;
 
