@@ -2,6 +2,7 @@ package com.qbitspark.buildwisebackend.accounting_service.receipt_mng.controller
 
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.CreateReceiptAllocationRequest;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.paylaods.ReceiptAllocationResponse;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.AllocationStatus;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.payload.ReceiptAllocationSummaryResponse;
@@ -39,16 +40,22 @@ public class ReceiptAllocationController {
     @PostMapping
     public ResponseEntity<GlobeSuccessResponseBuilder> createReceiptAllocation(
             @PathVariable UUID organisationId,
-            @Valid @RequestBody CreateReceiptAllocationRequest request)
+            @Valid @RequestBody CreateReceiptAllocationRequest request,
+            @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
         ReceiptAllocationEntity allocation = receiptAllocationService
-                .createReceiptAllocation(organisationId, request);
+                .createReceiptAllocation(organisationId, request, action);
 
         ReceiptAllocationResponse response = mapToResponse(allocation);
 
+        String successMessage = switch (action) {
+            case SAVE -> "Receipt allocation saved successfully";
+            case SAVE_AND_APPROVAL -> "Receipt allocation and submitted for approval";
+        };
+
         return new ResponseEntity<>(
-                GlobeSuccessResponseBuilder.success("Receipt allocation created successfully", response),
+                GlobeSuccessResponseBuilder.success(successMessage, response),
                 HttpStatus.CREATED
         );
     }

@@ -12,6 +12,7 @@ import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.r
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.BudgetFundingService;
 import com.qbitspark.buildwisebackend.accounting_service.coa.entity.ChartOfAccounts;
 import com.qbitspark.buildwisebackend.accounting_service.coa.repo.ChartOfAccountsRepo;
+import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.enums.ActionType;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationDetailEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
@@ -22,6 +23,9 @@ import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.Receip
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptAllocationRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.ReceiptAllocationService;
+import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalIntegrationService;
+import com.qbitspark.buildwisebackend.approval_service.service.ApprovalWorkflowService;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
@@ -67,9 +71,11 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
     private final BudgetFundingAllocationRepo budgetFundingAllocationRepo;
     private final OrgBudgetRepo orgBudgetRepo;
     private final BudgetFundingService budgetFundingService;
+    private final ApprovalIntegrationService approvalIntegrationService;
+    private final ApprovalWorkflowService approvalWorkflowService;
 
     @Override
-    public ReceiptAllocationEntity createReceiptAllocation(UUID organisationId, CreateReceiptAllocationRequest request)
+    public ReceiptAllocationEntity createReceiptAllocation(UUID organisationId, CreateReceiptAllocationRequest request, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
@@ -144,7 +150,25 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
         // Explicitly flush to ensure data is persisted
         receiptAllocationRepo.flush();
 
-        // Return the saved allocation (should now have all details)
+
+        if (action == ActionType.SAVE_AND_APPROVAL) {
+            // 1. Update document status via integration service
+            approvalIntegrationService.submitForApproval(
+                    ServiceType.RECEIPT_ALLOCATIONS_TO_BUDGET,
+                    savedAllocation.getAllocationId(),
+                    organisationId,
+                    null
+            );
+
+            // 2. Start the workflow directly
+            approvalWorkflowService.startApprovalWorkflow(
+                    ServiceType.RECEIPT_ALLOCATIONS_TO_BUDGET,
+                    savedAllocation.getAllocationId(),
+                    organisationId,
+                    null
+            );
+        }
+
         return savedAllocation;
     }
 
