@@ -16,5 +16,4 @@ public interface BudgetFundingService {
 
     List<AvailableDetailAllocationResponse> getAvailableDetailAllocations(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
 
-
 }
