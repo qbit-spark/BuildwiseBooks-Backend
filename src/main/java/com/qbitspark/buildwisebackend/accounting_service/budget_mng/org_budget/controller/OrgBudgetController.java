@@ -36,7 +36,6 @@ public class OrgBudgetController {
         OrgBudgetEntity createdBudget = orgBudgetService.createBudget(request, organisationId);
         CreateBudgetResponse response = mapToResponse(createdBudget);
 
-
         return new ResponseEntity<>(
                 GlobeSuccessResponseBuilder.success("Budget created successfully", response),
                 HttpStatus.CREATED

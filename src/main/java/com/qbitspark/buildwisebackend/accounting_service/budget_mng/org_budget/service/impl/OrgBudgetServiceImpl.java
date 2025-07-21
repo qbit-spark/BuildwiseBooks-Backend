@@ -56,6 +56,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
     private final ApprovalWorkflowService approvalWorkflowService;
 
 
+    @Transactional
     @Override
     public OrgBudgetEntity createBudget(CreateBudgetRequest request, UUID organisationId)
             throws ItemNotFoundException, AccessDeniedException {
@@ -90,6 +91,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         return savedBudget;
     }
 
+    @Transactional
     @Override
     public List<OrgBudgetDetailDistributionEntity> distributeToDetails(UUID budgetId, DistributeToDetailsRequest request, UUID organisationId, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
@@ -153,6 +155,7 @@ public class OrgBudgetServiceImpl implements OrgBudgetService {
         return orgBudgetRepo.findByOrganisation(organisation);
     }
 
+    @Transactional
     @Override
     public OrgBudgetEntity updateBudget(UUID budgetId, UpdateBudgetRequest request, UUID organisationId, ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
