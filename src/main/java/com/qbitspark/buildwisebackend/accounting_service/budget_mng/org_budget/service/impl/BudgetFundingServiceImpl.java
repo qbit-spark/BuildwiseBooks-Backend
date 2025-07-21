@@ -80,11 +80,6 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
         for (ReceiptAllocationDetailEntity detail : allocation.getAllocationDetails()) {
             ChartOfAccounts account = detail.getAccount();
 
-//            // Validate account belongs to an organisation
-//            if (!account.getOrganisation().getOrganisationId().equals(allocation.getReceipt().getOrganisation())) {
-//                throw new ItemNotFoundException("Account does not belong to this organisation: " + account.getAccountCode());
-//            }
-
             // Validate account exists in current budget distribution
             List<OrgBudgetDetailDistributionEntity> distributions = orgBudgetDetailDistributionRepo
                     .findByBudgetAndDetailAccount(activeBudget, account);
