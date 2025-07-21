@@ -5,6 +5,19 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.en
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.service.VoucherPrintService;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.utils.NumberToWordsUtil;
+import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalInstance;
+import com.qbitspark.buildwisebackend.approval_service.entities.ApprovalStepInstance;
+import com.qbitspark.buildwisebackend.approval_service.entities.embedings.ApprovalRecord;
+import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
+import com.qbitspark.buildwisebackend.approval_service.enums.StepStatus;
+import com.qbitspark.buildwisebackend.approval_service.repo.ApprovalInstanceRepo;
+import com.qbitspark.buildwisebackend.approval_service.repo.ApprovalStepInstanceRepo;
+import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.OrgMemberRoleRepo;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamRoleEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.repo.ProjectTeamRoleRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,11 +29,13 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
-
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +43,11 @@ import java.util.stream.Collectors;
 public class VoucherPrintServiceImpl implements VoucherPrintService {
 
     private final TemplateEngine templateEngine;
+    private final ApprovalInstanceRepo approvalInstanceRepo;
+    private final ApprovalStepInstanceRepo approvalStepInstanceRepo;
+    private final AccountRepo accountRepo;
+    private final OrgMemberRoleRepo orgMemberRoleRepo;
+    private final ProjectTeamRoleRepo projectTeamRoleRepo;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a");
@@ -44,8 +64,6 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
             log.info("Generating PDF for voucher: {}", voucher.getVoucherNumber());
 
             String html = generateVoucherHtml(voucher);
-
-            // Clean HTML for XHTML compliance
             html = cleanHtmlForPdf(html);
 
             try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
@@ -90,7 +108,8 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
             context.setVariable("accountName", voucher.getAccount().getName());
 
             // Creator information
-            context.setVariable("createdByName", voucher.getCreatedBy().getAccount().getUserName());
+            String creatorFullName = getFullName(voucher.getCreatedBy().getAccount());
+            context.setVariable("createdByName", creatorFullName);
 
             // Dates
             context.setVariable("voucherDate", voucher.getVoucherDate().format(DATE_FORMATTER));
@@ -102,7 +121,7 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
             // Beneficiaries and their net amounts
             context.setVariable("beneficiaries", voucher.getBeneficiaries());
 
-            // Pre-calculate net amounts for each beneficiary to avoid complex SpEL
+            // Pre-calculate net amounts for each beneficiary
             List<BigDecimal> beneficiaryNetAmounts = voucher.getBeneficiaries().stream()
                     .map(this::calculateBeneficiaryNetAmount)
                     .collect(Collectors.toList());
@@ -114,6 +133,10 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
             context.setVariable("totalDeductions", formatCurrency(totals.get("totalDeductions")));
             context.setVariable("totalNetAmount", formatCurrency(totals.get("netAmount")));
             context.setVariable("amountInWords", convertToWords(totals.get("netAmount")));
+
+            // NEW: Get approval signatures
+            List<ApprovalSignature> signatures = getApprovalSignatures(voucher);
+            context.setVariable("approvalSignatures", signatures);
 
             // Watermark for draft status
             context.setVariable("showWatermark", voucher.getStatus().name().equals("DRAFT"));
@@ -131,6 +154,243 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
             throw new RuntimeException("Failed to generate HTML", e);
         }
     }
+
+    /**
+     * NEW METHOD: Get approval signatures for the voucher
+     */
+    private List<ApprovalSignature> getApprovalSignatures(VoucherEntity voucher) {
+        List<ApprovalSignature> signatures = new ArrayList<>();
+
+        try {
+            // Always add the creator signature
+            String creatorFullName = getFullName(voucher.getCreatedBy().getAccount());
+            signatures.add(ApprovalSignature.builder()
+                    .roleTitle("Prepared By")
+                    .userName(creatorFullName)
+                    .roleName("Requester")
+                    .signedDate(voucher.getCreatedAt().format(DATE_FORMATTER))
+                    .isSigned(true)
+                    .build());
+
+            // Get approval instance for this voucher
+            Optional<ApprovalInstance> approvalInstanceOpt = approvalInstanceRepo
+                    .findByServiceNameAndItemId(ServiceType.VOUCHER, voucher.getId());
+
+            if (approvalInstanceOpt.isPresent()) {
+                ApprovalInstance instance = approvalInstanceOpt.get();
+
+                // Get all step instances
+                List<ApprovalStepInstance> steps = approvalStepInstanceRepo
+                        .findByApprovalInstanceOrderByStepOrderAsc(instance);
+
+                for (ApprovalStepInstance step : steps) {
+                    ApprovalSignature signature = buildSignatureFromStep(step);
+                    if (signature != null) {
+                        signatures.add(signature);
+                    }
+                }
+            }
+
+            // If no approval workflow exists or no approvals found, add default placeholders
+            if (signatures.size() == 1) { // Only creator
+                signatures.add(ApprovalSignature.builder()
+                        .roleTitle("Reviewed By")
+                        .userName("")
+                        .roleName("Finance Manager")
+                        .signedDate("")
+                        .isSigned(false)
+                        .build());
+
+                signatures.add(ApprovalSignature.builder()
+                        .roleTitle("Approved By")
+                        .userName("")
+                        .roleName("Managing Director")
+                        .signedDate("")
+                        .isSigned(false)
+                        .build());
+            }
+
+        } catch (Exception e) {
+            log.error("Error getting approval signatures for voucher: {}", voucher.getVoucherNumber(), e);
+
+            // Return minimal signatures on error
+            signatures.clear();
+            String creatorFullName = getFullName(voucher.getCreatedBy().getAccount());
+            signatures.add(ApprovalSignature.builder()
+                    .roleTitle("Prepared By")
+                    .userName(creatorFullName)
+                    .roleName("Requester")
+                    .signedDate(voucher.getCreatedAt().format(DATE_FORMATTER))
+                    .isSigned(true)
+                    .build());
+        }
+
+        return signatures;
+    }
+
+    /**
+     * Build signature from approval step
+     */
+    private ApprovalSignature buildSignatureFromStep(ApprovalStepInstance step) {
+        try {
+            String roleName = getRoleName(step.getRoleId(), step.getScopeType());
+            String roleTitle = determineRoleTitle(roleName, step.getStepOrder());
+
+            if (step.getStatus() == StepStatus.APPROVED && step.getApprovedBy() != null) {
+                // Step is approved - get user full name and date
+                AccountEntity approver = accountRepo.findById(step.getApprovedBy()).orElse(null);
+                String approverName = getFullName(approver);
+
+                log.debug("Found approver for step {}: ID={}, Name={}", step.getStepOrder(), step.getApprovedBy(), approverName);
+
+                // Try to get the latest approval from history for more details
+                ApprovalRecord latestApproval = step.getApprovalHistory().stream()
+                        .filter(record -> record.isActive())
+                        .findFirst()
+                        .orElse(null);
+
+                String signedDate = "";
+                if (step.getApprovedAt() != null) {
+                    signedDate = step.getApprovedAt().format(DATE_FORMATTER);
+                } else if (latestApproval != null && latestApproval.getApprovedAt() != null) {
+                    signedDate = latestApproval.getApprovedAt().format(DATE_FORMATTER);
+                }
+
+                // If we couldn't get name from step.approvedBy, try to get it from approval history
+                if ("Unknown".equals(approverName) && latestApproval != null) {
+                    // The approval history stores approvedBy as username/email, let's try to find the account
+                    String approvedByFromHistory = latestApproval.getApprovedBy();
+                    if (approvedByFromHistory != null && !approvedByFromHistory.isEmpty()) {
+                        // Try to find by username first
+                        AccountEntity accountFromHistory = accountRepo.findByUserName(approvedByFromHistory).orElse(null);
+
+                        // If not found by username, try by email (if the method exists)
+                        if (accountFromHistory == null) {
+                            try {
+                                accountFromHistory = accountRepo.findByEmail(approvedByFromHistory).orElse(null);
+                            } catch (Exception e) {
+                                // findByEmail method might not exist, ignore and continue
+                                log.debug("Could not search by email, method might not exist");
+                            }
+                        }
+
+                        if (accountFromHistory != null) {
+                            approverName = getFullName(accountFromHistory);
+                            log.debug("Found approver from history: {}", approverName);
+                        } else {
+                            // If we can't find the account, just use the stored name
+                            approverName = approvedByFromHistory;
+                            log.debug("Using stored name from history: {}", approverName);
+                        }
+                    }
+                }
+
+                return ApprovalSignature.builder()
+                        .roleTitle(roleTitle)
+                        .userName(approverName)
+                        .roleName(roleName)
+                        .signedDate(signedDate)
+                        .isSigned(true)
+                        .build();
+
+            } else {
+                // Step is not approved - show placeholder
+                return ApprovalSignature.builder()
+                        .roleTitle(roleTitle)
+                        .userName("")
+                        .roleName(roleName)
+                        .signedDate("")
+                        .isSigned(false)
+                        .build();
+            }
+
+        } catch (Exception e) {
+            log.error("Error building signature from step: {}", step.getStepInstanceId(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Get full name from AccountEntity
+     * Combines firstName and lastName, falls back to userName if names are not available
+     */
+    private String getFullName(AccountEntity account) {
+        if (account == null) {
+            return "Unknown";
+        }
+
+        try {
+            String firstName = account.getFirstName();
+            String lastName = account.getLastName();
+
+            // Build full name if both parts are available
+            if (firstName != null && !firstName.trim().isEmpty() &&
+                    lastName != null && !lastName.trim().isEmpty()) {
+                return (firstName.trim() + " " + lastName.trim()).trim();
+            }
+
+            // Use first name only if last name is missing
+            if (firstName != null && !firstName.trim().isEmpty()) {
+                return firstName.trim();
+            }
+
+            // Use last name only if first name is missing
+            if (lastName != null && !lastName.trim().isEmpty()) {
+                return lastName.trim();
+            }
+
+            // Fall back to username if no names are available
+            return account.getUserName() != null ? account.getUserName() : "Unknown";
+
+        } catch (Exception e) {
+            log.error("Error getting full name for account: {}", account.getId(), e);
+            return account.getUserName() != null ? account.getUserName() : "Unknown";
+        }
+    }
+
+    /**
+     * Get role name from role ID and scope type
+     */
+    private String getRoleName(UUID roleId, com.qbitspark.buildwisebackend.approval_service.enums.ScopeType scopeType) {
+        try {
+            switch (scopeType) {
+                case ORGANIZATION -> {
+                    Optional<OrgMemberRoleEntity> orgRole = orgMemberRoleRepo.findById(roleId);
+                    return orgRole.map(OrgMemberRoleEntity::getRoleName).orElse("Unknown Role");
+                }
+                case PROJECT -> {
+                    Optional<ProjectTeamRoleEntity> projectRole = projectTeamRoleRepo.findById(roleId);
+                    return projectRole.map(ProjectTeamRoleEntity::getRoleName).orElse("Unknown Role");
+                }
+                default -> {
+                    return "Unknown Role";
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error getting role name for roleId: {}, scopeType: {}", roleId, scopeType, e);
+            return "Unknown Role";
+        }
+    }
+
+    /**
+     * Determine appropriate role title for signature section
+     */
+    private String determineRoleTitle(String roleName, int stepOrder) {
+        // You can customize this logic based on your business needs
+        if (roleName.toLowerCase().contains("finance")) {
+            return "Reviewed By";
+        } else if (roleName.toLowerCase().contains("manager") ||
+                roleName.toLowerCase().contains("director") ||
+                roleName.toLowerCase().contains("ceo")) {
+            return "Approved By";
+        } else if (stepOrder == 1) {
+            return "Reviewed By";
+        } else {
+            return "Approved By";
+        }
+    }
+
+    // ... (keep all your existing helper methods)
 
     private Map<String, BigDecimal> calculateTotals(VoucherEntity voucher) {
         BigDecimal grossAmount = voucher.getTotalAmount();
@@ -177,9 +437,6 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
         return beneficiary.getAmount().subtract(deductions);
     }
 
-    /**
-     * Cleans HTML to ensure XHTML compliance for PDF generation
-     */
     private String cleanHtmlForPdf(String html) {
         if (html == null) {
             return "";
@@ -193,16 +450,21 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
         html = html.replaceAll("<meta([^>]*?)(?<!/)>", "<meta$1/>");
         html = html.replaceAll("<link([^>]*?)(?<!/)>", "<link$1/>");
 
-        // Remove any remaining unclosed tags that might cause issues
-        html = html.replaceAll("<area([^>]*?)(?<!/)>", "<area$1/>");
-        html = html.replaceAll("<base([^>]*?)(?<!/)>", "<base$1/>");
-        html = html.replaceAll("<col([^>]*?)(?<!/)>", "<col$1/>");
-        html = html.replaceAll("<embed([^>]*?)(?<!/)>", "<embed$1/>");
-        html = html.replaceAll("<source([^>]*?)(?<!/)>", "<source$1/>");
-        html = html.replaceAll("<track([^>]*?)(?<!/)>", "<track$1/>");
-        html = html.replaceAll("<wbr([^>]*?)(?<!/)>", "<wbr$1/>");
-
         return html;
     }
 
+    /**
+     * Inner class to represent approval signature
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class ApprovalSignature {
+        private String roleTitle;    // "Prepared By", "Reviewed By", "Approved By"
+        private String userName;     // Actual user name who signed
+        private String roleName;     // Role name like "Finance Manager", "CEO"
+        private String signedDate;   // Date when signed
+        private boolean isSigned;    // Whether this step is actually signed
+    }
 }

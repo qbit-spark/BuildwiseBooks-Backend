@@ -223,7 +223,7 @@ public class AccountServiceIMPL implements AccountService {
         String phoneRegex = "^\\+(?:[0-9] ?){6,14}[0-9]$";
         // Compile the pattern into a regex pattern object
         Pattern pattern = Pattern.compile(phoneRegex);
-        // Use the pattern matcher to test if the input matches the pattern
+        // Use the pattern matcher to tanzania-coat-of-arms.png if the input matches the pattern
         return input != null && pattern.matcher(input).matches();
     }
 
@@ -232,7 +232,7 @@ public class AccountServiceIMPL implements AccountService {
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
         // Compile the pattern into a regex pattern object
         Pattern pattern = Pattern.compile(emailRegex);
-        // Use the pattern matcher to test if the input matches the pattern
+        // Use the pattern matcher to tanzania-coat-of-arms.png if the input matches the pattern
         return input != null && pattern.matcher(input).matches();
     }
 
