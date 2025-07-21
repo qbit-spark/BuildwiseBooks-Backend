@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public interface BudgetFundingService {
 
-    List<BudgetFundingAllocationEntity> fundAccountsFromAllocation(UUID organisationId, ReceiptAllocationEntity allocation) throws ItemNotFoundException, AccessDeniedException;
+    List<BudgetFundingAllocationEntity> fundAccountsFromAllocation(ReceiptAllocationEntity allocation) throws ItemNotFoundException, AccessDeniedException;
 
     List<AvailableDetailAllocationResponse> getAvailableDetailAllocations(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
 

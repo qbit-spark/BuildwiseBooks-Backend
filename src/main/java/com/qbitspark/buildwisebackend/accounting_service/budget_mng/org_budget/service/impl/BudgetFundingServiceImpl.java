@@ -61,23 +61,18 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
     private final PermissionCheckerService permissionChecker;
 
     @Override
-    public List<BudgetFundingAllocationEntity> fundAccountsFromAllocation(UUID organisationId, ReceiptAllocationEntity allocation)
+    public List<BudgetFundingAllocationEntity> fundAccountsFromAllocation( ReceiptAllocationEntity allocation)
             throws ItemNotFoundException {
 
         AccountEntity currentUser = getAuthenticatedAccount();
-        OrganisationEntity organisation = getOrganisation(organisationId);
-        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
 
         if (allocation.getStatus() != AllocationStatus.APPROVED) {
             throw new ItemNotFoundException("Only approved allocations can be funded to budget");
         }
 
-        if (!allocation.getReceipt().getOrganisation().getOrganisationId().equals(organisationId)) {
-            throw new ItemNotFoundException("Allocation does not belong to this organisation");
-        }
 
         // Find active budget for organisation
-        OrgBudgetEntity activeBudget = findActiveBudget(organisation);
+        OrgBudgetEntity activeBudget = findActiveBudget(allocation.getReceipt().getOrganisation());
 
         // Validate allocation details and create funding allocations
         List<BudgetFundingAllocationEntity> fundingAllocations = new ArrayList<>();
@@ -85,10 +80,10 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
         for (ReceiptAllocationDetailEntity detail : allocation.getAllocationDetails()) {
             ChartOfAccounts account = detail.getAccount();
 
-            // Validate account belongs to an organisation
-            if (!account.getOrganisation().getOrganisationId().equals(organisationId)) {
-                throw new ItemNotFoundException("Account does not belong to this organisation: " + account.getAccountCode());
-            }
+//            // Validate account belongs to an organisation
+//            if (!account.getOrganisation().getOrganisationId().equals(allocation.getReceipt().getOrganisation())) {
+//                throw new ItemNotFoundException("Account does not belong to this organisation: " + account.getAccountCode());
+//            }
 
             // Validate account exists in current budget distribution
             List<OrgBudgetDetailDistributionEntity> distributions = orgBudgetDetailDistributionRepo
@@ -315,7 +310,7 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
     }
 
     public BigDecimal getAccountAvailableBalance(UUID accountId) {
-        try {
+
             ChartOfAccounts account = chartOfAccountsRepo.findById(accountId).orElse(null);
             if (account == null) return BigDecimal.ZERO;
 
@@ -327,11 +322,12 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
                     .map(BudgetSpendingEntity::getSpentAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        System.out.println("Total Funded: " + totalFunded);
+        System.out.println("Total Spent: " + totalSpent);
+
             return totalFunded.subtract(totalSpent);
 
-        } catch (Exception e) {
-            return BigDecimal.ZERO;
-        }
+
     }
 
     private AvailableDetailAllocationResponse buildAccountAllocationResponse(
@@ -373,7 +369,10 @@ public class BudgetFundingServiceImpl implements BudgetFundingService {
         response.setTotalFundedAmount(totalFunded);
         response.setTotalSpentAmount(totalSpent);
         response.setSpentAmount(totalSpent); // Duplicate for compatibility
-        response.setAvailableBalance(totalFunded.subtract(totalSpent));
+        response.setAvailableBalance(getAccountAvailableBalance(account.getId()));
+
+        System.out.println("Available Balance--------->: " + getAccountAvailableBalance(account.getId()));
+
         response.setHasFunding(totalFunded.compareTo(BigDecimal.ZERO) > 0);
 
         // Budget remaining (distributed - funded - spent)

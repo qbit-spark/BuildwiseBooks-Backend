@@ -29,7 +29,7 @@ public class ApprovalIntegrationServiceImpl implements ApprovalIntegrationServic
     }
 
     @Override
-    public void handleApprovalComplete(ServiceType serviceType, UUID itemId, boolean approved) {
+    public void handleApprovalComplete(ServiceType serviceType, UUID itemId, boolean approved) throws AccessDeniedException, ItemNotFoundException {
         // Update item status based on an approval result
         itemStatusService.updateItemStatus(serviceType, itemId, approved);
 

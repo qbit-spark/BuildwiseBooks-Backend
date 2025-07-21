@@ -22,7 +22,6 @@ public interface ReceiptAllocationService {
     ReceiptAllocationResponse getAllocationDetails(UUID organisationId, UUID allocationId)
             throws ItemNotFoundException, AccessDeniedException;
 
-    void fundBudget(UUID organisationId, UUID allocationId) throws ItemNotFoundException, AccessDeniedException;
 
 }
 

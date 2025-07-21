@@ -9,5 +9,5 @@ import java.util.UUID;
 public interface ApprovalIntegrationService {
     void submitForApproval(ServiceType serviceType, UUID itemId, UUID organisationId, UUID projectId)
             throws ItemNotFoundException, AccessDeniedException;
-    void handleApprovalComplete(ServiceType serviceType, UUID itemId, boolean approved);
+    void handleApprovalComplete(ServiceType serviceType, UUID itemId, boolean approved) throws AccessDeniedException, ItemNotFoundException;
 }

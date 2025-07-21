@@ -221,65 +221,6 @@ public class ReceiptAllocationServiceImpl implements ReceiptAllocationService {
         return mapToDetailedResponse(allocation);
     }
 
-    @Override
-    public void fundBudget(UUID organisationId, UUID allocationId) throws ItemNotFoundException, AccessDeniedException {
-
-        ReceiptAllocationEntity receiptAllocationEntity = receiptAllocationRepo.findById(allocationId).orElseThrow(
-                () -> new ItemNotFoundException("Receipt allocation not found")
-        );
-
-        if (receiptAllocationEntity.getStatus() != AllocationStatus.APPROVED) {
-            throw new ItemNotFoundException("Receipt allocation is not approved");
-        }
-
-        List<BudgetFundingAllocationEntity> fundingAllocation = budgetFundingService.fundAccountsFromAllocation(organisationId, receiptAllocationEntity);
-
-        System.out.println("Funded allocations: " + fundingAllocation.size());
-
-    }
-
-
-    private ReceiptAllocationResponse mapToResponse(ReceiptAllocationEntity allocation) {
-        ReceiptAllocationResponse response = new ReceiptAllocationResponse();
-        response.setAllocationId(allocation.getAllocationId());
-        response.setReceiptId(allocation.getReceipt().getReceiptId());
-        response.setReceiptNumber(allocation.getReceipt().getReceiptNumber());
-        response.setReceiptAmount(allocation.getReceipt().getTotalAmount());
-        response.setStatus(allocation.getStatus());
-        response.setNotes(allocation.getNotes());
-
-        // Use the calculated methods from entity
-        response.setTotalAllocatedAmount(allocation.getTotalAllocatedAmount());
-        response.setRemainingAmount(allocation.getRemainingAmount());
-        response.setFullyAllocated(allocation.isFullyAllocated());
-
-        response.setRequestedBy(allocation.getRequestedBy());
-        response.setCreatedAt(allocation.getCreatedAt());
-
-        // Map allocation details - check for null to avoid NPE
-        if (allocation.getAllocationDetails() != null) {
-            List<ReceiptAllocationResponse.AllocationDetailResponse> detailResponses =
-                    allocation.getAllocationDetails().stream()
-                            .map(detail -> {
-                                ReceiptAllocationResponse.AllocationDetailResponse detailResponse =
-                                        new ReceiptAllocationResponse.AllocationDetailResponse();
-                                detailResponse.setDetailId(detail.getDetailId());
-                                detailResponse.setAccountId(detail.getAccount().getId());
-                                detailResponse.setAccountCode(detail.getAccount().getAccountCode());
-                                detailResponse.setAccountName(detail.getAccount().getName());
-                                detailResponse.setAllocatedAmount(detail.getAllocatedAmount());
-                                detailResponse.setDescription(detail.getDescription());
-                                return detailResponse;
-                            })
-                            .collect(Collectors.toList());
-
-            response.setAllocationDetails(detailResponses);
-        } else {
-            response.setAllocationDetails(new ArrayList<>());
-        }
-
-        return response;
-    }
 
 
     private AccountEntity getAuthenticatedAccount() throws ItemNotFoundException {

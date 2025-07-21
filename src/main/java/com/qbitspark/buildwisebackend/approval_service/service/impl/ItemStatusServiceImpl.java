@@ -3,12 +3,15 @@ package com.qbitspark.buildwisebackend.approval_service.service.impl;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.entity.OrgBudgetEntity;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.enums.OrgBudgetStatus;
 import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.repo.OrgBudgetRepo;
+import com.qbitspark.buildwisebackend.accounting_service.budget_mng.org_budget.service.BudgetFundingService;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptAllocationEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.entity.ReceiptEntity;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.AllocationStatus;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.enums.ReceiptStatus;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptAllocationRepo;
 import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.repo.ReceiptRepo;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.FundBudgetService;
+import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.ReceiptAllocationService;
 import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
 import com.qbitspark.buildwisebackend.approval_service.service.ItemStatusService;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.repo.InvoiceDocRepo;
@@ -17,6 +20,8 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.invoice.en
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.repo.VoucherRepo;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.entity.VoucherEntity;
 import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.enums.VoucherStatus;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.vendormng_service.entity.VendorEntity;
 import com.qbitspark.buildwisebackend.vendormng_service.enums.VendorStatus;
 import com.qbitspark.buildwisebackend.vendormng_service.repo.VendorsRepo;
@@ -37,6 +42,7 @@ public class ItemStatusServiceImpl implements ItemStatusService {
     private final OrgBudgetRepo budgetRepo;
     private final ReceiptAllocationRepo receiptAllocationRepo;
     private final ReceiptRepo receiptRepo;
+    private final FundBudgetService fundBudgetService;
 
     @Override
     public void updateItemStatus(ServiceType serviceType, UUID itemId, boolean approved) {
@@ -115,7 +121,7 @@ public class ItemStatusServiceImpl implements ItemStatusService {
     }
 
     @Override
-    public void executePostApprovalActions(ServiceType serviceType, UUID itemId) {
+    public void executePostApprovalActions(ServiceType serviceType, UUID itemId) throws AccessDeniedException, ItemNotFoundException {
         switch (serviceType) {
             case INVOICE -> {
                 // Invoice post-approval actions
@@ -124,6 +130,9 @@ public class ItemStatusServiceImpl implements ItemStatusService {
             case VOUCHER -> {
                 // Voucher post-approval actions
                 // Could update budget allocations, etc.
+            }
+            case RECEIPT_ALLOCATIONS_TO_BUDGET -> {
+               fundBudgetService.fundBudget(itemId);
             }
         }
     }
