@@ -59,16 +59,16 @@ public class VendorServiceImpl implements VendorService {
 
         permissionChecker.checkMemberPermission(member, "VENDORS","createVendor");
 
-        if (vendorsRepo.existsByNameIgnoreCaseAndOrganisationAndStatus(
-                request.getName(), organisation, VendorStatus.ACTIVE)) {
+        if (vendorsRepo.existsByNameIgnoreCaseAndOrganisation(
+                request.getName(), organisation)) {
             throw new ItemNotFoundException("Vendor with this name already exists");
         }
-        if (vendorsRepo.existsByEmailIgnoreCaseAndOrganisationAndStatus(
-                request.getEmail(), organisation, VendorStatus.ACTIVE)) {
+        if (vendorsRepo.existsByNameIgnoreCaseAndOrganisation(
+                request.getEmail(), organisation)) {
             throw new ItemNotFoundException("Vendor with this email already exists");
         }
-        if (vendorsRepo.existsByTinIgnoreCaseAndOrganisationAndStatus(
-                request.getTin(), organisation, VendorStatus.ACTIVE)) {
+        if (vendorsRepo.existsByNameIgnoreCaseAndOrganisation(
+                request.getTin(), organisation)) {
             throw new ItemNotFoundException("Vendor with this TIN already exists");
         }
 
@@ -81,7 +81,7 @@ public class VendorServiceImpl implements VendorService {
         vendor.setTin(request.getTin());
         vendor.setEmail(request.getEmail());
         vendor.setVendorType(request.getVendorType());
-        vendor.setStatus(VendorStatus.ACTIVE);
+        vendor.setStatus(VendorStatus.DRAFT);
         vendor.setOrganisation(organisation);
         vendor.setBankDetails(request.getBankDetails());
         vendor.setAttachmentIds(request.getAttachmentIds() != null ?
@@ -166,10 +166,10 @@ public class VendorServiceImpl implements VendorService {
 
         if (vendorType != null) {
             return vendorsRepo.findAllByOrganisationAndStatusAndVendorTypeOrderByName(
-                    organisation, VendorStatus.ACTIVE, vendorType);
+                    organisation, VendorStatus.APPROVED, vendorType);
         } else {
             return vendorsRepo.findAllByOrganisationAndStatusOrderByName(
-                    organisation, VendorStatus.ACTIVE);
+                    organisation, VendorStatus.APPROVED);
         }
     }
 
@@ -229,7 +229,7 @@ public class VendorServiceImpl implements VendorService {
         VendorEntity vendor = vendorsRepo.findByVendorIdAndOrganisation(vendorId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Vendor not found"));
 
-        vendor.setStatus(VendorStatus.INACTIVE);
+        vendor.setStatus(VendorStatus.BLACKLISTED);
         vendorsRepo.save(vendor);
 
     }
@@ -250,6 +250,11 @@ public class VendorServiceImpl implements VendorService {
         updateVendorEnumFields(vendor, request);
         updateVendorBankDetails(vendor, request.getBankDetails());
         updateVendorAttachments(vendor, request.getAttachmentIds());
+        updateVendorStatus(vendor);
+    }
+
+    private void updateVendorStatus(VendorEntity vendor) {
+            vendor.setStatus(VendorStatus.DRAFT);
     }
 
     private void updateVendorName(VendorEntity vendor, String newName,
@@ -349,12 +354,12 @@ public class VendorServiceImpl implements VendorService {
             throws ItemNotFoundException {
 
         boolean exists = switch (fieldName.toLowerCase()) {
-            case "name" -> vendorsRepo.existsByNameIgnoreCaseAndOrganisationAndStatusAndVendorIdNot(
-                    value, organisation, VendorStatus.ACTIVE, excludeVendorId);
-            case "email" -> vendorsRepo.existsByEmailIgnoreCaseAndOrganisationAndStatusAndVendorIdNot(
-                    value, organisation, VendorStatus.ACTIVE, excludeVendorId);
-            case "tin" -> vendorsRepo.existsByTinIgnoreCaseAndOrganisationAndStatusAndVendorIdNot(
-                    value, organisation, VendorStatus.ACTIVE, excludeVendorId);
+            case "name" -> vendorsRepo.existsByNameIgnoreCaseAndOrganisationAndVendorIdNot(
+                    value, organisation, excludeVendorId);
+            case "email" -> vendorsRepo.existsByNameIgnoreCaseAndOrganisationAndVendorIdNot(
+                    value, organisation,  excludeVendorId);
+            case "tin" -> vendorsRepo.existsByNameIgnoreCaseAndOrganisationAndVendorIdNot(
+                    value, organisation, excludeVendorId);
             default -> false;
         };
 

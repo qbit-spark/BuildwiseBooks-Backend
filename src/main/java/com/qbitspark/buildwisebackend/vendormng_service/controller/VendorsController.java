@@ -112,6 +112,7 @@ public class VendorsController {
             throws ItemNotFoundException, AccessDeniedException {
 
         List<VendorEntity> vendorEntities = vendorService.getVendorSummaries(organisationId, vendorType);
+
         List<VendorSummaryResponse> responses = vendorEntities.stream()
                 .map(this::mapToVendorSummaryResponse)
                 .collect(Collectors.toList());

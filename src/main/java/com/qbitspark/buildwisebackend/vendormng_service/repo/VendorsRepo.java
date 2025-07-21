@@ -20,6 +20,8 @@ public interface VendorsRepo extends JpaRepository<VendorEntity, UUID> {
     boolean existsByEmailIgnoreCaseAndOrganisationAndStatus(String email, OrganisationEntity organisation, VendorStatus status);
     boolean existsByTinIgnoreCaseAndOrganisationAndStatus(String tin, OrganisationEntity organisation, VendorStatus status);
 
+    boolean existsByNameIgnoreCaseAndOrganisationAndVendorIdNot(
+            String name, OrganisationEntity organisation, UUID vendorId);
     List<VendorEntity> findAllByOrganisationAndStatus(OrganisationEntity organisation, VendorStatus status);
     List<VendorEntity> findAllByOrganisation(OrganisationEntity organisation);
     Optional<VendorEntity> findByVendorIdAndOrganisation(UUID vendorId, OrganisationEntity organisation);
@@ -38,4 +40,7 @@ public interface VendorsRepo extends JpaRepository<VendorEntity, UUID> {
 
     boolean existsByTinIgnoreCaseAndOrganisationAndStatusAndVendorIdNot(
             String tin, OrganisationEntity organisation, VendorStatus status, UUID vendorId);
+
+    boolean existsByNameIgnoreCaseAndOrganisation(String name, OrganisationEntity organisation);
+
 }

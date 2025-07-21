@@ -53,7 +53,7 @@ public class VendorEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private VendorStatus status = VendorStatus.ACTIVE;
+    private VendorStatus status = VendorStatus.DRAFT;
 
     @Embedded
     private BankDetails bankDetails;
@@ -76,9 +76,6 @@ public class VendorEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Helper methods
-    public boolean isActive() {
-        return this.status == VendorStatus.ACTIVE;
-    }
+
 
 }
