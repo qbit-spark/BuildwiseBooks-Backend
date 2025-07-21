@@ -37,9 +37,6 @@ public class VendorsController {
             @RequestParam(value = "action") ActionType action)
             throws ItemNotFoundException, AccessDeniedException {
 
-        if (action == null) {
-            throw new IllegalArgumentException("Action parameter is required and cannot be null");
-        }
 
         VendorEntity vendorEntity = vendorService.createVendor(organisationId, request,action);
         VendorResponse response = mapToVendorResponse(vendorEntity);

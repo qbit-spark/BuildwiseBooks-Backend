@@ -5,7 +5,6 @@ public enum ServiceType {
     BUDGET,
     RECEIPT_ALLOCATIONS_TO_BUDGET,
     VENDORS,
-
     PROJECT,
     RECEIPT,
     INVOICE,

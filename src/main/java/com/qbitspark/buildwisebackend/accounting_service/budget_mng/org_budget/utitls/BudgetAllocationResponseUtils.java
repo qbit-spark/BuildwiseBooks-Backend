@@ -118,7 +118,7 @@ public class BudgetAllocationResponseUtils {
         BigDecimal availableForAllocation = totalBudgetAmount.subtract(totalFundedAmount);
 
         response.setTotalBudgetAmount(totalBudgetAmount);
-        response.setTotalAllocatedToDetails(totalBudgetAmount);
+        response.setTotalAllocatedToDetails(totalFundedAmount);
         response.setTotalSpentAmount(totalSpentAmount);
         response.setTotalCommittedAmount(BigDecimal.ZERO);
         response.setTotalRemainingAmount(totalRemainingAmount);
@@ -242,7 +242,7 @@ public class BudgetAllocationResponseUtils {
         OrgBudgetDetailDistributionEntity distribution = distributionMap.get(detail.getId());
         List<BudgetFundingAllocationEntity> fundingAllocations = fundingAllocationMap.get(detail.getId());
 
-        BigDecimal allocatedAmount = distribution != null ? distribution.getDistributedAmount() : BigDecimal.ZERO;
+        BigDecimal distributedAmount = distribution != null ? distribution.getDistributedAmount() : BigDecimal.ZERO;
         BigDecimal fundedAmount = fundingMap.getOrDefault(detail.getId(), BigDecimal.ZERO);
         BigDecimal spentAmount = spendingMap.getOrDefault(detail.getId(), BigDecimal.ZERO);
 
@@ -256,20 +256,20 @@ public class BudgetAllocationResponseUtils {
 
         // Set allocation ID from the latest funding allocation
         detailResponse.setAllocationId(latestFundingAllocation != null ? latestFundingAllocation.getFundingId() : null);
-        detailResponse.setAllocatedAmount(allocatedAmount);
+        detailResponse.setDistributedAmount(distributedAmount);
         detailResponse.setSpentAmount(spentAmount);
         detailResponse.setCommittedAmount(BigDecimal.ZERO);
-        detailResponse.setBudgetRemaining(fundedAmount.subtract(spentAmount));
+        detailResponse.setBudgetRemaining(distributedAmount.subtract(fundedAmount));
 
-        detailResponse.setAllocationStatus(determineDetailAccountStatus(allocatedAmount, fundedAmount, spentAmount));
-        detailResponse.setHasAllocation(allocatedAmount.compareTo(BigDecimal.ZERO) > 0);
+        detailResponse.setAllocationStatus(determineDetailAccountStatus(distributedAmount, fundedAmount, spentAmount));
+        detailResponse.setHasAllocation(distributedAmount.compareTo(BigDecimal.ZERO) > 0);
         detailResponse.setNotes(distribution != null ? distribution.getDescription() : "");
 
         // Calculate utilization percentage
-        if (allocatedAmount.compareTo(BigDecimal.ZERO) > 0) {
+        if (distributedAmount.compareTo(BigDecimal.ZERO) > 0) {
             detailResponse.setUtilizationPercentage(
                     spentAmount.multiply(BigDecimal.valueOf(100))
-                            .divide(allocatedAmount, 2, RoundingMode.HALF_UP));
+                            .divide(distributedAmount, 2, RoundingMode.HALF_UP));
         } else {
             detailResponse.setUtilizationPercentage(BigDecimal.ZERO);
         }

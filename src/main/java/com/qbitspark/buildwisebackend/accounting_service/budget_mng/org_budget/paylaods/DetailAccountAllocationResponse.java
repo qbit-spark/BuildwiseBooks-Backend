@@ -20,7 +20,7 @@ public class DetailAccountAllocationResponse {
     private String detailAccountName;
     private String detailDescription;
     private UUID allocationId;
-    private BigDecimal allocatedAmount;
+    private BigDecimal distributedAmount;
     private BigDecimal spentAmount;
     private BigDecimal committedAmount;
     private BigDecimal budgetRemaining;
