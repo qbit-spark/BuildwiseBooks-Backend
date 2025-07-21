@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface BudgetFundingService {
-
     List<BudgetFundingAllocationEntity> fundAccountsFromAllocation(ReceiptAllocationEntity allocation) throws ItemNotFoundException, AccessDeniedException;
 
     List<AvailableDetailAllocationResponse> getAvailableDetailAllocations(UUID organisationId) throws ItemNotFoundException, AccessDeniedException;
