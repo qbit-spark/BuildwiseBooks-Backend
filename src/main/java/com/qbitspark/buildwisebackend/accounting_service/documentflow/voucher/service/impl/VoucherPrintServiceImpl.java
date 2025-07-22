@@ -459,13 +459,13 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
         // Since we're skipping the first step, adjust the logic
         // stepOrder 2 becomes first approval, stepOrder 3+ becomes subsequent approvals
         if (roleName.toLowerCase().contains("finance")) {
-            return "Reviewed By";
+            return "Examined By";
         } else if (roleName.toLowerCase().contains("manager") ||
                 roleName.toLowerCase().contains("director") ||
                 roleName.toLowerCase().contains("ceo")) {
             return "Approved By";
         } else if (stepOrder == 2) { // This is now the first approval step we show
-            return "Reviewed By";
+            return "Examined By";
         } else {
             return "Approved By";
         }
