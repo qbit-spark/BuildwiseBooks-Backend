@@ -471,7 +471,6 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
         }
     }
 
-    // ... (keep all your existing helper methods)
 
     private Map<String, BigDecimal> calculateTotals(VoucherEntity voucher) {
         BigDecimal grossAmount = voucher.getTotalAmount();
