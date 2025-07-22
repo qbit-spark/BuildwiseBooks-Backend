@@ -26,6 +26,7 @@ import org.thymeleaf.context.Context;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
@@ -138,6 +139,21 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
             List<ApprovalSignature> signatures = getApprovalSignatures(voucher);
             context.setVariable("approvalSignatures", signatures);
 
+            // NEW: Add University and Company logos
+            String universityLogo = getUniversityLogoBase64();
+            String companyLogo = getCompanyLogoBase64();
+            context.setVariable("universityLogoImage", universityLogo);
+            context.setVariable("companyLogoImage", companyLogo);
+
+            log.info("University logo set: {}", universityLogo != null ? "Yes" : "No");
+            log.info("Company logo set: {}", companyLogo != null ? "Yes" : "No");
+            if (universityLogo != null) {
+                log.info("University logo length: {} characters", universityLogo.length());
+            }
+            if (companyLogo != null) {
+                log.info("Company logo length: {} characters", companyLogo.length());
+            }
+
             // Watermark for draft status
             context.setVariable("showWatermark", voucher.getStatus().name().equals("DRAFT"));
 
@@ -153,6 +169,68 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
             log.error("Error generating HTML for voucher: {}", voucher.getVoucherNumber(), e);
             throw new RuntimeException("Failed to generate HTML", e);
         }
+    }
+
+
+    private String getUniversityLogoBase64() {
+        try {
+            // Load from classpath resources - full path from resources root
+            InputStream imageStream = getClass().getResourceAsStream("/must_logo.png");
+            if (imageStream != null) {
+                byte[] imageBytes = imageStream.readAllBytes();
+
+                // Validate the PNG header
+                if (imageBytes.length > 8 &&
+                        imageBytes[0] == (byte)0x89 && imageBytes[1] == 0x50 &&
+                        imageBytes[2] == 0x4E && imageBytes[3] == 0x47) {
+
+                    String base64 = java.util.Base64.getEncoder().encodeToString(imageBytes);
+                    log.info("University logo loaded successfully from /must_logo.png, size: {} bytes", imageBytes.length);
+                    return "data:image/png;base64," + base64;
+                } else {
+                    log.warn("University logo file is not a valid PNG format");
+                }
+            } else {
+                log.warn("University logo not found at /must_logo.png - will use template fallback");
+                return null; // Let template handle the fallback
+            }
+
+        } catch (Exception e) {
+            log.error("Error loading university logo", e);
+        }
+
+        return null; // Use template fallback
+    }
+
+
+    private String getCompanyLogoBase64() {
+        try {
+            // Load from classpath resources - full path from resources root
+            InputStream imageStream = getClass().getResourceAsStream("/mcb_logo.png");
+            if (imageStream != null) {
+                byte[] imageBytes = imageStream.readAllBytes();
+
+                // Validate the PNG header
+                if (imageBytes.length > 8 &&
+                        imageBytes[0] == (byte)0x89 && imageBytes[1] == 0x50 &&
+                        imageBytes[2] == 0x4E && imageBytes[3] == 0x47) {
+
+                    String base64 = java.util.Base64.getEncoder().encodeToString(imageBytes);
+                    log.info("Company logo loaded successfully from /mcb_logo.png, size: {} bytes", imageBytes.length);
+                    return "data:image/png;base64," + base64;
+                } else {
+                    log.warn("Company logo file is not a valid PNG format");
+                }
+            } else {
+                log.warn("Company logo not found at /mcb_logo.png - will use template fallback");
+                return null; // Let template handle the fallback
+            }
+
+        } catch (Exception e) {
+            log.error("Error loading company logo", e);
+        }
+
+        return null; // Use template fallback
     }
 
     /**
@@ -179,11 +257,13 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
             if (approvalInstanceOpt.isPresent()) {
                 ApprovalInstance instance = approvalInstanceOpt.get();
 
-                // Get all step instances
+                // Get all step instances, but skip the first approval step
                 List<ApprovalStepInstance> steps = approvalStepInstanceRepo
                         .findByApprovalInstanceOrderByStepOrderAsc(instance);
 
-                for (ApprovalStepInstance step : steps) {
+                // Skip the first step (index 0) and process the remaining steps
+                for (int i = 1; i < steps.size(); i++) {
+                    ApprovalStepInstance step = steps.get(i);
                     ApprovalSignature signature = buildSignatureFromStep(step);
                     if (signature != null) {
                         signatures.add(signature);
@@ -376,14 +456,15 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
      * Determine appropriate role title for signature section
      */
     private String determineRoleTitle(String roleName, int stepOrder) {
-        // You can customize this logic based on your business needs
+        // Since we're skipping the first step, adjust the logic
+        // stepOrder 2 becomes first approval, stepOrder 3+ becomes subsequent approvals
         if (roleName.toLowerCase().contains("finance")) {
             return "Reviewed By";
         } else if (roleName.toLowerCase().contains("manager") ||
                 roleName.toLowerCase().contains("director") ||
                 roleName.toLowerCase().contains("ceo")) {
             return "Approved By";
-        } else if (stepOrder == 1) {
+        } else if (stepOrder == 2) { // This is now the first approval step we show
             return "Reviewed By";
         } else {
             return "Approved By";
