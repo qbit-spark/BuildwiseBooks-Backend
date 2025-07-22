@@ -69,7 +69,7 @@
             display: table;
             width: 100%;
             margin: 15px 0;
-            border-top: 2px solid #000;
+            border-top: 1px solid #000;
             border-bottom: 1px solid #000;
             padding: 8px 0;
         }
@@ -310,15 +310,11 @@
         </td>
 
 
-
-
-        <td class="amount-cell" th:text="${#numbers.formatDecimal(beneficiary.amount, 0, 2)}">0.00</td>
-
-
+        <td class="amount-cell" th:text="${#numbers.formatDecimal(beneficiary.amount, 0, 'COMMA', 2, 'POINT')}">0.00</td>
 
         <td>
             <div th:each="deduction : ${beneficiary.deductions}" th:if="${beneficiary.deductions != null}">
-                <span th:text="${deduction.deductName + ' (' + deduction.percentage + '%): ' + #numbers.formatDecimal(deduction.deductionAmount, 0, 2)}">Deduction</span>
+                <span th:text="${deduction.deductName + ' (' + deduction.percentage + '%): ' + #numbers.formatDecimal(deduction.deductionAmount, 0, 'COMMA', 2, 'POINT')}">Deduction</span>
             </div>
             <span th:if="${beneficiary.deductions == null or beneficiary.deductions.isEmpty()}">None</span>
         </td>

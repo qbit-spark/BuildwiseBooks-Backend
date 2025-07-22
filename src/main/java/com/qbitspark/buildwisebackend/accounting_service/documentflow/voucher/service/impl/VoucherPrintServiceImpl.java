@@ -250,14 +250,14 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
                     .isSigned(true)
                     .build());
 
-            // Get approval instance for this voucher
+            // Get an approval instance for this voucher
             Optional<ApprovalInstance> approvalInstanceOpt = approvalInstanceRepo
                     .findByServiceNameAndItemId(ServiceType.VOUCHER, voucher.getId());
 
             if (approvalInstanceOpt.isPresent()) {
                 ApprovalInstance instance = approvalInstanceOpt.get();
 
-                // Get all step instances, but skip the first approval step
+                // Get all step instances but skip the first approval step
                 List<ApprovalStepInstance> steps = approvalStepInstanceRepo
                         .findByApprovalInstanceOrderByStepOrderAsc(instance);
 
@@ -274,7 +274,7 @@ public class VoucherPrintServiceImpl implements VoucherPrintService {
             // If no approval workflow exists or no approvals found, add default placeholders
             if (signatures.size() == 1) { // Only creator
                 signatures.add(ApprovalSignature.builder()
-                        .roleTitle("Reviewed By")
+                        .roleTitle("Examined By")
                         .userName("")
                         .roleName("Finance Manager")
                         .signedDate("")
