@@ -41,12 +41,9 @@ public class AccountServiceImpl implements AccountService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JWTProvider tokenProvider;
-    private final EmailOTPService emailOTPService;
     private final UsernameGenerationUtils usernameGenerationUtils;
     private final TempTokenService tempTokenService;
     private final GlobeMailService globeMailService;
-
-
     @Override
     public String registerAccount(CreateAccountRequest createAccountRequest) throws Exception {
 
@@ -230,22 +227,6 @@ public class AccountServiceImpl implements AccountService {
     public AccountEntity getAccountByID(UUID userId) throws ItemNotFoundException {
         return accountRepo.findById(userId).orElseThrow(() -> new ItemNotFoundException("No such user"));
     }
-
-    private String generateUserName(String email) {
-
-        StringBuilder username = new StringBuilder();
-        for (int i = 0; i < email.length(); i++) {
-            char c = email.charAt(i);
-            if (c != '@') {
-                username.append(c);
-            } else {
-                break;
-            }
-        }
-        return username.toString();
-    }
-
-
     private boolean isPhoneNumber(String input) {
         // Regular expression pattern for validating phone numbers
         String phoneRegex = "^\\+(?:[0-9] ?){6,14}[0-9]$";
