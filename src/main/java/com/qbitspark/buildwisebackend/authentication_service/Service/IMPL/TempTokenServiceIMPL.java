@@ -95,7 +95,7 @@ public class TempTokenServiceIMPL implements TempTokenService {
     @Transactional
     public AccountEntity validateTempTokenAndOTP(String tempToken, String otpCode) throws VerificationException, ItemNotFoundException, RandomExceptions {
 
-        // Hash the provided token to find it in database
+        // Hash the provided token to find it in a database
         String tokenHash = hashString(tempToken);
 
         // Find the temp token
@@ -129,7 +129,17 @@ public class TempTokenServiceIMPL implements TempTokenService {
         tempTokenEntity.markAsUsed();
         tempTokenRepository.save(tempTokenEntity);
 
-        return tempTokenEntity.getAccount();
+        AccountEntity account = tempTokenEntity.getAccount();
+
+        //Todo: Take action based in purpose of token
+        switch (tempTokenEntity.getPurpose()) {
+
+            case REGISTRATION_OTP -> actAfterRegistrationOtpValid(account);
+            case LOGIN_OTP -> actAfterLoginOtpValid();
+
+        }
+
+        return account;
     }
 
     @Override
@@ -216,4 +226,12 @@ public class TempTokenServiceIMPL implements TempTokenService {
             throw new RandomExceptions("Error hashing token: " + e.getMessage());
         }
     }
+
+    private void actAfterRegistrationOtpValid(AccountEntity account) {
+    }
+
+    private void actAfterLoginOtpValid() {
+    }
+
+
 }
