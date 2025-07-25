@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.authentication_service.Service.IMPL;
 
+import com.qbitspark.buildwisebackend.authentication_service.enums.TempTokenPurpose;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.authentication_service.payloads.AccountLoginRequest;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
@@ -39,33 +40,53 @@ public class AccountServiceIMPL implements AccountService {
     private final JWTProvider tokenProvider;
     private final EmailOTPService emailOTPService;
 
-
-
     @Override
-    public AccountEntity registerAccount(CreateAccountRequest createAccountRequest) throws ItemReadyExistException, RandomExceptions, ItemNotFoundException {
+    public String registerAccount(CreateAccountRequest createAccountRequest) throws ItemReadyExistException, RandomExceptions, ItemNotFoundException {
 
-        //check the existence of user
-        if (accountRepo.existsByPhoneNumberOrEmailOrUserName(createAccountRequest.getPhoneNumber(),
+        // Generate a unique username from email using the new utility
+        String generatedUsername = usernameGenerationUtils.generateUniqueUsernameFromEmail(createAccountRequest.getEmail());
+
+        // Check the existence of user by email, phone, or generated username
+        if (accountRepo.existsByPhoneNumberOrEmailOrUserName(
+                createAccountRequest.getPhoneNumber(),
                 createAccountRequest.getEmail(),
-                generateUserName(createAccountRequest.getEmail()))) {
+                generatedUsername)) {
             throw new ItemReadyExistException("User with provided credentials already exist, please login");
         }
 
+        // Create account entity but DON'T save it yet
         AccountEntity account = new AccountEntity();
-        account.setUserName(generateUserName(createAccountRequest.getEmail()));
+        account.setUserName(generatedUsername);
         account.setCreatedAt(LocalDateTime.now());
         account.setEditedAt(LocalDateTime.now());
         account.setIsVerified(false);
+        account.setIsEmailVerified(false);
+        account.setIsPhoneVerified(false);
         account.setEmail(createAccountRequest.getEmail());
         account.setPhoneNumber(createAccountRequest.getPhoneNumber());
         account.setPassword(passwordEncoder.encode(createAccountRequest.getPassword()));
-        //set the user role
+
+        // Set the user role
         Set<Roles> roles = new HashSet<>();
-        Roles userRoles = rolesRepository.findByRoleName("ROLE_NORMAL_USER").get();
+        Roles userRoles = rolesRepository.findByRoleName("ROLE_NORMAL_USER")
+                .orElseThrow(() -> new ItemNotFoundException("Default role not found"));
         roles.add(userRoles);
         account.setRoles(roles);
 
+        // Save the account first (so we have an ID for temp token)
         AccountEntity savedAccount = accountRepo.save(account);
+
+        // Generate OTP
+        String otpCode = generateOtpCode();
+
+        // Create a temp token for registration verification
+        String tempToken = tempTokenService.createTempToken(
+                savedAccount,  // Now we have a saved account
+                TempTokenPurpose.REGISTRATION_OTP,
+                createAccountRequest.getEmail(),
+                otpCode
+        );
+
 
         //Check a selected verification channel
         switch (createAccountRequest.getVerificationChannel()) {
@@ -93,15 +114,17 @@ public class AccountServiceIMPL implements AccountService {
             case ALL_CHANNELS -> {
                 System.out.println("All channels verification is not implemented yet.");
             }
-            default -> {
-                //Send the OTP via Email
-                emailOTPService.generateAndSendEmailOTP(savedAccount,
-                        "Welcome to BuildWise Books Support!", "Please use the following OTP to complete your registration: ");
-            }
 
+            default -> emailOTPService.sendRegistrationOTP(
+                    savedAccount.getEmail(),
+                    otpCode,
+                    savedAccount.getUserName(),
+                    "Welcome to BuildWise Books Support!",
+                    "Please use the following OTP to complete your registration: "
+            );
         }
 
-        return savedAccount;
+        return tempToken;
     }
 
     @Override
@@ -242,5 +265,10 @@ public class AccountServiceIMPL implements AccountService {
                 .collect(Collectors.toList());
     }
 
+    private String generateOtpCode() {
+        Random random = new Random();
+        int otp = random.nextInt(900000) + 100000;
+        return String.valueOf(otp);
+    }
 
 }
