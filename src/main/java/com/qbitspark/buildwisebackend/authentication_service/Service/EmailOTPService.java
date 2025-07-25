@@ -10,6 +10,8 @@ import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuil
 public interface EmailOTPService {
     void generateAndSendEmailOTP(AccountEntity userAuthEntity, String emailHeader, String instructionText) throws RandomExceptions, ItemNotFoundException;
 
+    void sendRegistrationOTP(String email, String otpCode, String firstName, String emailHeader, String instructionText) throws RandomExceptions, ItemNotFoundException;
+
     void generateAndSendPasswordResetEmail(AccountEntity userAuthEntity, String emailHeader, String instructionText) throws RandomExceptions, ItemNotFoundException;
 
     //Only this method should return GlobalJsonResponseBody direct from the service

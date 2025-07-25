@@ -1,10 +1,7 @@
 package com.qbitspark.buildwisebackend.authentication_service.payloads;
 
 import com.qbitspark.buildwisebackend.authentication_service.enums.VerificationChannels;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
@@ -28,6 +25,16 @@ public class CreateAccountRequest {
 
     @Email(message = "Email should be valid")
     private String email;
+
+    @NotBlank(message = "First name is required")
+    @Max(value = 30, message = "First name should be less than 30 characters")
+    private String firstName;
+    @Max(value = 30, message = "Last name should be less than 30 characters")
+    @NotBlank(message = "Last name is required")
+    private String lastName;
+    @NotBlank(message = "Middle name is required")
+    @Max(value = 30, message = "Middle name should be less than 30 characters")
+    private String middleName;
 
     @NotNull(message = "Verification channel is mandatory")
     private VerificationChannels verificationChannel;

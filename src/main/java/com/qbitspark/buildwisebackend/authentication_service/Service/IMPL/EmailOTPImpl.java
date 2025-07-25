@@ -22,12 +22,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Random;
 
 
 @RequiredArgsConstructor
 @Service
-public class EmailOTPIMPL implements EmailOTPService {
+public class EmailOTPImpl implements EmailOTPService {
 
 
     private final UserOTPRepository otpRepository;
@@ -38,50 +37,29 @@ public class EmailOTPIMPL implements EmailOTPService {
     private final GlobeMailService globeMailService;
     private final PasswordResetOTPRepo passwordResetOTPRepo;
 
-
     @Value("${otp.expire_time.minutes}")
     private String OTP_EXPIRE_TIME;
 
+
     @Override
     public void generateAndSendEmailOTP(AccountEntity userAuthEntity, String emailHeader, String instructionText) throws RandomExceptions, ItemNotFoundException {
-        // Find the account by email
-        AccountEntity account = accountRepo.findByEmail(userAuthEntity.getEmail())
-                .orElseThrow(() -> new ItemNotFoundException("No such account with the given email"));
 
-        // Check if there's an existing OTP
-        UserOTP existingOTP = otpRepository.findUserOTPByUser(account);
+    }
 
-        // Generate a new OTP code
-        String newOtpCode = generateOtpCode();
+    @Override
+    public void sendRegistrationOTP(String email, String otpCode, String firstName, String emailHeader, String instructionText) throws RandomExceptions, ItemNotFoundException {
 
-        if (existingOTP == null) {
-            // Create a new OTP entry if none exists for the account
-            existingOTP = new UserOTP();
-            existingOTP.setUser(account);
-            existingOTP.setSentTime(LocalDateTime.now());
-        }
-        // Update OTP details
-        existingOTP.setOtpCode(newOtpCode);
-        existingOTP.setSentTime(LocalDateTime.now());
-
-        // Save the OTP to the repository
-        otpRepository.save(existingOTP);
-
-        //Update account verification status
-        account.setIsEmailVerified(true);
-        accountRepo.save(account);
-
-        // Send the OTP via centralized email service - SIMPLE!
         try {
             globeMailService.sendOTPEmail(
-                    account.getEmail(),
-                    newOtpCode,
-                    account.getUserName(),
+                    email,
+                    otpCode,
+                    firstName,
                     emailHeader,
                     instructionText);
         } catch (Exception ex) {
-            throw new RandomExceptions("Failed to send verification email to account: " + account.getEmail() + ". " + ex.getMessage());
+            throw new RandomExceptions("Failed to send verification email to account: " + email + ". " + ex.getMessage());
         }
+
     }
 
     @Override
@@ -98,7 +76,7 @@ public class EmailOTPIMPL implements EmailOTPService {
         PasswordResetOTPEntity existingOTP = passwordResetOTPRepo.findPasswordResetOTPEntitiesByAccount(account);
 
         // Generate a new OTP code
-        String newOtpCode = generateOtpCode();
+        String newOtpCode = "generateOtpCode()";
 
         if (existingOTP == null) {
             // Create a new OTP entry if none exists for the account
@@ -190,10 +168,5 @@ public class EmailOTPIMPL implements EmailOTPService {
     }
 
 
-    private String generateOtpCode() {
-        // Generate a random OTP code of 6 digits
-        Random random = new Random();
-        int otp = random.nextInt(900000) + 100000;
-        return String.valueOf(otp);
-    }
+
 }

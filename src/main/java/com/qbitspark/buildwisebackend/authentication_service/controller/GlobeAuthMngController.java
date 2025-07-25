@@ -1,20 +1,21 @@
 package com.qbitspark.buildwisebackend.authentication_service.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.qbitspark.buildwisebackend.authentication_service.enums.VerificationChannels;
+import com.qbitspark.buildwisebackend.authentication_service.payloads.*;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
-import com.qbitspark.buildwisebackend.authentication_service.payloads.RefreshTokenRequest;
-import com.qbitspark.buildwisebackend.authentication_service.payloads.AccountLoginRequest;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.authentication_service.payloads.CreateAccountRequest;
-import com.qbitspark.buildwisebackend.authentication_service.payloads.LoginResponse;
-import com.qbitspark.buildwisebackend.authentication_service.payloads.RefreshTokenResponse;
 import com.qbitspark.buildwisebackend.authentication_service.Service.AccountService;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import static com.qbitspark.buildwisebackend.authentication_service.enums.VerificationChannels.WHATSAPP;
 
 @AllArgsConstructor
 @RestController
@@ -24,16 +25,26 @@ public class GlobeAuthMngController {
     private final AccountService accountService;
 
     @PostMapping("/register")
-    public ResponseEntity<GlobeSuccessResponseBuilder> accountRegistration(@Valid @RequestBody CreateAccountRequest createAccountRequest) throws RandomExceptions, JsonProcessingException, ItemReadyExistException, ItemNotFoundException {
+    public ResponseEntity<GlobeSuccessResponseBuilder> accountRegistration(
+            @Valid @RequestBody CreateAccountRequest createAccountRequest)
+            throws Exception {
 
-        accountService.registerAccount(createAccountRequest);
+        String tempToken = accountService.registerAccount(createAccountRequest);
 
-        GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-                "User account created successful, please verify your email"
+        RegistrationResponse registrationResponse = new RegistrationResponse(
+                tempToken,
+                "OTP has been sent to your " + getChannelName(createAccountRequest.getVerificationChannel()),
+                LocalDateTime.now().plusMinutes(10)
         );
 
-        return ResponseEntity.ok(response);
+        GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
+                "Registration initiated successfully. Please verify with OTP.",
+                registrationResponse
+        );
+
+        return ResponseEntity.status(201).body(response);
     }
+
 
     @PostMapping("/login")
     public ResponseEntity<GlobeSuccessResponseBuilder> accountLogin(@Valid @RequestBody AccountLoginRequest accountLoginRequest) throws VerificationException, ItemNotFoundException {
@@ -85,5 +96,16 @@ public class GlobeAuthMngController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    private String getChannelName(VerificationChannels channel) {
+        return switch (channel) {
+            case EMAIL -> "email";
+            case SMS -> "phone";
+            case WHATSAPP -> "WhatsApp";
+            case VOICE_CALL -> "phone via voice call";
+            case PUSH_NOTIFICATION -> "device";
+            default -> "email";
+        };
     }
 }

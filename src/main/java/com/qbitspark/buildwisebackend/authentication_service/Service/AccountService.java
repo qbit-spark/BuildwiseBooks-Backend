@@ -13,7 +13,7 @@ import java.util.UUID;
 
 public interface AccountService {
 
-    AccountEntity registerAccount(CreateAccountRequest createAccountRequest) throws JsonProcessingException, ItemReadyExistException, RandomExceptions, ItemNotFoundException;
+    String registerAccount(CreateAccountRequest createAccountRequest) throws Exception;
 
     LoginResponse loginAccount(AccountLoginRequest accountLoginRequest) throws VerificationException, ItemNotFoundException;
 

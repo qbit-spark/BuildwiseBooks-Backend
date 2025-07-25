@@ -1,6 +1,9 @@
 package com.qbitspark.buildwisebackend.authentication_service.Service.IMPL;
 
+import com.qbitspark.buildwisebackend.authentication_service.Service.TempTokenService;
 import com.qbitspark.buildwisebackend.authentication_service.enums.TempTokenPurpose;
+import com.qbitspark.buildwisebackend.authentication_service.utils.UsernameGenerationUtils;
+import com.qbitspark.buildwisebackend.emails_service.GlobeMailService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.authentication_service.payloads.AccountLoginRequest;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
@@ -31,7 +34,7 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
-public class AccountServiceIMPL implements AccountService {
+public class AccountServiceImpl implements AccountService {
 
     private final AccountRepo accountRepo;
     private final RolesRepository rolesRepository;
@@ -39,14 +42,18 @@ public class AccountServiceIMPL implements AccountService {
     private final AuthenticationManager authenticationManager;
     private final JWTProvider tokenProvider;
     private final EmailOTPService emailOTPService;
+    private final UsernameGenerationUtils usernameGenerationUtils;
+    private final TempTokenService tempTokenService;
+    private final GlobeMailService globeMailService;
+
 
     @Override
-    public String registerAccount(CreateAccountRequest createAccountRequest) throws ItemReadyExistException, RandomExceptions, ItemNotFoundException {
+    public String registerAccount(CreateAccountRequest createAccountRequest) throws Exception {
 
         // Generate a unique username from email using the new utility
         String generatedUsername = usernameGenerationUtils.generateUniqueUsernameFromEmail(createAccountRequest.getEmail());
 
-        // Check the existence of user by email, phone, or generated username
+        // Check the existence of a user by email, phone, or generated username
         if (accountRepo.existsByPhoneNumberOrEmailOrUserName(
                 createAccountRequest.getPhoneNumber(),
                 createAccountRequest.getEmail(),
@@ -54,7 +61,7 @@ public class AccountServiceIMPL implements AccountService {
             throw new ItemReadyExistException("User with provided credentials already exist, please login");
         }
 
-        // Create account entity but DON'T save it yet
+        // Create an account entity but DON'T save it yet
         AccountEntity account = new AccountEntity();
         account.setUserName(generatedUsername);
         account.setCreatedAt(LocalDateTime.now());
@@ -62,6 +69,9 @@ public class AccountServiceIMPL implements AccountService {
         account.setIsVerified(false);
         account.setIsEmailVerified(false);
         account.setIsPhoneVerified(false);
+        account.setFirstName(createAccountRequest.getFirstName());
+        account.setLastName(createAccountRequest.getLastName());
+        account.setMiddleName(createAccountRequest.getMiddleName());
         account.setEmail(createAccountRequest.getEmail());
         account.setPhoneNumber(createAccountRequest.getPhoneNumber());
         account.setPassword(passwordEncoder.encode(createAccountRequest.getPassword()));
@@ -91,7 +101,7 @@ public class AccountServiceIMPL implements AccountService {
         //Check a selected verification channel
         switch (createAccountRequest.getVerificationChannel()) {
             case EMAIL -> //Send the OTP via email
-                    emailOTPService.generateAndSendEmailOTP(savedAccount, "Account Verification", "Please use the following OTP to complete your registration: ");
+                globeMailService.sendOTPEmail(savedAccount.getEmail(), otpCode, savedAccount.getFirstName(), "Welcome to BuildWise Books Support!", "Please use the following OTP to complete your registration: ");
             case SMS -> {
                 System.out.println("SMS verification is not implemented yet.");
             }
@@ -115,13 +125,8 @@ public class AccountServiceIMPL implements AccountService {
                 System.out.println("All channels verification is not implemented yet.");
             }
 
-            default -> emailOTPService.sendRegistrationOTP(
-                    savedAccount.getEmail(),
-                    otpCode,
-                    savedAccount.getUserName(),
-                    "Welcome to BuildWise Books Support!",
-                    "Please use the following OTP to complete your registration: "
-            );
+            default -> globeMailService.sendOTPEmail(savedAccount.getEmail(), otpCode, savedAccount.getFirstName(), "Welcome to BuildWise Books Support!", "Please use the following OTP to complete your registration: ");
+
         }
 
         return tempToken;
