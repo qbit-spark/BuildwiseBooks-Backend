@@ -1,19 +1,29 @@
 package com.qbitspark.buildwisebackend.authentication_service.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.qbitspark.buildwisebackend.authentication_service.Service.TempTokenService;
+import com.qbitspark.buildwisebackend.authentication_service.entity.Roles;
 import com.qbitspark.buildwisebackend.authentication_service.enums.VerificationChannels;
 import com.qbitspark.buildwisebackend.authentication_service.payloads.*;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.authentication_service.Service.AccountService;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
+import com.qbitspark.buildwisebackend.globesecurity.JWTProvider;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.qbitspark.buildwisebackend.authentication_service.enums.VerificationChannels.WHATSAPP;
 
@@ -23,6 +33,8 @@ import static com.qbitspark.buildwisebackend.authentication_service.enums.Verifi
 public class GlobeAuthMngController {
 
     private final AccountService accountService;
+    private final TempTokenService tempTokenService;
+    private final JWTProvider tokenProvider;
 
     @PostMapping("/register")
     public ResponseEntity<GlobeSuccessResponseBuilder> accountRegistration(
@@ -43,6 +55,43 @@ public class GlobeAuthMngController {
         );
 
         return ResponseEntity.status(201).body(response);
+    }
+
+
+    @PostMapping("/verify-registration-otp")
+    public ResponseEntity<GlobeSuccessResponseBuilder> verifyRegistrationOTP(
+            @Valid @RequestBody VerifyRegistrationOTPRequest request)
+            throws VerificationException, ItemNotFoundException, RandomExceptions {
+
+        // Validate the temp token and OTP using the TempTokenService
+        AccountEntity account = tempTokenService.validateTempTokenAndOTP(
+                request.getTempToken(),
+                request.getOtpCode()
+        );
+
+        // Generate access and refresh tokens for the newly verified user
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                account.getUserName(),
+                null,
+                mapRolesToAuthorities(account.getRoles())
+        );
+
+        String accessToken = tokenProvider.generateAccessToken(authentication);
+        String refreshToken = tokenProvider.generateRefreshToken(authentication);
+
+        // Create a login response with tokens and user data
+        LoginResponse loginResponse = new LoginResponse();
+        loginResponse.setAccessToken(accessToken);
+        loginResponse.setRefreshToken(refreshToken);
+        loginResponse.setUserData(account);
+
+        // Build success response
+        GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
+                "Registration completed successfully. You are now logged in.",
+                loginResponse
+        );
+
+        return ResponseEntity.ok(response);
     }
 
 
@@ -107,5 +156,11 @@ public class GlobeAuthMngController {
             case PUSH_NOTIFICATION -> "device";
             default -> "email";
         };
+    }
+
+    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Set<Roles> roles) {
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority(role.getRoleName()))
+                .collect(Collectors.toList());
     }
 }

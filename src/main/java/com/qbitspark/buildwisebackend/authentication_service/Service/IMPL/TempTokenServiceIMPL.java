@@ -1,5 +1,6 @@
 package com.qbitspark.buildwisebackend.authentication_service.Service.IMPL;
 
+import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.TempTokenRepository;
 import com.qbitspark.buildwisebackend.authentication_service.Service.TempTokenService;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
@@ -30,6 +31,7 @@ public class TempTokenServiceIMPL implements TempTokenService {
     private final TempTokenRepository tempTokenRepository;
     private final JWTProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
+    private final AccountRepo accountRepo;
 
     @Value("${temp.token.expiry.minutes:10}")
     private int tempTokenExpiryMinutes;
@@ -228,9 +230,17 @@ public class TempTokenServiceIMPL implements TempTokenService {
     }
 
     private void actAfterRegistrationOtpValid(AccountEntity account) {
+        // Mark the user as verified and set email as verified
+        account.setIsVerified(true);
+        account.setIsEmailVerified(true);
+        account.setEditedAt(LocalDateTime.now());
+
+        // Save the updated account
+        accountRepo.save(account);
     }
 
     private void actAfterLoginOtpValid() {
+        // Handle login OTP validation actions if needed
     }
 
 
