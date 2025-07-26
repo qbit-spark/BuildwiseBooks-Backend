@@ -144,7 +144,7 @@ public class GlobeAuthMngController {
     }
 
 
-    @PostMapping("/psw-request-otp")
+    @PostMapping("/psw-reset-otp")
     public ResponseEntity<GlobeSuccessResponseBuilder> requestOTP(@Valid @RequestBody EmailPasswordResetRequest requestOTPBody) throws RandomExceptions, JsonProcessingException, ItemReadyExistException, ItemNotFoundException {
 
         String newTempToken = tempTokenService.sendPSWDResetOTP(requestOTPBody.getEmail());
