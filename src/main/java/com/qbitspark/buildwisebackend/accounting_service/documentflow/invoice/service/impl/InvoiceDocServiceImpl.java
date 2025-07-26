@@ -90,7 +90,7 @@ public class InvoiceDocServiceImpl implements InvoiceDocService {
         ClientEntity client = project.getClient();
         String invoiceNumber = invoiceNumberService.generateInvoiceNumber(project, client, organisation);
 
-        // Create invoice (same as before)
+        // Create an invoice (same as before)
         InvoiceDocEntity invoice = InvoiceDocEntity.builder()
                 .invoiceNumber(invoiceNumber)
                 .project(project)

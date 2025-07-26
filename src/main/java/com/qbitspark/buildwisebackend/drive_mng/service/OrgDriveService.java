@@ -16,8 +16,7 @@ public interface OrgDriveService {
     void initializeOrganisationDrive(OrganisationEntity organisation) throws ItemNotFoundException;
     void createProjectSystemFolder(OrganisationEntity organisation, ProjectEntity project) throws ItemNotFoundException;
 
-    BatchUploadSyncResponse uploadFilesBatch(UUID organisationId, UUID projectId,
-                                             SystemFileType type, List<MultipartFile> files) throws ItemNotFoundException, AccessDeniedException;
+    BatchUploadSyncResponse uploadFilesBatch(UUID organisationId, UUID projectId, SystemFileType type, List<MultipartFile> files) throws ItemNotFoundException, AccessDeniedException;
 
     List<FileInfoResponse> getFilesPreviewInfo(UUID organisationId, List<UUID> fileIds) throws ItemNotFoundException, AccessDeniedException;
 }

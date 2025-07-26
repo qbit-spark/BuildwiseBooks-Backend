@@ -4,11 +4,12 @@ import lombok.Getter;
 
 @Getter
 public enum SystemFileType {
-    INVOICE("invoice"),
-    VOUCHER("voucher"),
-    BUDGET("budget"),
-    VENDOR("others"),
-    PAYMENT("payment"),
+    INVOICES("invoices"),
+    VOUCHERS("vouchers"),
+    BUDGETS("budgets"),
+    PAYMENTS("payments"),
+    OTHERS("Others"),
+    VENDORS("vendors"),
     GLOBAL("global_files");
 
     private final String folderName;
