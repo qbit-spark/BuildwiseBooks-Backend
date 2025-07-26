@@ -1,8 +1,8 @@
-package com.qbitspark.buildwisebackend.authentication_service.Service.IMPL;
+package com.qbitspark.buildwisebackend.authentication_service.service.impl;
 
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.TempTokenRepository;
-import com.qbitspark.buildwisebackend.authentication_service.Service.TempTokenService;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.TempTokenRepository;
+import com.qbitspark.buildwisebackend.authentication_service.service.TempTokenService;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.authentication_service.entity.TempTokenEntity;
 import com.qbitspark.buildwisebackend.authentication_service.enums.TempTokenPurpose;

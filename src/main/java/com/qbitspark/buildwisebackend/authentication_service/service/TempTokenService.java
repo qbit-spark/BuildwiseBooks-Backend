@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.authentication_service.Service;
+package com.qbitspark.buildwisebackend.authentication_service.service;
 
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.authentication_service.enums.TempTokenPurpose;

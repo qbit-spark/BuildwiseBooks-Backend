@@ -1,11 +1,10 @@
 package com.qbitspark.buildwisebackend.authentication_service.utils;
 
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor

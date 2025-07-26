@@ -1,6 +1,6 @@
-package com.qbitspark.buildwisebackend.authentication_service.Service.IMPL;
+package com.qbitspark.buildwisebackend.authentication_service.service.impl;
 
-import com.qbitspark.buildwisebackend.authentication_service.Service.TempTokenService;
+import com.qbitspark.buildwisebackend.authentication_service.service.TempTokenService;
 import com.qbitspark.buildwisebackend.authentication_service.enums.TempTokenPurpose;
 import com.qbitspark.buildwisebackend.authentication_service.enums.VerificationChannels;
 import com.qbitspark.buildwisebackend.authentication_service.utils.UsernameGenerationUtils;
@@ -11,9 +11,9 @@ import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntit
 import com.qbitspark.buildwisebackend.authentication_service.entity.Roles;
 import com.qbitspark.buildwisebackend.authentication_service.payloads.CreateAccountRequest;
 import com.qbitspark.buildwisebackend.authentication_service.payloads.RefreshTokenResponse;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.RolesRepository;
-import com.qbitspark.buildwisebackend.authentication_service.Service.AccountService;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.RolesRepository;
+import com.qbitspark.buildwisebackend.authentication_service.service.AccountService;
 import com.qbitspark.buildwisebackend.globesecurity.JWTProvider;
 import lombok.RequiredArgsConstructor;
 

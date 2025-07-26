@@ -1,7 +1,7 @@
 package com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.impl;
 import com.qbitspark.buildwisebackend.emails_service.GlobeMailService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo.OrganisationRepo;

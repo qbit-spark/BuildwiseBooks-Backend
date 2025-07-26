@@ -1,5 +1,5 @@
 package com.qbitspark.buildwisebackend.clientsmng_service.service.Impl;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.payloads.ClientResponse;

@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.emails_service.IMPL;
+package com.qbitspark.buildwisebackend.emails_service.impl;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;

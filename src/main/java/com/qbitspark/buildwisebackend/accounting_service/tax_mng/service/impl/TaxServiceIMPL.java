@@ -6,7 +6,7 @@ import com.qbitspark.buildwisebackend.accounting_service.tax_mng.payload.UpdateT
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.payload.TaxResponse;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.repo.TaxRepo;
 import com.qbitspark.buildwisebackend.accounting_service.tax_mng.service.TaxService;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;

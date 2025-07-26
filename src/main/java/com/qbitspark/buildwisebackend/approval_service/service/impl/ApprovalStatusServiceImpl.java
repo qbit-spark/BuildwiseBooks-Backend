@@ -10,7 +10,7 @@ import com.qbitspark.buildwisebackend.approval_service.repo.ApprovalStepInstance
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalPermissionService;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalStatusService;
 import com.qbitspark.buildwisebackend.approval_service.utils.PendingApprovalResponseUtils;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;

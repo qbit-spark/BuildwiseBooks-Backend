@@ -15,7 +15,7 @@ import com.qbitspark.buildwisebackend.accounting_service.receipt_mng.service.Rec
 import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalIntegrationService;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalWorkflowService;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.clientsmng_service.entity.ClientEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;

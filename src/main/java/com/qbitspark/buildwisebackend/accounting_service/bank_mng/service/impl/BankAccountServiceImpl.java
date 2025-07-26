@@ -5,7 +5,7 @@ import com.qbitspark.buildwisebackend.accounting_service.bank_mng.payload.Create
 import com.qbitspark.buildwisebackend.accounting_service.bank_mng.payload.UpdateBankAccountRequest;
 import com.qbitspark.buildwisebackend.accounting_service.bank_mng.repo.BankAccountRepo;
 import com.qbitspark.buildwisebackend.accounting_service.bank_mng.service.BankAccountService;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;

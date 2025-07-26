@@ -1,6 +1,6 @@
 package com.qbitspark.buildwisebackend.drive_mng.service.impl;
 
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.drive_mng.entity.OrgFileEntity;
 import com.qbitspark.buildwisebackend.drive_mng.entity.OrgFolderEntity;

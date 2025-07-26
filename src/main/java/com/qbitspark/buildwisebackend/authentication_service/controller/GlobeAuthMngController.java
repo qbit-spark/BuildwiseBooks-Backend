@@ -1,14 +1,13 @@
 package com.qbitspark.buildwisebackend.authentication_service.controller;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
-import com.qbitspark.buildwisebackend.authentication_service.Service.TempTokenService;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.service.TempTokenService;
 import com.qbitspark.buildwisebackend.authentication_service.entity.Roles;
 import com.qbitspark.buildwisebackend.authentication_service.enums.TempTokenPurpose;
 import com.qbitspark.buildwisebackend.authentication_service.enums.VerificationChannels;
 import com.qbitspark.buildwisebackend.authentication_service.payloads.*;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
-import com.qbitspark.buildwisebackend.authentication_service.Service.AccountService;
+import com.qbitspark.buildwisebackend.authentication_service.service.AccountService;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.globesecurity.JWTProvider;
 import io.jsonwebtoken.Claims;

@@ -1,11 +1,9 @@
-package com.qbitspark.buildwisebackend.authentication_service.Service;
+package com.qbitspark.buildwisebackend.authentication_service.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.authentication_service.payloads.AccountLoginRequest;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.authentication_service.payloads.CreateAccountRequest;
-import com.qbitspark.buildwisebackend.authentication_service.payloads.LoginResponse;
 import com.qbitspark.buildwisebackend.authentication_service.payloads.RefreshTokenResponse;
 
 import java.util.List;

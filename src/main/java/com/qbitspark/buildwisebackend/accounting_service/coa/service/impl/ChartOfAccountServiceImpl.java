@@ -11,7 +11,7 @@ import com.qbitspark.buildwisebackend.accounting_service.coa.utils.AccountCodeGe
 import com.qbitspark.buildwisebackend.accounting_service.coa.utils.ChartOfAccountsMapper;
 import com.qbitspark.buildwisebackend.accounting_service.coa.utils.DefaultChartOfAccountsUtils;
 import com.qbitspark.buildwisebackend.accounting_service.coa.utils.HierarchicalChartOfAccountsMapper;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;

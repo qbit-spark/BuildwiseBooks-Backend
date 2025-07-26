@@ -18,7 +18,7 @@ import com.qbitspark.buildwisebackend.accounting_service.documentflow.voucher.se
 import com.qbitspark.buildwisebackend.approval_service.enums.ServiceType;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalIntegrationService;
 import com.qbitspark.buildwisebackend.approval_service.service.ApprovalWorkflowService;
-import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
+import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.drive_mng.entity.OrgFileEntity;
 import com.qbitspark.buildwisebackend.drive_mng.repo.OrgFileRepo;

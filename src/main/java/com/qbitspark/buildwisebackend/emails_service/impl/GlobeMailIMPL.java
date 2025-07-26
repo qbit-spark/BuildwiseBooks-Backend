@@ -1,4 +1,4 @@
-package com.qbitspark.buildwisebackend.emails_service.IMPL;
+package com.qbitspark.buildwisebackend.emails_service.impl;
 
 import com.qbitspark.buildwisebackend.emails_service.GlobeMailService;
 import lombok.RequiredArgsConstructor;
