@@ -25,8 +25,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.qbitspark.buildwisebackend.authentication_service.enums.VerificationChannels.WHATSAPP;
-
 @AllArgsConstructor
 @RestController
 @RequestMapping("api/v1/auth")
@@ -147,12 +145,15 @@ public class GlobeAuthMngController {
 
 
     @PostMapping("/psw-request-otp")
-    public ResponseEntity<GlobeSuccessResponseBuilder> requestOTP(@Valid @RequestBody RequestSMSOTPBody requestOTPBody) throws RandomExceptions, JsonProcessingException, ItemReadyExistException, ItemNotFoundException {
+    public ResponseEntity<GlobeSuccessResponseBuilder> requestOTP(@Valid @RequestBody EmailPasswordResetRequest requestOTPBody) throws RandomExceptions, JsonProcessingException, ItemReadyExistException, ItemNotFoundException {
 
-        String email = passwordResetOTPService.generateAndSendPSWDResetOTP(requestOTPBody.getEmail());
+        String newTempToken = tempTokenService.sendPSWDResetOTP(requestOTPBody.getEmail());
+
+
 
         GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-                "OTP for password reset was generated and sent to: " + email
+                "OTP resent successfully",
+                resendResponse
         );
 
         return ResponseEntity.ok(response);

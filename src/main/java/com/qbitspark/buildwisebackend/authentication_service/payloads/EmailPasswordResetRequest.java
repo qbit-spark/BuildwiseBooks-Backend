@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class RequestSMSOTPBody {
+public class EmailPasswordResetRequest {
     @NotBlank(message = "Email is mandatory")
     @Email(message = "Email must be valid")
     private String email;
