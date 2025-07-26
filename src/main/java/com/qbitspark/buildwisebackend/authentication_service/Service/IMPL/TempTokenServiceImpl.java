@@ -149,6 +149,7 @@ public class TempTokenServiceImpl implements TempTokenService {
             case REGISTRATION_OTP -> actAfterRegistrationOtpValid(account);
             case LOGIN_OTP -> actAfterLoginOtpValid();
 
+
         }
 
         return account;
@@ -226,6 +227,58 @@ public class TempTokenServiceImpl implements TempTokenService {
     @Transactional
     public void invalidateAllTokensForPurpose(AccountEntity account, TempTokenPurpose purpose) {
         invalidateAllTokensForPurpose(account, null, purpose);
+    }
+
+
+    @Override
+    @Transactional
+    public String sendPSWDResetOTP(String email) throws VerificationException, ItemNotFoundException, RandomExceptions {
+
+        // Find an account by email
+        AccountEntity account = accountRepo.findByEmail(email)
+                .orElseThrow(() -> new ItemNotFoundException("No account found with this email"));
+
+        if (!account.getIsVerified()) {
+            throw new VerificationException("Account is not verified. Please complete registration first.");
+        }
+
+        if (!account.getIsEmailVerified()) {
+            throw new VerificationException("Email is not verified. Please verify your email first.");
+        }
+
+        // Check rate limiting
+        if (!isWithinRateLimit(account, TempTokenPurpose.PASSWORD_RESET_OTP)) {
+            throw new RandomExceptions("Too many password reset requests. Please wait before requesting again.");
+        }
+
+        // Invalidate any existing password reset tokens
+        invalidateAllTokensForPurpose(account, TempTokenPurpose.PASSWORD_RESET_OTP);
+
+        // Generate new OTP
+        String newOtpCode = generateOtpCode();
+
+        // Create temp token
+        String tempToken = createTempToken(
+                account,
+                TempTokenPurpose.PASSWORD_RESET_OTP,
+                email,
+                newOtpCode
+        );
+
+        // Send password reset OTP
+        try {
+            globeMailService.sendOTPEmail(
+                    email,
+                    newOtpCode,
+                    account.getFirstName(),
+                    "Password Reset Request",
+                    "Please use this OTP to reset your password: "
+            );
+        } catch (Exception e) {
+            throw new RandomExceptions("Failed to send password reset email: " + e.getMessage());
+        }
+
+        return tempToken;
     }
 
 

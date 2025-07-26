@@ -19,6 +19,8 @@ public interface TempTokenService {
     AccountEntity validateTempTokenAndOTP(String tempToken, String otpCode) throws VerificationException, ItemNotFoundException, RandomExceptions;
 
 
+    String sendPSWDResetOTP(String email) throws VerificationException, ItemNotFoundException, RandomExceptions;
+
     void invalidateAllTokensForPurpose(AccountEntity account, TempTokenPurpose purpose);
 
     void cleanupExpiredTokens();

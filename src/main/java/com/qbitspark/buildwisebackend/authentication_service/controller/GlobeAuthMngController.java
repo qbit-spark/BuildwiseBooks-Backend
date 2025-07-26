@@ -19,6 +19,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -34,6 +35,7 @@ public class GlobeAuthMngController {
     private final TempTokenService tempTokenService;
     private final JWTProvider tokenProvider;
     private final AccountRepo accountRepo;
+    private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
     public ResponseEntity<GlobeSuccessResponseBuilder> accountRegistration(
@@ -77,7 +79,7 @@ public class GlobeAuthMngController {
         // Create a login response with tokens and user data
         VerifiedAccountResponse verifiedAccountResponse = new VerifiedAccountResponse();
         verifiedAccountResponse.setAccessToken(accessToken);
-        verifiedAccountResponse.setRefreshToken(refreshToken);
+        verifiedAccountResponse.setRefreshToken(null);
         
         AccountResponse accountResponse = new AccountResponse();
         accountResponse.setFirstName(account.getFirstName());
@@ -145,18 +147,42 @@ public class GlobeAuthMngController {
 
 
     @PostMapping("/psw-reset-otp")
-    public ResponseEntity<GlobeSuccessResponseBuilder> requestOTP(@Valid @RequestBody EmailPasswordResetRequest requestOTPBody) throws RandomExceptions, JsonProcessingException, ItemReadyExistException, ItemNotFoundException {
+    public ResponseEntity<GlobeSuccessResponseBuilder> requestPasswordResetOTP(
+            @Valid @RequestBody EmailPasswordResetRequest request)
+            throws RandomExceptions, ItemNotFoundException, VerificationException {
 
-        String newTempToken = tempTokenService.sendPSWDResetOTP(requestOTPBody.getEmail());
+        String tempToken = tempTokenService.sendPSWDResetOTP(request.getEmail());
 
-
-
-        GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-                "OTP resent successfully",
-                resendResponse
+        RegistrationResponse response = new RegistrationResponse(
+                tempToken,
+                "Password reset OTP has been sent to your email",
+                LocalDateTime.now().plusMinutes(10)
         );
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Password reset OTP sent successfully",
+                response
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<GlobeSuccessResponseBuilder> resetPassword(
+            @Valid @RequestBody PswResetAndOTPRequestBody request)
+            throws VerificationException, ItemNotFoundException, RandomExceptions {
+
+        AccountEntity account = tempTokenService.validateTempTokenAndOTP(
+                request.getTempToken(),
+                request.getCode()
+        );
+
+        account.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        account.setEditedAt(LocalDateTime.now());
+        accountRepo.save(account);
+
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Password reset successfully",
+                "Your password has been updated. You can now login with your new password."
+        ));
     }
 
 
@@ -186,32 +212,6 @@ public class GlobeAuthMngController {
         GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
                 "Token refreshed successful",
                 refreshTokenResponse
-        );
-
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/all-users")
-    public ResponseEntity<GlobeSuccessResponseBuilder> getAllUsers() {
-
-        List<AccountEntity> userList = accountService.getAllAccounts();
-
-        GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-                "All users retrieved successfully",
-                userList
-        );
-
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/single-user/{userId}")
-    public ResponseEntity<GlobeSuccessResponseBuilder> getSingleUser(@PathVariable UUID userId) throws ItemNotFoundException {
-
-        AccountEntity user = accountService.getAccountByID(userId);
-
-        GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-                "User details retrieved successfully",
-                user
         );
 
         return ResponseEntity.ok(response);
