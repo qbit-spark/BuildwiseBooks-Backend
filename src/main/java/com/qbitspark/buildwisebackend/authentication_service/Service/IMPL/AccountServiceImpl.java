@@ -2,6 +2,7 @@ package com.qbitspark.buildwisebackend.authentication_service.Service.IMPL;
 
 import com.qbitspark.buildwisebackend.authentication_service.Service.TempTokenService;
 import com.qbitspark.buildwisebackend.authentication_service.enums.TempTokenPurpose;
+import com.qbitspark.buildwisebackend.authentication_service.enums.VerificationChannels;
 import com.qbitspark.buildwisebackend.authentication_service.utils.UsernameGenerationUtils;
 import com.qbitspark.buildwisebackend.emails_service.GlobeMailService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
@@ -44,10 +45,10 @@ public class AccountServiceImpl implements AccountService {
     private final UsernameGenerationUtils usernameGenerationUtils;
     private final TempTokenService tempTokenService;
     private final GlobeMailService globeMailService;
+
     @Override
     public String registerAccount(CreateAccountRequest createAccountRequest) throws Exception {
 
-        // Generate a unique username from email using the new utility
         String generatedUsername = usernameGenerationUtils.generateUniqueUsernameFromEmail(createAccountRequest.getEmail());
 
         // Check the existence of a user by email, phone, or generated username
@@ -58,7 +59,6 @@ public class AccountServiceImpl implements AccountService {
             throw new ItemReadyExistException("User with provided credentials already exist, please login");
         }
 
-        // Create an account entity but DON'T save it yet
         AccountEntity account = new AccountEntity();
         account.setUserName(generatedUsername);
         account.setCreatedAt(LocalDateTime.now());
@@ -73,107 +73,55 @@ public class AccountServiceImpl implements AccountService {
         account.setPhoneNumber(createAccountRequest.getPhoneNumber());
         account.setPassword(passwordEncoder.encode(createAccountRequest.getPassword()));
 
-        // Set the user role
         Set<Roles> roles = new HashSet<>();
         Roles userRoles = rolesRepository.findByRoleName("ROLE_NORMAL_USER")
                 .orElseThrow(() -> new ItemNotFoundException("Default role not found"));
         roles.add(userRoles);
         account.setRoles(roles);
 
-        // Save the account first (so we have an ID for temp token)
         AccountEntity savedAccount = accountRepo.save(account);
 
-        // Generate OTP
         String otpCode = generateOtpCode();
 
-        // Create a temp token for registration verification
         String tempToken = tempTokenService.createTempToken(
-                savedAccount,  // Now we have a saved account
+                savedAccount,
                 TempTokenPurpose.REGISTRATION_OTP,
                 createAccountRequest.getEmail(),
                 otpCode
         );
 
 
-        //Check a selected verification channel
-        switch (createAccountRequest.getVerificationChannel()) {
-            case EMAIL -> //Send the OTP via email
-                globeMailService.sendOTPEmail(savedAccount.getEmail(), otpCode, savedAccount.getFirstName(), "Welcome to BuildWise Books Support!", "Please use the following OTP to complete your registration: ");
-            case SMS -> {
-                System.out.println("SMS verification is not implemented yet.");
-            }
-            case EMAIL_AND_SMS -> {
-                System.out.println("Email and SMS verification is not implemented yet.");
-            }
-
-            case SMS_AND_WHATSAPP -> {
-                System.out.println("SMS and WhatsApp verification is not implemented yet.");
-            }
-            case WHATSAPP -> {
-                System.out.println("WhatsApp verification is not implemented yet.");
-            }
-            case VOICE_CALL -> {
-                System.out.println("Voice call verification is not implemented yet.");
-            }
-            case PUSH_NOTIFICATION -> {
-                System.out.println("Push notification verification is not implemented yet.");
-            }
-            case ALL_CHANNELS -> {
-                System.out.println("All channels verification is not implemented yet.");
-            }
-
-            default -> globeMailService.sendOTPEmail(savedAccount.getEmail(), otpCode, savedAccount.getFirstName(), "Welcome to BuildWise Books Support!", "Please use the following OTP to complete your registration: ");
-
-        }
-
-        return tempToken;
+        return sendOTPViaChannel(createAccountRequest.getVerificationChannel(), savedAccount, otpCode, tempToken);
     }
 
+
     @Override
-    public LoginResponse loginAccount(AccountLoginRequest accountLoginRequest) throws VerificationException, ItemNotFoundException {
+    public String loginAccount(AccountLoginRequest accountLoginRequest) throws Exception {
 
-            String input = accountLoginRequest.getPhoneEmailOrUserName();
-            String password = accountLoginRequest.getPassword();
+        String identifier = accountLoginRequest.getIdentifier();
+        String password = accountLoginRequest.getPassword();
 
-            // Determine the type of input (phone number, email, or username)
-            AccountEntity user = null;
-            if (isEmail(input)) {
-                user = accountRepo.findByEmail(input).orElseThrow(
-                        () -> new ItemNotFoundException("User with provided email does not exist")
-                );
-            } else if (isPhoneNumber(input)) {
-                user = accountRepo.findAccountEntitiesByPhoneNumber(input).orElseThrow(() -> new ItemNotFoundException("phone number do not exist"));
-            } else {
-                user = accountRepo.findByUserName(input).orElseThrow(
-                        () -> new ItemNotFoundException("User with provided username does not exist")
-                );
-            }
-            if (user != null) {
+        AccountEntity userAccount = accountRepo.findByEmailOrPhoneNumberOrUserName(identifier, identifier, identifier).orElseThrow(() -> new ItemNotFoundException("User not found"));
 
-                Authentication authentication = authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(
-                                user.getUserName(),
-                                password));
+        String otpCode = generateOtpCode();
 
-                if (!user.getIsVerified()) {
-                    throw new VerificationException("Account not verified, please verify");
-                }
+        String tempToken = tempTokenService.createTempToken(
+                userAccount,
+                TempTokenPurpose.LOGIN_OTP,
+                userAccount.getEmail(),
+                otpCode
+        );
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                String accessToken = tokenProvider.generateAccessToken(authentication);
-                String refreshToken = tokenProvider.generateRefreshToken(authentication);
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        userAccount.getUserName(),
+                        password));
 
-                LoginResponse loginResponse = new LoginResponse();
-                loginResponse.setAccessToken(accessToken);
-                loginResponse.setRefreshToken(refreshToken);
-                loginResponse.setUserData(user);
+        if (!userAccount.getIsVerified()) {
+            userAccount.setIsVerified(true);
+        }
 
-
-                return loginResponse;
-
-            } else {
-                throw new ItemNotFoundException("User with provided details does not exist, register");
-            }
+        return sendOTPViaChannel(VerificationChannels.EMAIL, userAccount, otpCode, tempToken);
 
     }
 
@@ -227,6 +175,7 @@ public class AccountServiceImpl implements AccountService {
     public AccountEntity getAccountByID(UUID userId) throws ItemNotFoundException {
         return accountRepo.findById(userId).orElseThrow(() -> new ItemNotFoundException("No such user"));
     }
+
     private boolean isPhoneNumber(String input) {
         // Regular expression pattern for validating phone numbers
         String phoneRegex = "^\\+(?:[0-9] ?){6,14}[0-9]$";
@@ -255,6 +204,42 @@ public class AccountServiceImpl implements AccountService {
         Random random = new Random();
         int otp = random.nextInt(900000) + 100000;
         return String.valueOf(otp);
+    }
+
+    private String sendOTPViaChannel(VerificationChannels verificationChannels, AccountEntity savedAccount, String otpCode, String tempToken) throws Exception {
+        //Check a selected verification channel
+        switch (verificationChannels) {
+            case EMAIL -> //Send the OTP via email
+                    globeMailService.sendOTPEmail(savedAccount.getEmail(), otpCode, savedAccount.getFirstName(), "Welcome to BuildWise Books Support!", "Please use the following OTP to complete your Authentication: ");
+            case SMS -> {
+                System.out.println("SMS verification is not implemented yet.");
+            }
+            case EMAIL_AND_SMS -> {
+                System.out.println("Email and SMS verification is not implemented yet.");
+            }
+
+            case SMS_AND_WHATSAPP -> {
+                System.out.println("SMS and WhatsApp verification is not implemented yet.");
+            }
+            case WHATSAPP -> {
+                System.out.println("WhatsApp verification is not implemented yet.");
+            }
+            case VOICE_CALL -> {
+                System.out.println("Voice call verification is not implemented yet.");
+            }
+            case PUSH_NOTIFICATION -> {
+                System.out.println("Push notification verification is not implemented yet.");
+            }
+            case ALL_CHANNELS -> {
+                System.out.println("All channels verification is not implemented yet.");
+            }
+
+            default ->
+                    globeMailService.sendOTPEmail(savedAccount.getEmail(), otpCode, savedAccount.getFirstName(), "Welcome to BuildWise Books Support!", "Please use the following OTP to complete your registration: ");
+
+        }
+
+        return tempToken;
     }
 
 }

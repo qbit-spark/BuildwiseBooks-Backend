@@ -18,7 +18,7 @@ public class GlobeMailIMPL implements GlobeMailService {
     private final EmailsHelperMethodsIMPL emailsHelperMethodsIMPL;
 
     @Override
-    public boolean sendOTPEmail(String email, String otp, String userName, String textHeader, String instructions) throws Exception {
+    public void sendOTPEmail(String email, String otp, String userName, String textHeader, String instructions) throws Exception {
         try {
             log.info("Sending OTP email to: {} for user: {}", email, userName);
 
@@ -38,7 +38,6 @@ public class GlobeMailIMPL implements GlobeMailService {
             );
 
             log.info("OTP email sent successfully to: {}", email);
-            return true;
 
         } catch (Exception e) {
             log.error("Failed to send OTP email to: {}", email, e);

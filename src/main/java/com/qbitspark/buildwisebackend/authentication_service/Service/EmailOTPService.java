@@ -14,6 +14,4 @@ public interface EmailOTPService {
 
     void generateAndSendPasswordResetEmail(AccountEntity userAuthEntity, String emailHeader, String instructionText) throws RandomExceptions, ItemNotFoundException;
 
-    //Only this method should return GlobalJsonResponseBody direct from the service
-    GlobeSuccessResponseBuilder verifyEmailOTP(String email, String otpCode) throws RandomExceptions, VerificationException, ItemNotFoundException;
 }

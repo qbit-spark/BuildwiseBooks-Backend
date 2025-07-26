@@ -7,9 +7,9 @@ import lombok.Data;
 
 @Data
 public class PswResetAndOTPRequestBody {
-    @NotBlank(message = "Email is mandatory")
+    @NotBlank(message = "Temp OTP is mandatory")
     @Email(message = "Email must be valid")
-    private String email;
+    private String tempToken;
     @NotBlank(message = "OTP code is mandatory")
     private String code;
     @NotBlank(message = "Password is mandatory")

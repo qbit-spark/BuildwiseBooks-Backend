@@ -50,27 +50,23 @@ public class GlobeAuthMngController {
                 LocalDateTime.now().plusMinutes(10)
         );
 
-        GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-                "Registration initiated successfully. Please verify with OTP.",
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Registration successful",
                 registrationResponse
-        );
-
-        return ResponseEntity.status(201).body(response);
+        ));
     }
 
 
-    @PostMapping("/verify-registration-otp")
+    @PostMapping("/verify-otp")
     public ResponseEntity<GlobeSuccessResponseBuilder> verifyRegistrationOTP(
             @Valid @RequestBody VerifyRegistrationOTPRequest request)
             throws VerificationException, ItemNotFoundException, RandomExceptions {
 
-        // Validate the temp token and OTP using the TempTokenService
         AccountEntity account = tempTokenService.validateTempTokenAndOTP(
                 request.getTempToken(),
                 request.getOtpCode()
         );
 
-        // Generate access and refresh tokens for the newly verified user
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 account.getUserName(),
                 null,
@@ -81,9 +77,9 @@ public class GlobeAuthMngController {
         String refreshToken = tokenProvider.generateRefreshToken(authentication);
 
         // Create a login response with tokens and user data
-        LoginResponse loginResponse = new LoginResponse();
-        loginResponse.setAccessToken(accessToken);
-        loginResponse.setRefreshToken(refreshToken);
+        VerifiedAccountResponse verifiedAccountResponse = new VerifiedAccountResponse();
+        verifiedAccountResponse.setAccessToken(accessToken);
+        verifiedAccountResponse.setRefreshToken(refreshToken);
         
         AccountResponse accountResponse = new AccountResponse();
         accountResponse.setFirstName(account.getFirstName());
@@ -101,12 +97,12 @@ public class GlobeAuthMngController {
         accountResponse.setCreatedAt(account.getCreatedAt());
         accountResponse.setEditedAt(account.getEditedAt());
 
-        loginResponse.setUserData(accountResponse);
+        verifiedAccountResponse.setUserData(accountResponse);
 
         // Build success response
         GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
                 "Registration completed successfully. You are now logged in.",
-                loginResponse
+                verifiedAccountResponse
         );
 
         return ResponseEntity.ok(response);
@@ -150,19 +146,35 @@ public class GlobeAuthMngController {
     }
 
 
+    @PostMapping("/psw-request-otp")
+    public ResponseEntity<GlobeSuccessResponseBuilder> requestOTP(@Valid @RequestBody RequestSMSOTPBody requestOTPBody) throws RandomExceptions, JsonProcessingException, ItemReadyExistException, ItemNotFoundException {
 
-
-    @PostMapping("/login")
-    public ResponseEntity<GlobeSuccessResponseBuilder> accountLogin(@Valid @RequestBody AccountLoginRequest accountLoginRequest) throws VerificationException, ItemNotFoundException {
-
-        LoginResponse loginResponse = accountService.loginAccount(accountLoginRequest);
+        String email = passwordResetOTPService.generateAndSendPSWDResetOTP(requestOTPBody.getEmail());
 
         GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-                "Account login successful",
-                loginResponse
+                "OTP for password reset was generated and sent to: " + email
         );
 
         return ResponseEntity.ok(response);
+    }
+
+
+
+    @PostMapping("/login")
+    public ResponseEntity<GlobeSuccessResponseBuilder> accountLogin(@Valid @RequestBody AccountLoginRequest accountLoginRequest) throws Exception {
+
+        String tempToken = accountService.loginAccount(accountLoginRequest);
+
+        RegistrationResponse registrationResponse = new RegistrationResponse(
+                tempToken,
+                "OTP has been sent to your " + getChannelName(VerificationChannels.EMAIL),
+                LocalDateTime.now().plusMinutes(10)
+        );
+
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success(
+                "Login successful",
+                registrationResponse
+        ));
     }
 
     @PostMapping("/refreshToken")

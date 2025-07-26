@@ -2,7 +2,6 @@ package com.qbitspark.buildwisebackend.authentication_service.Service.IMPL;
 
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.TempTokenRepository;
-import com.qbitspark.buildwisebackend.authentication_service.Service.EmailOTPService;
 import com.qbitspark.buildwisebackend.authentication_service.Service.TempTokenService;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.authentication_service.entity.TempTokenEntity;
@@ -30,7 +29,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class TempTokenServiceIMPL implements TempTokenService {
+public class TempTokenServiceImpl implements TempTokenService {
 
     private final TempTokenRepository tempTokenRepository;
     private final JWTProvider jwtProvider;
