@@ -88,7 +88,7 @@ public class OrgDriveServiceImpl implements OrgDriveService {
         projectFolder.setProject(project);
         OrgFolderEntity savedProjectFolder = orgFolderRepository.save(projectFolder);
 
-        String[] subfolders = {"voucher", "invoice", "payment", "budget", "others", "vendors"};
+        String[] subfolders = {"vouchers", "invoices", "payments", "budgets", "others", "vendors"};
 
         for (String subfolderName : subfolders) {
             String subfolderPath = mainFolderPath + "/" + subfolderName;
