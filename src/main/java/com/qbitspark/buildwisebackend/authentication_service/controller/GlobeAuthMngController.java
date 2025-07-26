@@ -84,7 +84,24 @@ public class GlobeAuthMngController {
         LoginResponse loginResponse = new LoginResponse();
         loginResponse.setAccessToken(accessToken);
         loginResponse.setRefreshToken(refreshToken);
-        loginResponse.setUserData(account);
+        
+        AccountResponse accountResponse = new AccountResponse();
+        accountResponse.setFirstName(account.getFirstName());
+        accountResponse.setId(account.getId());
+        accountResponse.setUserName(account.getUserName());
+        accountResponse.setLastName(account.getLastName());
+        accountResponse.setMiddleName(account.getMiddleName());
+        accountResponse.setEmail(account.getEmail());
+        accountResponse.setIsVerified(account.getIsVerified());
+        accountResponse.setIsEmailVerified(account.getIsEmailVerified());
+        accountResponse.setIsPhoneVerified(account.getIsPhoneVerified());
+        accountResponse.setRoles(account.getRoles().stream()
+                .map(Roles::getRoleName)
+                .collect(Collectors.toSet()));
+        accountResponse.setCreatedAt(account.getCreatedAt());
+        accountResponse.setEditedAt(account.getEditedAt());
+
+        loginResponse.setUserData(accountResponse);
 
         // Build success response
         GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
@@ -133,124 +150,6 @@ public class GlobeAuthMngController {
     }
 
 
-    @PostMapping("/resend-verification-otp")
-    public ResponseEntity<GlobeSuccessResponseBuilder> resendVerificationOTPByEmail(
-            @Valid @RequestBody ResendOTPByEmailRequest request)
-            throws VerificationException, ItemNotFoundException, RandomExceptions {
-
-        // Validate rate limiting
-        if (!tempTokenService.canResendByEmail(request.getEmail(), request.getPurpose())) {
-            throw new RandomExceptions("Too many attempts. Please wait before trying again.");
-        }
-
-        // Generate a new token and send OTP
-        String newTempToken = tempTokenService.resendOTPByEmail(
-                request.getEmail(),
-                request.getPurpose()
-        );
-
-        // Build response
-        ResendOTPResponse response = new ResendOTPResponse(
-                newTempToken,
-                "Verification code sent to your email",
-                LocalDateTime.now().plusMinutes(10),
-                tempTokenService.getRemainingResendAttempts(request.getEmail(), request.getPurpose()),
-                tempTokenService.getNextResendAllowedTime(request.getEmail(), request.getPurpose())
-        );
-
-        GlobeSuccessResponseBuilder successResponse = GlobeSuccessResponseBuilder.success(
-                "OTP sent successfully",
-                response
-        );
-
-        return ResponseEntity.ok(successResponse);
-    }
-
-    // Convenience endpoint specifically for registration recovery
-    @PostMapping("/continue-registration")
-    public ResponseEntity<GlobeSuccessResponseBuilder> continueRegistration(
-            @Valid @RequestBody RequestEmailOTPBody request)
-            throws VerificationException, ItemNotFoundException, RandomExceptions {
-
-        // Check account status first
-        AccountEntity account = accountRepo.findByEmail(request.getEmail()).orElse(null);
-
-        if (account == null) {
-            throw new ItemNotFoundException("No registration found. Please start registration process.");
-        }
-
-        if (account.getIsVerified()) {
-            // Account already verified - redirect to log in
-            GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-                    "Account already verified. Please login.",
-                    Map.of(
-                            "action", "LOGIN",
-                            "message", "Your account is ready! You can login now."
-                    )
-            );
-            return ResponseEntity.ok(response);
-        }
-
-        // Continue the registration flow
-        String newTempToken = tempTokenService.resendOTPByEmail(
-                request.getEmail(),
-                TempTokenPurpose.REGISTRATION_OTP
-        );
-
-        RegistrationResponse registrationResponse = new RegistrationResponse(
-                newTempToken,
-                "Welcome back! Please check your email for the verification code.",
-                LocalDateTime.now().plusMinutes(10)
-        );
-
-        GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-                "Registration continuation sent",
-                registrationResponse
-        );
-
-        return ResponseEntity.ok(response);
-    }
-
-    // Account status checker - helps frontend decide what to show
-    @PostMapping("/account-status")
-    public ResponseEntity<GlobeSuccessResponseBuilder> checkAccountStatus(
-            @Valid @RequestBody RequestEmailOTPBody request) {
-
-        String email = request.getEmail();
-        AccountEntity account = accountRepo.findByEmail(email).orElse(null);
-
-        Map<String, Object> status = new HashMap<>();
-
-        if (account == null) {
-            status.put("exists", false);
-            status.put("verified", false);
-            status.put("action", "REGISTER");
-            status.put("message", "Ready to create your account!");
-
-        } else if (!account.getIsVerified()) {
-            status.put("exists", true);
-            status.put("verified", false);
-            status.put("action", "CONTINUE_REGISTRATION");
-            status.put("message", "Let's complete your registration");
-            status.put("registeredAt", account.getCreatedAt());
-            status.put("canResend", tempTokenService.canResendByEmail(email, TempTokenPurpose.REGISTRATION_OTP));
-            status.put("firstName", account.getFirstName());
-
-        } else {
-            status.put("exists", true);
-            status.put("verified", true);
-            status.put("action", "LOGIN");
-            status.put("message", "Welcome back! You can login now.");
-            status.put("firstName", account.getFirstName());
-        }
-
-        GlobeSuccessResponseBuilder response = GlobeSuccessResponseBuilder.success(
-                "Account status retrieved",
-                status
-        );
-
-        return ResponseEntity.ok(response);
-    }
 
 
     @PostMapping("/login")

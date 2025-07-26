@@ -12,18 +12,12 @@ public interface TempTokenService {
 
     String createTempToken(AccountEntity account, TempTokenPurpose purpose, String identifier, String otpCode) throws RandomExceptions;
 
-    default String createRegistrationTempToken(String userIdentifier, TempTokenPurpose purpose, String otpCode) throws RandomExceptions {
-        return createTempToken(null, purpose, userIdentifier, otpCode);
-    }
 
     String resendOTP(String tempToken) throws VerificationException, ItemNotFoundException, RandomExceptions;
 
 
     AccountEntity validateTempTokenAndOTP(String tempToken, String otpCode) throws VerificationException, ItemNotFoundException, RandomExceptions;
 
-
-    String resendOTPByEmail(String email, TempTokenPurpose purpose)
-            throws VerificationException, ItemNotFoundException, RandomExceptions;
 
     void invalidateAllTokensForPurpose(AccountEntity account, TempTokenPurpose purpose);
 

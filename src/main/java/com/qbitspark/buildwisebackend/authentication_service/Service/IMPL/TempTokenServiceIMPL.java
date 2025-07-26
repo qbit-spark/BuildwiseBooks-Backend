@@ -155,7 +155,6 @@ public class TempTokenServiceIMPL implements TempTokenService {
         return account;
     }
 
-
     @Override
     @Transactional
     public String resendOTP(String tempToken) throws VerificationException, ItemNotFoundException, RandomExceptions {
@@ -221,32 +220,6 @@ public class TempTokenServiceIMPL implements TempTokenService {
         sendOTPBasedOnPurpose(tokenPurpose, identifier, newOtpCode, account);
 
         return newTempToken;
-    }
-
-
-    @Override
-    @Transactional
-    public String resendOTPByEmail(String email, TempTokenPurpose purpose)
-            throws VerificationException, ItemNotFoundException, RandomExceptions {
-
-        // Security: Check rate limiting first
-        if (!canResendByEmail(email, purpose)) {
-            throw new RandomExceptions("Too many resend attempts. Please wait before trying again.");
-        }
-
-        // Handle different purposes with specific validation
-        switch (purpose) {
-            case REGISTRATION_OTP -> {
-                return handleRegistrationResendByEmail(email);
-            }
-            case PASSWORD_RESET_OTP -> {
-                return handlePasswordResetResendByEmail(email);
-            }
-            case LOGIN_OTP -> {
-                return handleLoginResendByEmail(email);
-            }
-            default -> throw new VerificationException("Unsupported purpose for email-based resend");
-        }
     }
 
 
