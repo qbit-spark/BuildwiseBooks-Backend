@@ -11,11 +11,10 @@ public interface AccountRepo extends JpaRepository<AccountEntity, UUID> {
     Optional<AccountEntity> findAccountEntitiesByEmailOrPhoneNumberOrUserName(String email, String phoneNumber, String userName);
     Optional<AccountEntity> findAccountEntitiesByUserName(String userName);
     Optional<AccountEntity> findByEmail(String email);
-    Optional<AccountEntity> findAccountEntitiesByPhoneNumber(String phoneNumber);
     Optional<AccountEntity> findByUserName(String username);
     Boolean existsByPhoneNumberOrEmailOrUserName(String phoneNumber, String email, String userName);
-    Boolean existsByPhoneNumber(String phoneNumber);
-    Boolean existsByEmail(String email);
+
+    Optional<AccountEntity> findByEmailOrPhoneNumberOrUserName(String email, String phoneNumber, String userName);
     Boolean existsByUserName(String userName);
 
 }

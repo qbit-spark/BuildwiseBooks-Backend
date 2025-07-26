@@ -32,6 +32,10 @@ public class AccountEntity {
     private String phoneNumber;
     private String userName;
 
+    private String firstName;
+    private String lastName;
+    private String middleName;
+
     @JsonIgnore
     private String password;
 

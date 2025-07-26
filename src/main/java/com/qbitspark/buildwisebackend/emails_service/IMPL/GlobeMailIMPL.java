@@ -18,7 +18,7 @@ public class GlobeMailIMPL implements GlobeMailService {
     private final EmailsHelperMethodsIMPL emailsHelperMethodsIMPL;
 
     @Override
-    public boolean sendOTPEmail(String email, String otp, String userName, String textHeader, String instructions) throws Exception {
+    public void sendOTPEmail(String email, String otp, String userName, String textHeader, String instructions) throws Exception {
         try {
             log.info("Sending OTP email to: {} for user: {}", email, userName);
 
@@ -38,7 +38,6 @@ public class GlobeMailIMPL implements GlobeMailService {
             );
 
             log.info("OTP email sent successfully to: {}", email);
-            return true;
 
         } catch (Exception e) {
             log.error("Failed to send OTP email to: {}", email, e);
@@ -48,7 +47,7 @@ public class GlobeMailIMPL implements GlobeMailService {
 
     @Override
     public boolean sendOrganisationInvitationEmail(String email, String organisationName, String inviterName,
-                                                   String role, String acceptLink, String declineLink) throws Exception {
+                                                   String role, String invitationLink) throws Exception {
         try {
             log.info("Sending organisation invitation email to: {} for organisation: {}", email, organisationName);
 
@@ -56,8 +55,8 @@ public class GlobeMailIMPL implements GlobeMailService {
             templateVariables.put("organisationName", organisationName);
             templateVariables.put("inviterName", inviterName);
             templateVariables.put("role", role);
-            templateVariables.put("acceptLink", acceptLink);
-            templateVariables.put("declineLink", declineLink);
+            templateVariables.put("invitationLink", invitationLink);
+
 
             // Send email using template
             String subject = "You're invited to join " + organisationName;
@@ -76,4 +75,37 @@ public class GlobeMailIMPL implements GlobeMailService {
             throw new Exception("Failed to send invitation email: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public void sendProjectTeamMemberAddedEmail(String email, String userName, String projectName, String role, String projectLink) throws Exception {
+        try {
+            log.info("Sending project team member added email to: {} for project: {}", email, projectName);
+
+            Map<String, Object> templateVariables = new HashMap<>();
+            templateVariables.put("userName", userName != null ? userName : "Team Member");
+            templateVariables.put("projectName", projectName);
+            templateVariables.put("role", role);
+            templateVariables.put("projectLink", projectLink);
+
+            // Add some additional context for the email
+            templateVariables.put("emailHeader", "Welcome to the Team!");
+            templateVariables.put("welcomeMessage", "You have been added to a new project");
+
+            // Send email using template
+            String subject = userName+" , welcome to Project! " + projectName;
+            emailsHelperMethodsIMPL.sendTemplateEmail(
+                    email,
+                    subject,
+                    "project_team_member_added_email",
+                    templateVariables
+            );
+
+            log.info("Project team member added email sent successfully to: {} for project: {}", email, projectName);
+
+        } catch (Exception e) {
+            log.error("Failed to send project team member added email to: {} for project: {}", email, projectName, e);
+            throw new Exception("Failed to send project team member added email: " + e.getMessage(), e);
+        }
+    }
+
 }

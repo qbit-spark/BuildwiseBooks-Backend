@@ -1,10 +1,7 @@
 package com.qbitspark.buildwisebackend.authentication_service.payloads;
 
 import com.qbitspark.buildwisebackend.authentication_service.enums.VerificationChannels;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
@@ -15,7 +12,6 @@ public class CreateAccountRequest {
             regexp = "^\\+[1-9]\\d{1,14}$",
             message = "Phone number must be in valid international format (e.g., +1234567890)"
     )
-
     private String phoneNumber;
 
     // Password validation for strong password
@@ -26,10 +22,22 @@ public class CreateAccountRequest {
     )
     private String password;
 
+    @NotBlank(message = "Email is mandatory")
     @Email(message = "Email should be valid")
     private String email;
 
+    @NotBlank(message = "First name is required")
+    @Size(max = 30, message = "First name should be less than 30 characters")
+    private String firstName;
+
+    @NotBlank(message = "Last name is required")
+    @Size(max = 30, message = "Last name should be less than 30 characters")
+    private String lastName;
+
+    @NotBlank(message = "Middle name is required")
+    @Size(max = 30, message = "Middle name should be less than 30 characters")
+    private String middleName;
+
     @NotNull(message = "Verification channel is mandatory")
     private VerificationChannels verificationChannel;
-
 }

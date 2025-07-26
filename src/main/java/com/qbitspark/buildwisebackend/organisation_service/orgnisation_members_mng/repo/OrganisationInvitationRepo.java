@@ -11,14 +11,11 @@ import java.util.UUID;
 
 public interface OrganisationInvitationRepo extends JpaRepository<OrganisationInvitation, UUID> {
     Optional<OrganisationInvitation> findByToken(String token);
-    boolean existsByEmailAndOrganisationAndStatus(String email, OrganisationEntity organisation, InvitationStatus status);
 
     Optional<OrganisationInvitation> findByEmailAndOrganisationAndStatus(String email, OrganisationEntity organisation, InvitationStatus status);
 
     List<OrganisationInvitation> findAllByOrganisationAndStatus(OrganisationEntity organisation, InvitationStatus status);
-
-    List<OrganisationInvitation> findAllByOrganisation(OrganisationEntity organisation);
-
     long countByOrganisationAndStatus(OrganisationEntity organisation, InvitationStatus status);
 
+    Optional<OrganisationInvitation> findByOrganisationAndInvitationId(OrganisationEntity organisation, UUID invitationId);
 }

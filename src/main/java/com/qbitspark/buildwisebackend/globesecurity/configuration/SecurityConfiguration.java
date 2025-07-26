@@ -1,5 +1,4 @@
 package com.qbitspark.buildwisebackend.globesecurity.configuration;
-
 import com.qbitspark.buildwisebackend.globesecurity.JWTAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,9 +53,9 @@ public class SecurityConfiguration {
 
                         .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
 
-                        .requestMatchers( "/api/v1/invitation/**").permitAll()
-
                         .requestMatchers("/jobrunr").permitAll()
+
+                        .requestMatchers("/api/v1/clients/**").permitAll()
 
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())

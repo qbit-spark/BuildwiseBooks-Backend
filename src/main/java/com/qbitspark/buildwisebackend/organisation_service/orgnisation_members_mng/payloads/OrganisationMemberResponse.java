@@ -15,6 +15,5 @@ public class OrganisationMemberResponse {
     private String invitedByUserName;
     private boolean isOwner;
     private boolean isAdmin;
-    private boolean canManageMembers;
 }
 

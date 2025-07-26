@@ -2,9 +2,9 @@ package com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_
 
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
-import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberRole;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
-import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMember;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
+import com.qbitspark.buildwisebackend.projectmng_service.entity.ProjectTeamMemberEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,7 +27,6 @@ import java.util.UUID;
                 @Index(name = "idx_member_account_email_org", columnList = "account_id, organisation_id"),
                 @Index(name = "idx_member_organisation", columnList = "organisation_id"),
                 @Index(name = "idx_member_account", columnList = "account_id"),
-                @Index(name = "idx_member_role", columnList = "role"),
                 @Index(name = "idx_member_status", columnList = "status"),
                 @Index(name = "idx_member_joined_at", columnList = "joinedAt"),
                 @Index(name = "idx_member_invited_by", columnList = "invitedBy")
@@ -45,8 +44,9 @@ public class OrganisationMember {
     @JoinColumn(name = "account_id")
     private AccountEntity account;
 
-    @Enumerated(EnumType.STRING)
-    private MemberRole role;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id", nullable = false)
+    private OrgMemberRoleEntity memberRole;
 
     @Enumerated(EnumType.STRING)
     private MemberStatus status;
@@ -55,8 +55,6 @@ public class OrganisationMember {
 
     private UUID invitedBy;
 
-
-    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<ProjectTeamMember> projectMemberships = new HashSet<>();
-
+    @OneToMany(mappedBy = "organisationMember", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ProjectTeamMemberEntity> projectMemberships = new HashSet<>();
 }

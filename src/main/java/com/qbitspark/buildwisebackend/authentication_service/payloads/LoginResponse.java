@@ -1,10 +1,14 @@
 package com.qbitspark.buildwisebackend.authentication_service.payloads;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
+@AllArgsConstructor
 public class LoginResponse {
-    private Object userData;
-    private String accessToken;
-    private String refreshToken;
+    private String tempToken;
+    private String message;
+    private LocalDateTime expireAt;
 }

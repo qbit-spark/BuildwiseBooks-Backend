@@ -13,9 +13,9 @@ import java.util.UUID;
 
 public interface AccountService {
 
-    AccountEntity registerAccount(CreateAccountRequest createAccountRequest) throws JsonProcessingException, ItemReadyExistException, RandomExceptions, ItemNotFoundException;
+    String registerAccount(CreateAccountRequest createAccountRequest) throws Exception;
 
-    LoginResponse loginAccount(AccountLoginRequest accountLoginRequest) throws VerificationException, ItemNotFoundException;
+    String loginAccount(AccountLoginRequest accountLoginRequest) throws Exception;
 
     RefreshTokenResponse refreshToken(String refreshToken) throws TokenInvalidException;
 

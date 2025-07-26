@@ -7,5 +7,6 @@ public enum ProjectStatus {
     CANCELLED,
     DELETED,
     ON_HOLD,
-    PAUSED, PLANNING
+    PAUSED,
+    PLANNING
 }

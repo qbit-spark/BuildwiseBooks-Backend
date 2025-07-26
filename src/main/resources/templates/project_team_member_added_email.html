@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Project Team</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+<!-- Main Container -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f4; padding: 20px 0;">
+    <tr>
+        <td align="center">
+            <!-- Email Content Table -->
+            <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px;">
+
+                <!-- Header -->
+                <tr>
+                    <td style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                                <td align="center">
+                                    <!-- Logo/Icon -->
+                                    <div style="width: 60px; height: 60px; background-color: rgba(255,255,255,0.2); border-radius: 12px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: white;">
+                                        BW
+                                    </div>
+                                    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">
+                                        🚀 <span th:text="${emailHeader}">Welcome to the Team!</span>
+                                    </h1>
+                                    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">
+                                        You've been added to a project
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Content Body -->
+                <tr>
+                    <td style="padding: 40px 30px;">
+                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <!-- Greeting -->
+                            <tr>
+                                <td style="padding-bottom: 20px;">
+                                    <h2 style="color: #2c3e50; margin: 0; font-size: 20px; font-weight: 600;">
+                                        Hello <span th:text="${userName}">Team Member</span>! 👋
+                                    </h2>
+                                </td>
+                            </tr>
+
+                            <!-- Welcome Message -->
+                            <tr>
+                                <td style="padding-bottom: 30px;">
+                                    <p style="color: #555; margin: 0; font-size: 16px; line-height: 1.6;">
+                                        <strong th:text="${welcomeMessage}">You have been added to a new project</strong>
+                                        and we're thrilled to have you on board. Your expertise and contributions will be invaluable to our team's success.
+                                    </p>
+                                </td>
+                            </tr>
+
+                            <!-- Project Info Card -->
+                            <tr>
+                                <td style="padding-bottom: 30px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8f9fa; border-radius: 12px; border-left: 4px solid #2196F3;">
+                                        <tr>
+                                            <td style="padding: 25px;">
+                                                <h3 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">
+                                                    📋 Project Information
+                                                </h3>
+
+                                                <!-- Project Name Row -->
+                                                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
+                                                    <tr>
+                                                        <td style="width: 100px; color: #4a5568; font-weight: 600; font-size: 15px; vertical-align: top;">
+                                                            Project:
+                                                        </td>
+                                                        <td style="color: #2d3748; font-weight: 500; background-color: white; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                                            <span th:text="${projectName}">Project Name</span>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+
+                                                <!-- Role Row -->
+                                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                                    <tr>
+                                                        <td style="width: 100px; color: #4a5568; font-weight: 600; font-size: 15px; vertical-align: top;">
+                                                            Your Role:
+                                                        </td>
+                                                        <td>
+                                                            <span style="background-color: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: bold;" th:text="${role}">Team Member</span>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+
+                            <!-- Features Section -->
+                            <tr>
+                                <td style="padding-bottom: 30px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8f9fa; border-radius: 12px;">
+                                        <tr>
+                                            <td style="padding: 25px;">
+                                                <h4 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 16px; font-weight: 600; text-align: center;">
+                                                    🎯 What you can do now:
+                                                </h4>
+
+                                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                                    <tr>
+                                                        <td style="padding: 5px 0;">
+                                                            <span style="color: #48bb78; font-weight: bold; margin-right: 10px;">✓</span>
+                                                            <span style="color: #4a5568; font-size: 14px;">Access the project dashboard and overview</span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 5px 0;">
+                                                            <span style="color: #48bb78; font-weight: bold; margin-right: 10px;">✓</span>
+                                                            <span style="color: #4a5568; font-size: 14px;">Collaborate with team members in real-time</span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 5px 0;">
+                                                            <span style="color: #48bb78; font-weight: bold; margin-right: 10px;">✓</span>
+                                                            <span style="color: #4a5568; font-size: 14px;">View project tasks and milestones</span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 5px 0;">
+                                                            <span style="color: #48bb78; font-weight: bold; margin-right: 10px;">✓</span>
+                                                            <span style="color: #4a5568; font-size: 14px;">Contribute to project discussions</span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 5px 0;">
+                                                            <span style="color: #48bb78; font-weight: bold; margin-right: 10px;">✓</span>
+                                                            <span style="color: #4a5568; font-size: 14px;">Upload and share project files</span>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+
+                            <!-- CTA Button -->
+                            <tr>
+                                <td style="text-align: center; padding-bottom: 30px;">
+                                    <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+                                        <tr>
+                                            <td style="background-color: #4CAF50; border-radius: 6px;">
+                                                <a th:href="${projectLink}" style="display: inline-block; padding: 16px 32px; color: white; text-decoration: none; font-weight: 600; font-size: 16px;">
+                                                    🚀 Access Your Project
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+
+                            <!-- Link Fallback -->
+                            <tr>
+                                <td style="padding-bottom: 20px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                        <tr>
+                                            <td style="padding: 15px; text-align: center;">
+                                                <p style="margin: 0 0 10px; font-size: 14px; color: #4a5568;">
+                                                    If the button above doesn't work, copy and paste this link:
+                                                </p>
+                                                <div style="background-color: white; padding: 8px 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; word-break: break-all; color: #2d3748; border: 1px solid #e2e8f0;">
+                                                    <span th:text="${projectLink}">Project Link</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+
+                            <!-- Final Message -->
+                            <tr>
+                                <td>
+                                    <p style="color: #555; margin: 0; font-size: 16px; line-height: 1.6;">
+                                        Ready to make an impact? We're excited to see what we'll accomplish together. If you have any questions or need help getting started, don't hesitate to reach out to your project team or administrator.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; border-radius: 0 0 8px 8px;">
+                        <p style="color: #4a5568; margin: 0 0 15px; font-size: 14px; font-weight: bold;">
+                            BuildWise Project Management
+                        </p>
+                        <p style="color: #718096; margin: 0; font-size: 14px; line-height: 1.6;">
+                            This is an automated notification. Please do not reply to this email.<br>
+                            For support, contact your project administrator or visit our help center.
+                        </p>
+                        <table cellpadding="0" cellspacing="0" border="0" style="margin: 15px auto 0;">
+                            <tr>
+                                <td style="padding: 0 10px;">
+                                    <a href="#" style="color: #2196F3; text-decoration: none; font-size: 14px; font-weight: 500;">Help Center</a>
+                                </td>
+                                <td style="padding: 0 10px;">
+                                    <a href="#" style="color: #2196F3; text-decoration: none; font-size: 14px; font-weight: 500;">Contact Support</a>
+                                </td>
+                                <td style="padding: 0 10px;">
+                                    <a href="#" style="color: #2196F3; text-decoration: none; font-size: 14px; font-weight: 500;">Privacy Policy</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

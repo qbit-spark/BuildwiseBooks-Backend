@@ -1,9 +1,6 @@
 package com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.impl;
 import com.qbitspark.buildwisebackend.emails_service.GlobeMailService;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.AccessDeniedException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationAlreadyProcessedException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.InvitationExpiredException;
-import com.qbitspark.buildwisebackend.globeadvice.exceptions.ItemNotFoundException;
+import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.authentication_service.Repository.AccountRepo;
 import com.qbitspark.buildwisebackend.authentication_service.entity.AccountEntity;
 import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.entity.OrganisationEntity;
@@ -11,12 +8,15 @@ import com.qbitspark.buildwisebackend.organisation_service.organisation_mng.repo
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationInvitation;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.entities.OrganisationMember;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.InvitationStatus;
-import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberRole;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.enums.MemberStatus;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.payloads.*;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationInvitationRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.repo.OrganisationMemberRepo;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.OrganisationMemberService;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.entity.OrgMemberRoleEntity;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.repo.OrgMemberRoleRepo;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.MemberRoleService;
+import com.qbitspark.buildwisebackend.organisation_service.roles_mng.service.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -38,64 +38,60 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
     private final OrganisationRepo organisationRepo;
     private final OrganisationInvitationRepo organisationInvitationRepo;
     private final GlobeMailService globeMailService;
+    private final MemberRoleService memberRoleService;
+    private final PermissionCheckerService permissionChecker;
+    private final OrgMemberRoleRepo orgMemberRoleRepository;
 
     @Value("${frontend.base-url}")
     private String frontendBaseUrl;
 
     @Transactional
     @Override
-    public boolean inviteMember(UUID organisationId, String email, String role) throws ItemNotFoundException, AccessDeniedException {
+    public boolean inviteMember(UUID organisationId, String email, UUID roleId) throws ItemNotFoundException, AccessDeniedException {
 
-        // Step 0: Check authenticated user permissions FIRST
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Step 1: Get the organisation
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        // Step 2: Check if the current user can manage members in this org
-        if (!canManageMembers(currentUser, organisation)) {
-            throw new AccessDeniedException("You do not have permission to manage members in this organisation");
-        }
+        OrganisationMember currentMember = organisationMemberRepo
+                .findByAccountAndOrganisation(currentUser, organisation)
+                .orElseThrow(() -> new AccessDeniedException("You are not a member of this organisation"));
 
-        // Step 3: Check if email is already a member
+        permissionChecker.checkMemberPermission(currentMember, "ORGANISATION", "manageMembers");
+
         if (organisationMemberRepo.existsByAccountEmailAndOrganisation(email, organisation)) {
-            return false; // Already a member
+            return false;
         }
 
-        // Step 4: Check if email already has valid pending invitation
-        if (hasValidPendingInvitation(email, organisation)) {
-            return false; // Already has a valid invitation
+        OrgMemberRoleEntity roleToAssign = orgMemberRoleRepository.findByOrganisationAndRoleId(organisation, roleId).orElseThrow(
+                ()-> new ItemNotFoundException("Role not found in organisation")
+        );
+
+
+        String currentUserRoleName = currentMember.getMemberRole().getRoleName();
+
+        if ("OWNER".equals(roleToAssign.getRoleName()) && !"OWNER".equals(currentUserRoleName)) {
+            throw new AccessDeniedException("Only organisation owner can invite other owners");
         }
 
-        // Step 5: Create invitation
-        // TODO: Generate token, set fields, save invitation
+
         OrganisationInvitation invitation = new OrganisationInvitation();
         invitation.setOrganisation(organisation);
         invitation.setInviter(currentUser);
         invitation.setEmail(email);
-        invitation.setRole(MemberRole.valueOf(role)); // Convert string to enum
+        invitation.setMemberRole(roleToAssign);
         invitation.setToken(generateUniqueToken());
         invitation.setStatus(InvitationStatus.PENDING);
         invitation.setCreatedAt(LocalDateTime.now());
-        invitation.setExpiresAt(LocalDateTime.now().plusDays(7)); // 7 days expiry
+        invitation.setExpiresAt(LocalDateTime.now().plusDays(7));
 
-        // Save invitation to a database
         OrganisationInvitation savedInvitation = organisationInvitationRepo.save(invitation);
 
-        // Step 6: Send invitation email
-        if (sendInvitationEmail(savedInvitation)) {
-            return true; // Success - transaction commits
-        } else {
-            return false; // Email failed - transaction rolls back automatically
-        }
-
+        return sendInvitationEmail(savedInvitation);
     }
-
-
     @Override
     public void addOwnerAsMember(OrganisationEntity organisation, AccountEntity owner) {
-        // Check if an owner is already a member (safety check)
         Optional<OrganisationMember> existingMember = organisationMemberRepo
                 .findByAccountAndOrganisation(owner, organisation);
 
@@ -103,10 +99,11 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
             OrganisationMember ownerMember = new OrganisationMember();
             ownerMember.setOrganisation(organisation);
             ownerMember.setAccount(owner);
-            ownerMember.setRole(MemberRole.OWNER);
             ownerMember.setStatus(MemberStatus.ACTIVE);
             ownerMember.setJoinedAt(LocalDateTime.now());
             ownerMember.setInvitedBy(owner.getId());
+
+            ownerMember.setMemberRole(memberRoleService.assignRoleToMember(ownerMember, "OWNER"));
 
             organisationMemberRepo.save(ownerMember);
         }
@@ -115,20 +112,18 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
     @Transactional
     @Override
-    public boolean acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException {
+    public AcceptInvitationResponse acceptInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException {
 
-        // Step 1: Find an invitation by token
+        AccountEntity currentUser = getAuthenticatedAccount();
+
         OrganisationInvitation invitation = organisationInvitationRepo.findByToken(token)
                 .orElseThrow(() -> new ItemNotFoundException("Invalid invitation token"));
 
-        // Step 2: Validate invitation (throws exceptions if invalid)
-        validateInvitation(invitation);
+        validateInvitation(currentUser, invitation);
 
-        // Step 3: Check if the user already exists and handle verification
         Optional<AccountEntity> existingUser = accountRepo.findByEmail(invitation.getEmail());
 
         if (existingUser.isEmpty()) {
-            // User doesn't exist - they need to register first
             throw new ItemNotFoundException("Account not found. Please register ");
         }
 
@@ -158,7 +153,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         OrganisationMember member = new OrganisationMember();
         member.setOrganisation(invitation.getOrganisation());
         member.setAccount(user);
-        member.setRole(invitation.getRole());
+        member.setMemberRole(memberRoleService.assignRoleToMember(member, invitation.getMemberRole().getRoleName()));
         member.setStatus(MemberStatus.ACTIVE);
         member.setJoinedAt(LocalDateTime.now());
         member.setInvitedBy(invitation.getInviter().getId());
@@ -170,20 +165,26 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         invitation.setRespondedAt(LocalDateTime.now());
         organisationInvitationRepo.save(invitation);
 
-        return true;
+        AcceptInvitationResponse response = new AcceptInvitationResponse();
+        response.setOrganisationId(member.getOrganisation().getOrganisationId());
+        response.setOrganisationName(member.getOrganisation().getOrganisationName());
+
+        return response;
     }
 
 
     @Transactional
     @Override
-    public boolean declineInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException {
+    public boolean declineInvitation(String token) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException {
 
-        // Step 1: Find invitation by token
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        // Step 1: Find an invitation by token
         OrganisationInvitation invitation = organisationInvitationRepo.findByToken(token)
                 .orElseThrow(() -> new ItemNotFoundException("Invalid invitation token"));
 
         // Step 2: Validate invitation (throws exceptions if invalid)
-        validateInvitation(invitation);
+        validateInvitation(currentUser, invitation);
 
         // Step 3: Mark as declined
         invitation.setStatus(InvitationStatus.DECLINED);
@@ -194,21 +195,55 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
     }
 
     @Override
-    public InvitationInfoResponse getInvitationInfo(String token) throws ItemNotFoundException {
+    public void revokeInvitation(UUID organisationId, UUID invitationId) throws ItemNotFoundException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions, AccessDeniedException {
 
-        // Step 1: Find invitation by token
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(
+                ()-> new ItemNotFoundException("Organisation not found")
+        );
+
+        OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
+
+        OrganisationInvitation invitation = organisationInvitationRepo.findByOrganisationAndInvitationId(organisation, invitationId).orElseThrow(
+                () -> new ItemNotFoundException("Invitation not exist in this organisation")
+        );
+
+
+        permissionChecker.checkMemberPermission(member, "ORGANISATION", "manageMembers");
+
+
+        //We can revoke only pending invitations
+        if(invitation.getStatus() != InvitationStatus.PENDING){
+            throw new AccessDeniedException("You can only revoke pending invitations");
+        }
+        organisationInvitationRepo.delete(invitation);
+
+    }
+
+    @Override
+    public InvitationInfoResponse getInvitationInfo(String token) throws ItemNotFoundException, AccessDeniedException, InvitationAlreadyProcessedException, InvitationExpiredException, RandomExceptions {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
         OrganisationInvitation invitation = organisationInvitationRepo.findByToken(token)
                 .orElseThrow(() -> new ItemNotFoundException("Invalid invitation token"));
 
-        // Step 2: Check if invitation is expired (but don't update status here)
+        // Step 2: Validate invitation (throws exceptions if invalid)
+        if (!currentUser.getEmail().equals(invitation.getEmail())) {
+            throw new AccessDeniedException("This invitation does not belong to you");
+        }
+
+        // Step 3: Check if the invitation is expired (but don't update the status here)
         boolean isExpired = invitation.getExpiresAt().isBefore(LocalDateTime.now());
 
-        // Step 3: Build safe response
+        // Step 4: Build a safe response
         InvitationInfoResponse response = new InvitationInfoResponse();
         response.setOrganisationName(invitation.getOrganisation().getOrganisationName());
         response.setOrganisationDescription(invitation.getOrganisation().getOrganisationDescription());
-        response.setInviterName(invitation.getInviter().getUserName()); // Only username, no sensitive info
-        response.setRole(invitation.getRole().toString());
+        response.setInviterName(invitation.getInviter().getUserName());
+        response.setRole(invitation.getMemberRole().getRoleName());
+        response.setToken(invitation.getToken());
         response.setInvitedEmail(invitation.getEmail());
         response.setInvitedAt(invitation.getCreatedAt());
         response.setExpiresAt(invitation.getExpiresAt());
@@ -231,36 +266,31 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
     @Override
     public OrganisationMembersOverviewResponse getAllMembersAndInvitations(UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
-        // Step 1: Get authenticated user and validate permissions
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        if (!canManageMembers(currentUser, organisation)) {
-            throw new AccessDeniedException("You do not have permission to view members of this organisation");
-        }
+        OrganisationMember currentMember = validateOrganisationMemberAccess(currentUser, organisation);
 
-        // Step 2: Get all members
+        permissionChecker.checkMemberPermission(currentMember, "ORGANISATION", "manageMembers");
+
         List<OrganisationMember> allMembers = organisationMemberRepo.findAllByOrganisation(organisation);
         List<OrganisationMemberResponse> memberResponses = allMembers.stream()
                 .map(this::mapToMemberResponse)
                 .toList();
 
-        // Step 3: Get pending invitations
         List<OrganisationInvitation> pendingInvitations = organisationInvitationRepo
                 .findAllByOrganisationAndStatus(organisation, InvitationStatus.PENDING);
         List<PendingInvitationResponse> pendingResponses = pendingInvitations.stream()
                 .map(this::mapToPendingInvitationResponse)
                 .toList();
 
-        // Step 4: Get declined invitations
         List<OrganisationInvitation> declinedInvitations = organisationInvitationRepo
                 .findAllByOrganisationAndStatus(organisation, InvitationStatus.DECLINED);
         List<PendingInvitationResponse> declinedResponses = declinedInvitations.stream()
                 .map(this::mapToPendingInvitationResponse)
                 .toList();
 
-        // Step 5: Build overview response
         OrganisationMembersOverviewResponse response = new OrganisationMembersOverviewResponse();
         response.setOrganisationName(organisation.getOrganisationName());
         response.setTotalMembers(allMembers.size());
@@ -281,9 +311,9 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        if (!canManageMembers(currentUser, organisation)) {
-            throw new AccessDeniedException("You do not have permission to view members of this organisation");
-        }
+        OrganisationMember currentMember = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(currentMember, "ORGANISATION", "manageMembers");
 
         List<OrganisationMember> activeMembers = organisationMemberRepo
                 .findAllByOrganisationAndStatus(organisation, MemberStatus.ACTIVE);
@@ -300,9 +330,9 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        if (!canManageMembers(currentUser, organisation)) {
-            throw new AccessDeniedException("You do not have permission to view invitations of this organisation");
-        }
+        OrganisationMember currentMember = validateOrganisationMemberAccess(currentUser, organisation);
+
+        permissionChecker.checkMemberPermission(currentMember, "ORGANISATION", "manageMembers");
 
         List<OrganisationInvitation> pendingInvitations = organisationInvitationRepo
                 .findAllByOrganisationAndStatus(organisation, InvitationStatus.PENDING);
@@ -315,10 +345,8 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
     @Override
     public UserOrganisationsOverviewResponse getMyOrganisations() throws ItemNotFoundException {
 
-        // Step 1: Get authenticated user
         AccountEntity currentUser = getAuthenticatedAccount();
 
-        // Step 2: Get all memberships for this user
         List<OrganisationMember> userMemberships = organisationMemberRepo.findAllByAccount(currentUser);
 
         // Step 3: Map to response objects
@@ -349,91 +377,49 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
     @Override
     public boolean removeMember(UUID organisationId, UUID memberId) throws ItemNotFoundException, AccessDeniedException {
 
-        // Step 1: Get authenticated user and validate permissions
         AccountEntity currentUser = getAuthenticatedAccount();
         OrganisationEntity organisation = organisationRepo.findById(organisationId)
                 .orElseThrow(() -> new ItemNotFoundException("Organisation not found"));
 
-        // Step 2: Get current user's membership to check permissions
-        Optional<OrganisationMember> currentUserMembership = organisationMemberRepo
-                .findByAccountAndOrganisation(currentUser, organisation);
+        OrganisationMember currentUserMember = validateOrganisationMemberAccess(currentUser, organisation);
 
-        if (currentUserMembership.isEmpty()) {
-            throw new AccessDeniedException("You must be a member of this organisation to remove members");
-        }
-
-        MemberRole currentUserRole = currentUserMembership.get().getRole();
-
-        // Step 3: Get the member to be removed
         OrganisationMember memberToRemove = organisationMemberRepo.findByMemberIdAndOrganisation(memberId, organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Member not found in this organisation"));
 
-        // Step 4: Apply business rules for removal
-
-        // Rule 1: OWNER cannot be removed
-        if (memberToRemove.getRole() == MemberRole.OWNER) {
-            throw new AccessDeniedException("Organisation owner cannot be removed");
-        }
-
-        // Rule 2: Only OWNER can remove ADMIN
-        if (memberToRemove.getRole() == MemberRole.ADMIN && currentUserRole != MemberRole.OWNER) {
-            throw new AccessDeniedException("Only organisation owner can remove administrators");
-        }
-
-        // Rule 3: ADMIN and OWNER can remove MEMBER
-        if (memberToRemove.getRole() == MemberRole.MEMBER &&
-                currentUserRole != MemberRole.OWNER && currentUserRole != MemberRole.ADMIN) {
-            throw new AccessDeniedException("You do not have permission to remove members");
-        }
-
-        // Rule 4: Users can remove themselves (leave organisation)
+        // Check if it's self-removal (leaving organisation)
         boolean isSelfRemoval = memberToRemove.getAccount().getId().equals(currentUser.getId());
-        if (isSelfRemoval && memberToRemove.getRole() == MemberRole.OWNER) {
-            throw new AccessDeniedException("Organisation owner cannot leave. Transfer ownership first or delete the organisation");
-        }
 
-        // Step 5: Remove the member
-        organisationMemberRepo.delete(memberToRemove);
+        if (isSelfRemoval) {
+            // Special rule: OWNER cannot leave
+            if ("OWNER".equals(memberToRemove.getMemberRole().getRoleName())) {
+                throw new AccessDeniedException("Organisation owner cannot leave. Transfer ownership first or delete the organisation");
+            }
 
-        return true;
-    }
+        } else {
+            // Removing another member - check permission
+            permissionChecker.checkMemberPermission(currentUserMember, "ORGANISATION", "removeMembers");
 
+            // Additional business rule: OWNER cannot be removed by anyone
+            if ("OWNER".equals(memberToRemove.getMemberRole().getRoleName())) {
+                throw new AccessDeniedException("Organisation owner cannot be removed");
+            }
 
-    private boolean hasValidPendingInvitation(String email, OrganisationEntity organisation) {
-        Optional<OrganisationInvitation> existingInvitation = organisationInvitationRepo
-                .findByEmailAndOrganisationAndStatus(email, organisation, InvitationStatus.PENDING);
-
-        if (existingInvitation.isPresent()) {
-            OrganisationInvitation invitation = existingInvitation.get();
-
-            if (invitation.getExpiresAt().isAfter(LocalDateTime.now())) {
-                return true; // Valid pending invitation exists
-            } else {
-                // Mark as expired
-                invitation.setStatus(InvitationStatus.EXPIRED);
-                organisationInvitationRepo.save(invitation);
-                return false; // No valid pending invitation
+            // Additional business rule: Only OWNER can remove ADMIN
+            if ("ADMIN".equals(memberToRemove.getMemberRole().getRoleName()) && !"OWNER".equals(currentUserMember.getMemberRole().getRoleName())) {
+                throw new AccessDeniedException("Only organisation owner can remove administrators");
             }
         }
 
-        return false; // No pending invitation
+        organisationMemberRepo.delete(memberToRemove);
+        return true;
     }
 
+    private void validateInvitation(AccountEntity accountEntity, OrganisationInvitation invitation) throws InvitationExpiredException, InvitationAlreadyProcessedException, RandomExceptions, AccessDeniedException {
 
-    private boolean canManageMembers(AccountEntity user, OrganisationEntity organisation) {
-        // Check if user is OWNER or ADMIN of this organisation
-        Optional<OrganisationMember> membership = organisationMemberRepo
-                .findByAccountAndOrganisation(user, organisation);
-
-        if (membership.isPresent()) {
-            MemberRole role = membership.get().getRole();
-            return role == MemberRole.OWNER || role == MemberRole.ADMIN;
+        //Before check if the invitation link is clicked with the right user?
+        if (!invitation.getEmail().equals(accountEntity.getEmail())) {
+            throw new AccessDeniedException("This invitation does not belong to you");
         }
-
-        return false; // Not a member, can't manage
-    }
-
-    private void validateInvitation(OrganisationInvitation invitation) throws InvitationExpiredException, InvitationAlreadyProcessedException {
 
         // First check if invitation is expired (regardless of status)
         if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
@@ -465,16 +451,14 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
     private boolean sendInvitationEmail(OrganisationInvitation invitation) {
         try {
-            String acceptLink = frontendBaseUrl + "/invitation/accept?token=" + invitation.getToken();
-            String declineLink = frontendBaseUrl + "/invitation/decline?token=" + invitation.getToken();
+            String invitationLink = frontendBaseUrl + "/invitation?token=" + invitation.getToken();
 
             return globeMailService.sendOrganisationInvitationEmail(
                     invitation.getEmail(),
                     invitation.getOrganisation().getOrganisationName(),
                     invitation.getInviter().getUserName(),
-                    invitation.getRole().toString(),
-                    acceptLink,
-                    declineLink
+                    invitation.getMemberRole().getRoleName(),
+                    invitationLink
             );
         } catch (Exception e) {
             return false;
@@ -503,7 +487,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         response.setMemberId(member.getMemberId());
         response.setUserName(member.getAccount().getUserName());
         response.setEmail(member.getAccount().getEmail());
-        response.setRole(member.getRole().toString());
+        response.setRole(member.getMemberRole().getRoleName());
         response.setStatus(member.getStatus().toString());
         response.setJoinedAt(member.getJoinedAt());
 
@@ -513,9 +497,10 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
                     .ifPresent(inviter -> response.setInvitedByUserName(inviter.getUserName()));
         }
 
-        response.setOwner(member.getRole() == MemberRole.OWNER);
-        response.setAdmin(member.getRole() == MemberRole.ADMIN);
-        response.setCanManageMembers(member.getRole() == MemberRole.OWNER || member.getRole() == MemberRole.ADMIN);
+
+        String roleName = member.getMemberRole().getRoleName();
+        response.setOwner("OWNER".equals(roleName));
+        response.setAdmin("ADMIN".equals(roleName));
 
         return response;
     }
@@ -524,7 +509,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         PendingInvitationResponse response = new PendingInvitationResponse();
         response.setInvitationId(invitation.getInvitationId());
         response.setEmail(invitation.getEmail());
-        response.setRole(invitation.getRole().toString());
+        response.setRole(invitation.getMemberRole().getRoleName());
         response.setStatus(invitation.getStatus().toString());
         response.setInvitedAt(invitation.getCreatedAt());
         response.setExpiresAt(invitation.getExpiresAt());
@@ -545,23 +530,38 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         response.setOrganisationId(org.getOrganisationId());
         response.setOrganisationName(org.getOrganisationName());
         response.setOrganisationDescription(org.getOrganisationDescription());
-        response.setMyRole(membership.getRole().toString());
+        response.setMyRole(membership.getMemberRole().getRoleName());
         response.setMyStatus(membership.getStatus().toString());
         response.setJoinedAt(membership.getJoinedAt());
         response.setOwnerUserName(org.getOwner().getUserName());
 
-        // Set role-based flags
-        boolean isOwner = membership.getRole() == MemberRole.OWNER;
-        boolean isAdmin = membership.getRole() == MemberRole.ADMIN;
+        String roleName = membership.getMemberRole().getRoleName();
+        boolean isOwner = "OWNER".equals(roleName);
+        boolean isAdmin = "ADMIN".equals(roleName);
+
         response.setOwner(isOwner);
         response.setAdmin(isAdmin);
         response.setCanManageMembers(isOwner || isAdmin);
         response.setCanInviteMembers(isOwner || isAdmin);
 
-        // Get organization statistics
         response.setTotalMembers((int) organisationMemberRepo.countByOrganisationAndStatus(org, MemberStatus.ACTIVE));
         response.setTotalPendingInvitations((int) organisationInvitationRepo.countByOrganisationAndStatus(org, InvitationStatus.PENDING));
 
         return response;
     }
+
+    private OrganisationMember validateOrganisationMemberAccess(AccountEntity account, OrganisationEntity organisation) throws ItemNotFoundException {
+        OrganisationMember member = organisationMemberRepo.findByAccountAndOrganisation(account, organisation)
+                .orElseThrow(() -> new ItemNotFoundException("Member is not belong to this organisation"));
+
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ItemNotFoundException("Member is not active");
+        }
+
+        return member;
+    }
+
+
+
+
 }

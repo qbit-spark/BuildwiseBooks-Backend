@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.Map;
 
 @Component
 public class JWTProvider {
@@ -22,6 +23,9 @@ public class JWTProvider {
 
     @Value("${app.jwt-refresh-token.expiration-days}")
     private Long refreshTokenExpirationDays;
+
+    @Value("${jwt.temp.token.expiration:600000}")
+    private int tempTokenExpirationMs;
 
 
     public String generateRefreshToken(Authentication authentication) {
@@ -97,9 +101,71 @@ public class JWTProvider {
 
     }
 
+
+    public String generateTempToken(Map<String, Object> claims) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + tempTokenExpirationMs);
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .claim("tokenType", "TEMP")
+                .signWith(the_key())
+                .compact();
+    }
+
+    public boolean validateTempToken(String token, String expectedPurpose) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(the_key())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            // Check if this is a temp token
+            String tokenType = claims.get("tokenType", String.class);
+            if (!"TEMP".equals(tokenType)) {
+                return false;
+            }
+
+            // If the expectedPurpose is provided, check it matches
+            if (!expectedPurpose.isEmpty()) {
+                String tokenPurpose = claims.get("purpose", String.class);
+                if (!expectedPurpose.equals(tokenPurpose)) {
+                    return false;
+                }
+            }
+
+            // Check expiration
+            return !claims.getExpiration().before(new Date());
+
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public Claims getTempTokenClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(the_key())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public String getUserIdentifierFromTempToken(String token) {
+        Claims claims = getTempTokenClaims(token);
+        return claims.get("userIdentifier", String.class);
+    }
+
     private Key the_key() {
         return Keys.hmacShaKeyFor(
                 Decoders.BASE64.decode(secret_key)
         );
+    }
+
+    public String getPurposeFromTempToken(String token) {
+        Claims claims = getTempTokenClaims(token);
+        return claims.get("purpose", String.class);
     }
 }

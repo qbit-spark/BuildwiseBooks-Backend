@@ -28,7 +28,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         AccountEntity user = accountRepo.findAccountEntitiesByUserName(username)
-                .orElseThrow(() -> new ItemReadyExistException("User with given username not found: " + username));
+                .orElseThrow(() -> new ItemReadyExistException("Invalid user token: Account does not exist."));
 
         Set<GrantedAuthority> authorities =
                 user.getRoles()
