@@ -110,9 +110,10 @@ public class MemberRoleServiceImpl implements MemberRoleService {
         OrgMemberRoleEntity newRole = new OrgMemberRoleEntity();
         newRole.setOrganisation(organisation);
         newRole.setRoleName(createRoleRequest.getName());
+        newRole.setDescription(createRoleRequest.getDescription());
         newRole.setIsDefaultRole(false);
         newRole.setIsActive(true);
-        newRole.setPermissions(validatePermissions(createRoleRequest.getPermissions()));
+        newRole.setPermissions(createMemberPermissions());
         newRole.setCreatedBy(organisationMember.getMemberId());
         newRole.setCreatedDate(LocalDateTime.now());
 
@@ -140,10 +141,11 @@ public class MemberRoleServiceImpl implements MemberRoleService {
         if (updateRoleRequest.getName() != null && !updateRoleRequest.getName().trim().isEmpty()) {
             String newName = updateRoleRequest.getName().trim();
 
-                if (orgMemberRoleRepository.existsByOrganisationAndRoleNameIgnoreCase(organisation, newName)) {
-                    throw new IllegalArgumentException("Role with name '" + newName + "' already exists in this organisation");
-                }
-                role.setRoleName(newName);
+            if (!role.getRoleName().equalsIgnoreCase(newName) &&
+                    orgMemberRoleRepository.existsByOrganisationAndRoleNameIgnoreCase(organisation, newName)) {
+                throw new IllegalArgumentException("Role with name '" + newName + "' already exists in this organisation");
+            }
+            role.setRoleName(newName);
         }
 
         if (updateRoleRequest.getDescription() != null) {

@@ -23,6 +23,8 @@ public class BasicAuthApiClient {
     @Value("${api.sms-password}")
     private  String password;
 
+
+
     // POST request without authentication
     public <T> T postRequest(String url, Object request, Class<T> responseType, String someText) {
         return webClient

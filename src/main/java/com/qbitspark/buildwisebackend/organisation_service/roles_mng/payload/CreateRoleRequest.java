@@ -16,8 +16,4 @@ public class CreateRoleRequest {
 
     @Size(max = 200, message = "Description cannot exceed 200 characters")
     private String description;
-
-    @NotNull(message = "Permissions are required")
-    @NotEmpty(message = "At least one permission must be provided")
-    private Map<String, Map<String, Boolean>> permissions;
 }
