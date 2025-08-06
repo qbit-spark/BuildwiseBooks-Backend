@@ -4,11 +4,13 @@ import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.globeresponsebody.GlobeSuccessResponseBuilder;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.payloads.AcceptInvitationResponse;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.payloads.InvitationInfoResponse;
+import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.payloads.UserPendingInvitationResponse;
 import com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.OrganisationMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -72,6 +74,19 @@ class OrganisationInvitationController {
         return ResponseEntity.ok(
                 GlobeSuccessResponseBuilder.success(
                         "Invitation revoked successfully."
+                )
+        );
+    }
+
+    @GetMapping("/my-pending-invites")
+    public ResponseEntity<GlobeSuccessResponseBuilder> getAllMyPendingInvitations() throws ItemNotFoundException {
+
+        List<UserPendingInvitationResponse> allPendingInvitations = organisationMemberService.getAllMyPendingInvitations();
+
+        return ResponseEntity.ok(
+                GlobeSuccessResponseBuilder.success(
+                        "All your pending invitations from different organisations retrieved successfully",
+                        allPendingInvitations
                 )
         );
     }

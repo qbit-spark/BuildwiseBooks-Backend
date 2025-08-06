@@ -372,6 +372,22 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         return response;
     }
 
+    @Override
+    public List<UserPendingInvitationResponse> getAllMyPendingInvitations() throws ItemNotFoundException {
+
+        AccountEntity currentUser = getAuthenticatedAccount();
+
+        // Find ALL pending invitations for the user's email across all organizations
+        List<OrganisationInvitation> pendingInvitations = organisationInvitationRepo
+                .findAllByEmailAndStatus(currentUser.getEmail(), InvitationStatus.PENDING);
+
+        // Map to response and filter out expired ones
+        return pendingInvitations.stream()
+                .map(this::mapToUserPendingInvitationResponse)
+                .filter(invitation -> !invitation.isExpired()) // Only return actionable invitations
+                .sorted((a, b) -> b.getInvitedAt().compareTo(a.getInvitedAt())) // Latest first
+                .toList();
+    }
 
     @Transactional
     @Override
@@ -562,6 +578,28 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
     }
 
 
+    private UserPendingInvitationResponse mapToUserPendingInvitationResponse(OrganisationInvitation invitation) {
+        UserPendingInvitationResponse response = new UserPendingInvitationResponse();
+
+        response.setInvitationId(invitation.getInvitationId());
+        response.setToken(invitation.getToken());
+        response.setOrganisationId(invitation.getOrganisation().getOrganisationId());
+        response.setOrganisationName(invitation.getOrganisation().getOrganisationName());
+        response.setOrganisationDescription(invitation.getOrganisation().getOrganisationDescription());
+        response.setInviterName(invitation.getInviter().getUserName());
+        response.setInviterEmail(invitation.getInviter().getEmail());
+        response.setRole(invitation.getMemberRole().getRoleName());
+        response.setStatus(invitation.getStatus().toString());
+        response.setInvitedAt(invitation.getCreatedAt());
+        response.setExpiresAt(invitation.getExpiresAt());
+
+        boolean isExpired = invitation.getExpiresAt().isBefore(LocalDateTime.now());
+        response.setExpired(isExpired);
+        response.setCanAccept(!isExpired && invitation.getStatus() == InvitationStatus.PENDING);
+        response.setCanDecline(!isExpired && invitation.getStatus() == InvitationStatus.PENDING);
+
+        return response;
+    }
 
 
 }

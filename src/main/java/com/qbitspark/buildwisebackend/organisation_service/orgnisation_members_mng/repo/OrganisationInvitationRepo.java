@@ -18,4 +18,8 @@ public interface OrganisationInvitationRepo extends JpaRepository<OrganisationIn
     long countByOrganisationAndStatus(OrganisationEntity organisation, InvitationStatus status);
 
     Optional<OrganisationInvitation> findByOrganisationAndInvitationId(OrganisationEntity organisation, UUID invitationId);
+
+    List<OrganisationInvitation> findAllByEmailAndStatus(String email, InvitationStatus status);
+
+    List<OrganisationInvitation> findAllByEmail(String email);
 }

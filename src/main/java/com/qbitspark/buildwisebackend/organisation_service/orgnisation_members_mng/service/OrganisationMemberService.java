@@ -33,4 +33,6 @@ public interface OrganisationMemberService {
 
     boolean removeMember(UUID organisationId, UUID memberId) throws ItemNotFoundException, AccessDeniedException;
 
+    List<UserPendingInvitationResponse> getAllMyPendingInvitations() throws ItemNotFoundException;
+
 }
