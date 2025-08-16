@@ -27,7 +27,6 @@ public class JWTProvider {
     @Value("${jwt.temp.token.expiration:600000}")
     private int tempTokenExpirationMs;
 
-
     public String generateRefreshToken(Authentication authentication) {
         String userName = authentication.getName();
 

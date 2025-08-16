@@ -22,12 +22,12 @@ public class ChartOfAccountController {
     private final ChartOfAccountService chartOfAccountService;
 
     @GetMapping
-    public ResponseEntity<GroupedChartOfAccountsResponse> getGroupedHierarchicalChartOfAccounts(
+    public ResponseEntity<GlobeSuccessResponseBuilder> getGroupedHierarchicalChartOfAccounts(
             @PathVariable UUID organisationId) throws ItemNotFoundException, AccessDeniedException {
 
         GroupedChartOfAccountsResponse response = chartOfAccountService
                 .getGroupedHierarchicalChartOfAccounts(organisationId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(GlobeSuccessResponseBuilder.success("Organisation's COA retrieved successfully", response));
     }
 
 
