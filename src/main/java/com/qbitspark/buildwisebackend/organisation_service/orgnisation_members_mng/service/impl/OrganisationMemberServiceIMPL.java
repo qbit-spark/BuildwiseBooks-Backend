@@ -1,4 +1,5 @@
 package com.qbitspark.buildwisebackend.organisation_service.orgnisation_members_mng.service.impl;
+
 import com.qbitspark.buildwisebackend.emails_service.GlobeMailService;
 import com.qbitspark.buildwisebackend.globeadvice.exceptions.*;
 import com.qbitspark.buildwisebackend.authentication_service.repo.AccountRepo;
@@ -24,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -65,16 +67,13 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         }
 
         OrgMemberRoleEntity roleToAssign = orgMemberRoleRepository.findByOrganisationAndRoleId(organisation, roleId).orElseThrow(
-                ()-> new ItemNotFoundException("Role not found in organisation")
+                () -> new ItemNotFoundException("Role not found in organisation")
         );
 
-
-        String currentUserRoleName = currentMember.getMemberRole().getRoleName();
-
-        if ("OWNER".equals(roleToAssign.getRoleName()) && !"OWNER".equals(currentUserRoleName)) {
-            throw new AccessDeniedException("Only organisation owner can invite other owners");
+        //The role owner cannot be assigned to a user
+        if (roleToAssign.getRoleName().equals("OWNER")) {
+            throw new AccessDeniedException("Role owner cannot be assigned to new Organisation members");
         }
-
 
         OrganisationInvitation invitation = new OrganisationInvitation();
         invitation.setOrganisation(organisation);
@@ -90,6 +89,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
         return sendInvitationEmail(savedInvitation);
     }
+
     @Override
     public void addOwnerAsMember(OrganisationEntity organisation, AccountEntity owner) {
         Optional<OrganisationMember> existingMember = organisationMemberRepo
@@ -200,7 +200,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
         AccountEntity currentUser = getAuthenticatedAccount();
 
         OrganisationEntity organisation = organisationRepo.findById(organisationId).orElseThrow(
-                ()-> new ItemNotFoundException("Organisation not found")
+                () -> new ItemNotFoundException("Organisation not found")
         );
 
         OrganisationMember member = validateOrganisationMemberAccess(currentUser, organisation);
@@ -214,7 +214,7 @@ public class OrganisationMemberServiceIMPL implements OrganisationMemberService 
 
 
         //We can revoke only pending invitations
-        if(invitation.getStatus() != InvitationStatus.PENDING){
+        if (invitation.getStatus() != InvitationStatus.PENDING) {
             throw new AccessDeniedException("You can only revoke pending invitations");
         }
         organisationInvitationRepo.delete(invitation);

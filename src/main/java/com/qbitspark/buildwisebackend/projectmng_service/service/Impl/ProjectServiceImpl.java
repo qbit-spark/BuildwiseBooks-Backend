@@ -71,8 +71,10 @@ public class ProjectServiceImpl implements ProjectService {
 
         validateOrgBudget(organisation);
 
+
         ClientEntity client = clientsRepo.findClientEntitiesByClientIdAndOrganisation(request.getClientId(), organisation)
                 .orElseThrow(() -> new ItemNotFoundException("Client does not exist in this organisation"));
+
 
 
         if (projectRepo.existsByNameAndOrganisation(request.getName(), organisation)) {
@@ -100,6 +102,7 @@ public class ProjectServiceImpl implements ProjectService {
         OrganisationMember organisationOwner = organisationMemberRepo
                 .findByOrganisationAndMemberRole_RoleName(organisation, "OWNER")
                 .orElseThrow(() -> new ItemNotFoundException("Organisation owner not found"));
+
 
         projectTeamMemberService.addCreatorAndOwnerAsTeamMembers(
                 savedProject,
